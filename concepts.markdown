@@ -11,6 +11,7 @@ it, but a few core concepts will help.
 ## Clients
 Clients are any browser based or JavaScript runtime application, this
 includes:
+
 * Classic web sites with HTML/JavaScript/CSS
 * AngularJS
 * Ember.js
@@ -18,17 +19,23 @@ includes:
 * Node.js
 
 The requirements are:
+
 * A JavaScript runtime ES5+
 * HTTP or WebSocket connectivity
 
+Cutting to it, this means you aren't locked into any specific UI or
+application programming framework or style.
+
 ## Servers
-Servers are `node.js` processes run in any way you see fit. Servers
+Servers are ==node.js== processes run in any way you see fit. Servers
 serve variables from memory, using append only logging. In this way,
 Variable Sky is an in memory server, using disk as a backup mechanism.
 
 ## Linked Data
 
 ## Data Model
+
+The data model is ==JavaScript==, addressed by ==href==.
 
 ## Operations
 
