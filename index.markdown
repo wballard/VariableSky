@@ -10,7 +10,7 @@ title: Variable Sky
 * You don't want to be locked into a proprietary cloud
 
 ## Solution
-[Variable Sky][varsky] is all about building single page applications with a realtime
+[Variable Sky]({{ site.github }}) is all about building single page applications with a realtime
 server designed to easily store what you are already working with
 _JavaScript variables_. You make the client app, VarServer does the
 rest. Fully open source. No specified UI framework.
@@ -24,32 +24,47 @@ function(err, snapshot){
   //snapshot is a 'live' variable linked to the server
   //and will start off blank, we haven't saved anything yet
   //this callback is fired when the server returns data
-  console.log(snapshot);
+  //but this callback is fired every time this variable in
+  //the sky changes
+  //and we store it each time it changes
   linkedInfo = snapshot;
 });
 
 //... your app happens here, pay attention to the variable names
 var stuff = {hi: 'mom'};
+//yep, the value from stuff
+console.log(stuff);
 VarServer.save("http://yourserver.io/info", stuff,
 function(err, snapshot){
   //this callback is fired after the save has reached the server
-  //now -- this has the value from 'stuff'
+  //now -- this has the value from 'stuff' coming back from the sky
   console.log(snapshot);
-  //yep, the value from stuff
-  console.log(stuff);
-  //and, what, here is the magic!
   console.log(linkedInfo);
 });
 
 ```
 
-This is going to print out `{hi: 'mom'}`. Three times.
+This is going to print out `{hi: 'mom'}`. Three times. Huh?
+
+* One from `stuff`
+* One from the `save` `snapshot`
+* One from the `linkedInfo`, which was updated by the `link` snapshot
 
 OK, so what happened:
 
 * We linked a variable to the server
 * We saved data to the server
 * Our linked variable updated automatically
+
+And, you can update variables:
+
+```javascript
+stuff.from = 'me';
+VarServer.save("http://yoursever.io/info", stuff);
+```
+
+No additional callback, the one originally set to `link` will print out
+`{hi: 'mom', from: 'me'}`.
 
 This is a lot more exciting when you realize that multiple client
 applications can be linked to the same URL, automatically pushing saved

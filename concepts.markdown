@@ -24,7 +24,7 @@ The requirements are:
 ## Servers
 Servers are `node.js` processes run in any way you see fit. Servers
 serve variables from memory, using append only logging. In this way,
-**Variable Sky**:e
+Variable Sky is an in memory server, using disk as a backup mechanism.
 
 ## Linked Data
 
