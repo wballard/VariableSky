@@ -10,7 +10,7 @@ title: Variable Sky
 * You don't want to be locked into a proprietary cloud
 
 ## Solution
-**Variable Sky** is all about building single page applications with a realtime
+[Variable Sky][varsky] is all about building single page applications with a realtime
 server designed to easily store what you are already working with
 _JavaScript variables_. You make the client app, VarServer does the
 rest. Fully open source. No specified UI framework.

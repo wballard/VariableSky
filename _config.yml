@@ -1,8 +1,8 @@
 name: Variable Sky
-safe: true
 lsi: false
 pygments: true
 github: https://github.com/wballard/VariableSky
+plugins: _plugins
 markdown: redcarpet
 redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript", "with_toc_data"]
