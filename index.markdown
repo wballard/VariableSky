@@ -1,5 +1,5 @@
 ---
-layout: spartan
+layout: default
 title: Variable Sky
 ---
 
