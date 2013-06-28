@@ -1,4 +1,5 @@
 ---
+layout: spartan
 title: Variable Sky
 ---
 
