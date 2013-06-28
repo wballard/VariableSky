@@ -1,0 +1,8 @@
+name: Variable Sky
+markdown: rdiscount
+rdiscount:
+  extensions:
+    - autolink
+    - footnotes
+    - smart
+github: https://github.com/wballard/VariableSky
