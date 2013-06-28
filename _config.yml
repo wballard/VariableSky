@@ -1,5 +1,8 @@
 name: Variable Sky
 markdown: rdiscount
+safe: true
+lsi: false
+pygments: true
 rdiscount:
   extensions:
     - autolink
