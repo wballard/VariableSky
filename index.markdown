@@ -5,8 +5,8 @@ title: Variable Sky
 
 Code
 
-{% highlight javascript %}
+``` javascript
 var x = 0;
-{% endhighlight %}
+```
 
-# yep
+# yepl
