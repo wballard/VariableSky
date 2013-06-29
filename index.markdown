@@ -12,14 +12,14 @@ title: Variable Sky
 ## Solution
 [Variable Sky]({{ site.github }}) is all about building single page applications with a realtime
 server designed to easily store what you are already working with
-_JavaScript variables_. You make the client app, VarServer does the
+_JavaScript variables_. You make the client app, Variable Sky does the
 rest. Fully open source. No specified UI framework.
 
 To give you a sense, here is a sample of connecting to data:
 
 ```javascript
 var linkedInfo = null;
-var usersLink = VarServer.link("http://yourserver.io/info",
+var usersLink = VariableSky.link("http://yourserver.io/info",
 function(err, snapshot){
   //snapshot is a 'live' variable linked to the server
   //and will start off blank, we haven't saved anything yet
@@ -34,8 +34,7 @@ function(err, snapshot){
 var stuff = {hi: 'mom'};
 //yep, the value from stuff
 console.log(stuff);
-VarServer.save("http://yourserver.io/info", stuff,
-function(err, snapshot){
+usersLink.save(stuff, function(err, snapshot){
   //this callback is fired after the save has reached the server
   //now -- this has the value from 'stuff' coming back from the sky
   console.log(snapshot);
@@ -60,7 +59,7 @@ And, you can update variables:
 
 ```javascript
 stuff.from = 'me';
-VarServer.save("http://yoursever.io/info", stuff);
+usersLink.save(stuff);
 ```
 
 No additional callback, the one originally set to `link` will print out

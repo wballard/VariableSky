@@ -1,35 +1,63 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>{{ page.title }}</title>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<title>{{ page.title }}</title>
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
+<link rel="stylesheet" href="stylesheets/styles.css">
+<link rel="stylesheet" href="stylesheets/github.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>{{ site.name }}</h1>
-        <p></p>
-
-        <p class="view"><a href="{{ site.github }}">View the Project on GitHub</a></p>
-
-        <p class="view"><a href="index.html">Overview</a></p>
-        <p class="view"><a href="concepts.html">Concepts</a></p>
-      </header>
-      <section>
-        {{ content }}
-      </section>
-      <footer>
-        <p>Copyright &copy; {{ site.time | date: "%Y" }}</p>
-      </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-  </body>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <h1>{{ site.name }}</h1>
+    <p class=""><a href="{{ site.github }}">View the Project on GitHub</a></p>
+    <p class=""><a href="index.html">Overview</a></p>
+    <p class=""><a href="concepts.html">Concepts</a></p>
+    <p class=""><a href="api.html">API</a></p>
+    <ul>
+      <li>
+      <a href="api.html#VariableSky">VariableSky</a>
+      <ul>
+        <li><a href="api.html#VariableSky.link">link()</a></li>
+        <li><a href="api.html#VariableSky.link">authenticate()</a></li>
+        <li><a href="api.html#VariableSky.link">unauthenticate()</a></li>
+      </ul>
+      </li>
+      <li>
+      <a href="api.html#VariableSky">VariableLink</a>
+      <ul>
+        <li><a href="api.html#VariableSky.link">save()</a></li>
+        <li><a href="api.html#VariableSky.link">remove()</a></li>
+      </ul>
+      </li>
+      <li>
+      <a href="api.html#VariableSky">VariableLinkArray</a>
+      <ul>
+        <li><a href="api.html#VariableSky.link">save()</a></li>
+        <li><a href="api.html#VariableSky.link">remove()</a></li>
+        <li><a href="api.html#VariableSky.link">splice()</a></li>
+        <li><a href="api.html#VariableSky.link">push()</a></li>
+        <li><a href="api.html#VariableSky.link">pop()</a></li>
+        <li><a href="api.html#VariableSky.link">shift()</a></li>
+        <li><a href="api.html#VariableSky.link">unshift()</a></li>
+        <li><a href="api.html#VariableSky.link">reverse()</a></li>
+      </ul>
+      </li>
+    </ul>
+  </header>
+  <section>
+    {{ content }}
+  </section>
+  <footer>
+    <p>Copyright &copy; {{ site.time | date: "%Y" }}</p>
+  </footer>
+</div>
+<script src="javascripts/scale.fix.js"></script>
+</body>
 </html>

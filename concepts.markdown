@@ -67,6 +67,7 @@ Different operations are available based on the type of data.
 
 * All Values
   * `save`: writes a new value, which may be any JavaScript value
+  * `remove`: turns a value to undefined, different than saving null
 * Arrays
   * `splice`: exactly like JavaScript splice, allows you to update
     arrays in place by index
