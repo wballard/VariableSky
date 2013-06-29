@@ -73,6 +73,7 @@ $(document).on('click', function(event){
 });
 //autotoc
 $(':header').each(function(){
+  if(this.tagName == 'H4') return;
   $link = $('<li><a href="#">Link</a></li>');
   $toc = $('#toc');
   console.log(this);
@@ -82,5 +83,6 @@ $(':header').each(function(){
   }
   $toc.append($link);
 })
+$('table').addClass('table table-bordered');
 </script>
 </html>
