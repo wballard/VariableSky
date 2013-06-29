@@ -5,59 +5,82 @@
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
 <title>{{ page.title }}</title>
 
-<link rel="stylesheet" href="stylesheets/styles.css">
+<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 <link rel="stylesheet" href="stylesheets/github.css">
+<link rel="stylesheet" href="stylesheets/tweaks.css">
+<script src="javascripts/jquery.min.js"></script>
+<script src="javascripts/bootstrap.min.js"></script>
+
+
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
 </head>
 <body>
-<div class="wrapper">
-  <header>
-    <h1>{{ site.name }}</h1>
-    <p class=""><a href="{{ site.github }}">View the Project on GitHub</a></p>
-    <p class=""><a href="index.html">Overview</a></p>
-    <p class=""><a href="concepts.html">Concepts</a></p>
-    <p class=""><a href="api.html">API</a></p>
-    <ul>
-      <li>
-      <a href="api.html#VariableSky">VariableSky</a>
-      <ul>
-        <li><a href="api.html#VariableSky.link">link()</a></li>
-        <li><a href="api.html#VariableSky.link">authenticate()</a></li>
-        <li><a href="api.html#VariableSky.link">unauthenticate()</a></li>
+
+<div class="navbar navbar-fixed-top">
+  <div class="container">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="#">{{site.name}}</a>
+    <div class="nav-collapse collapse navbar-responsive-collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="concepts.html">Concepts</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="{{site.github}}">Source</a></li>
       </ul>
-      </li>
-      <li>
-      <a href="api.html#VariableSky">VariableLink</a>
-      <ul>
-        <li><a href="api.html#VariableSky.link">save()</a></li>
-        <li><a href="api.html#VariableSky.link">remove()</a></li>
-      </ul>
-      </li>
-      <li>
-      <a href="api.html#VariableSky">VariableLinkArray</a>
-      <ul>
-        <li><a href="api.html#VariableSky.link">save()</a></li>
-        <li><a href="api.html#VariableSky.link">remove()</a></li>
-        <li><a href="api.html#VariableSky.link">splice()</a></li>
-        <li><a href="api.html#VariableSky.link">push()</a></li>
-        <li><a href="api.html#VariableSky.link">pop()</a></li>
-        <li><a href="api.html#VariableSky.link">shift()</a></li>
-        <li><a href="api.html#VariableSky.link">unshift()</a></li>
-        <li><a href="api.html#VariableSky.link">reverse()</a></li>
-      </ul>
-      </li>
-    </ul>
-  </header>
-  <section>
-    {{ content }}
-  </section>
+    </div>
+  </div>
+</div>
+
+<div class="container main">
+  <div class="row">
+    <div class="col-lg-3">
+      <div class="well sidebar-nav sidebar-nav-fixed">
+        <ul class="nav nav-list" id="toc">
+        </ul>
+      </div>
+    </div>
+    <div class="col-lg-9">
+      {{content}}
+    </div>
+  </div>
+  <hr>
   <footer>
     <p>Copyright &copy; {{ site.time | date: "%Y" }}</p>
   </footer>
 </div>
-<script src="javascripts/scale.fix.js"></script>
+
 </body>
+<script>
+//auto active
+$('li a').each(function(){
+  if(this.href == window.location.href) {
+    $(this).parent().addClass('active');
+  }
+})
+//room for the nav
+$(document).on('click', function(event){
+  if(event.target.href) {
+    setTimeout(function(){
+      console.log(event);
+      console.log($('body').scrollTop());
+      $('body').scrollTop($('body').scrollTop() - 50);
+    });
+  }
+});
+//autotoc
+$(':header').each(function(){
+  $link = $('<li><a href="#">Link</a></li>');
+  $toc = $('#toc');
+  console.log(this);
+  $link.find('a').attr('href',"#"+this.id).text(this.innerText);
+  if(this.tagName == 'H3') {
+    $link.find('a').addClass('subnav');
+  }
+  $toc.append($link);
+})
+</script>
 </html>

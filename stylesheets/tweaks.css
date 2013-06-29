@@ -1,0 +1,39 @@
+body { padding-top: 70px; }
+
+.sidebar-nav {
+    padding: 9px 0;
+}
+
+.sidebar-nav-fixed {
+    position:fixed;
+    top:60px;
+    width: 20%;
+}
+
+@media (max-width: 1090px) {
+    .sidebar-nav-fixed {
+        position:static;
+        width:auto;
+    }
+}
+
+@media (min-width: 1200px) {
+    .sidebar-nav-fixed {
+        width: 18%;
+    }
+}
+
+ /* for demo purposes (fixed top navbar placement in the fiddle. Ok to remove */
+
+@media (max-width: 767px) {
+    body {
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 979px) {
+    body {
+        padding-top: 0;
+    }
+}
+

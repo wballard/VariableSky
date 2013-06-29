@@ -3,8 +3,21 @@ layout: default
 title: API
 ---
 
-# VariableSky <a id="VariableSky"></a>
-
-## link [link]
+## VariableSky
+### link
+### authenticate
+### unauthenticate
+## VariableLink
+### save
+### remove
+## VariableLinkArray
+### save
+### remove
+### splice
+### push
+### pop
+### shift
+### unshift
+### reverse
 
 
