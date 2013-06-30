@@ -72,17 +72,22 @@ $(document).on('click', function(event){
   }
 });
 //autotoc
+var $nested = null
 $(':header').each(function(){
   if(this.tagName == 'H4') return;
-  $link = $('<li><a href="#">Link</a></li>');
-  $toc = $('#toc');
+  var $link = $('<li><a href="#">Link</a></li>');
+  var $toc = $('#toc');
   console.log(this);
   $link.find('a').attr('href',"#"+this.id).text(this.innerText);
-  if(this.tagName == 'H3') {
-    $link.find('a').addClass('subnav');
+  if(this.tagName == 'H2') {
+    $nested = $('<ul/>');
+    $link.append($nested);
+    $toc.append($link);
   }
-  $toc.append($link);
+  if(this.tagName == 'H3') {
+    $nested.append($link);
+  }
 })
-$('table').addClass('table table-bordered');
+$('table').addClass('table table-bordered table-striped');
 </script>
 </html>

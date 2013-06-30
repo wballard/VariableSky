@@ -1,7 +1,7 @@
 body { padding-top: 70px; }
 
 .sidebar-nav {
-    padding: 9px 0;
+  padding: 0px;
 }
 
 .sidebar-nav-fixed {
@@ -36,4 +36,3 @@ body { padding-top: 70px; }
         padding-top: 0;
     }
 }
-

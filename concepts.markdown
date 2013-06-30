@@ -8,6 +8,10 @@ Variable Sky keeps variables in synch between multiple clients and
 servers. It is at the core a replication solution, keeping variables in
 synch.
 
+The data model can be though of as _a giant JavaScript variable in the
+sky_. You point into with with Links, update it, and replicate it to
+connected clients.
+
 ## Clients
 Clients are any browser based or JavaScript runtime application, this
 includes:
@@ -40,6 +44,9 @@ their linked data, which make sense -- you are going to be drawing it on
 the screen with HTML anyhow. Linked data keeps all the clients up to
 date, think of it as continuous replication rather than the detached
 replicas you get via a REST API.
+
+By varying how you link, you get a slice of the total data on the server
+on each client as needed.
 
 ## Data Model
 The data model is `JavaScript`, addressed by `href`. This builds on a
