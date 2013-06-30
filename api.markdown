@@ -44,26 +44,16 @@ returned `Link` object.
 |error||
 |snapshot|A plain old JavaScript value, returned from Variable Sky. This is your data, use it.|
 
-It is important to realize that this callback will fire just once.
+It is important to realize that this callback will fire every time the
+link changes, this is how values are replicated.
 
 Snapshot is a JavaScript value, and this includes `undefined`, which you
 can think of as like a `404`, and `null`, which is when you actually
 `save` a `null` value.
 
-Take snapshot and save it into a variable in your client program, just
-`x = snapshot;` will do it.
-
-Internally, the `Link` tracks the `snapshot` reference, and will update
-it automatically. Having another reference to this value will work just
-fine, after all another `var` just points to the same contents.
-**However** if you clone this value in any way, it unhooks from the
-server. You can do this on purpose, but just make sure you did it on
-purpose.
-
-While linked, `snapshot` will update automatically with:
-
-* Changes made by the server
-* Changes saved by other clients
+Take snapshot and use it in your client program. This callback is the
+place where you move data coming in from the server into the UI
+framework you are using.
 
 ####Return Notes
 The return value of this function is a `Link`, not actual data. Holding
@@ -74,7 +64,7 @@ never gives a `404`, it gives a `Link`, and you can always `save` to it.
 The Variable Sky server will create objects as needed to make sure your
 data is reachable.
 
-If you let go of this `Link`, you disconnect your `snapshot` from the
+If you let go of this `Link`, you disconnect your `callback` from the
 server.
 
 ### authenticate()
@@ -145,13 +135,32 @@ than `null`.
 |---------|-----|
 |error|If you get an error, the value didn't get removed|
 
-## VariableLink
-## VariableLinkArray
-### splice
-### push
-### pop
-### shift
-### unshift
-### reverse
+## StringLink
+Strings are a bit special, in that you will often want to edit parts of
+them, as well as allow users to concurrently edit them to allow
+collaboration. Variable Sky strings can be used as shared workspaces for
+multiple users to collaborate in real time.
+
+## ArrayLink
+Arrays allow you to do partial updates, more efficient then updating the
+entire array all the time, and more concurrent. You can of course `save`
+them, and re-write the entire array, but the link itself supports the
+basic JavaScript array mutators.
+
+ArrayLink does this in a novel way, the `snapshot` handed to you is a
+modified JavaScript Array, proxied to intercept the following methods:
+
+* splice
+* sort
+* reverse
+* push
+* pop
+* shift
+* unshift
+
+Collectively 'the mutators', methods that modify an array in place. This
+proxies array transmits these operations on to the server automatically.
+Arrays coming back from Variable Sky are special in this way, and simple
+to use -- they works just like normal arrays.
 
 

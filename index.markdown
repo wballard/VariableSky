@@ -9,7 +9,7 @@ title: Variable Sky
 * You don't want to be locked into a proprietary cloud
 
 ## Solution
-[Variable Sky]({{ site.github }}) is all about building single page
+**Variable Sky** is all about building single page
 applications with a realtime server designed to easily store and
 replicate what you are already working with: _JavaScript variables_.
 Variable Sky keeps your JavaScript variables in synch, replicating them
@@ -22,7 +22,7 @@ var linkedInfo = null;
 var usersLink = VariableSky.link("http://yourserver.io/info",
 function(err, snapshot){
   //snapshot is a 'live' variable linked to the server
-  //and will start off blank, we haven't saved anything yet
+  //and will start off undefined, we haven't saved anything yet
   //this callback is fired when the server returns data
   //but this callback is fired every time this variable in
   //the sky changes
