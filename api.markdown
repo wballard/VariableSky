@@ -55,14 +55,16 @@ never gives a `404`, it gives a `Link`, and you can always `save` to it.
 The Variable Sky server will create objects as needed to make sure your
 data is reachable.
 
+If you let go of this `Link`, you disconnect your `snapshot` from the
+server.
+
 ### authenticate
 ### unauthenticate
+## Link
+### save
+### remove
 ## VariableLink
-### save
-### remove
 ## VariableLinkArray
-### save
-### remove
 ### splice
 ### push
 ### pop
