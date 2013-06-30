@@ -4,8 +4,9 @@ title: Concepts
 ---
 
 # Overview
-It's not really necesscary to know how Variable Sky works in order to use
-it, but a few core concepts will help.
+Variable Sky keeps variables in synch between multiple clients and
+servers. It is at the core a replication solution, keeping variables in
+synch.
 
 ## Clients
 Clients are any browser based or JavaScript runtime application, this

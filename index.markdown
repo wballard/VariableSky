@@ -5,15 +5,15 @@ title: Variable Sky
 
 ## Problem
 * You want to make a modern, single page, real time application
-* You want to pick your UI framework
-* You want to avoid server programming and focus on the application
+* You want to pick your UI framework, or just plain program JavaScript
 * You don't want to be locked into a proprietary cloud
 
 ## Solution
-[Variable Sky]({{ site.github }}) is all about building single page applications with a realtime
-server designed to easily store what you are already working with
-_JavaScript variables_. You make the client app, Variable Sky does the
-rest. Fully open source. No specified UI framework.
+[Variable Sky]({{ site.github }}) is all about building single page
+applications with a realtime server designed to easily store and
+replicate what you are already working with: _JavaScript variables_.
+Variable Sky keeps your JavaScript variables in synch, replicating them
+between multiple JavaScript programs, including clients and servers.
 
 To give you a sense, here is a sample of connecting to data:
 
