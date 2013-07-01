@@ -87,6 +87,9 @@ When you call `link`, you get a `Link`. This object maintains the
 connection between your client and the server, so you need to hang on to
 it in order to have snapshots update automatically.
 
+### href
+The `Link` is to this `href` path. Used for self reference.
+
 ### save()
 Save a new value to a link, this **replaces** the existing value, notifies
 the server, and then replicates to all clients.
@@ -103,6 +106,25 @@ links' you can do bulk updates of whole objects.
 ### remove()
 Remove lets you _undefine_ a variable on the server. This is different
 than `null`.
+
+### search()
+Starting from this link, do a full text search query. This will return
+matches, which are themselves links to matched data.
+
+By default, all data in Variable Sky is full text indexed. You search
+from a given `Link` as a root, and all matching data is returned as
+links down to the property level. Using these links you can _back up_
+the `href` to logically containing objects as needed.
+
+|Parameter|Notes|
+|---------|-----|
+|query|A full text search expression|
+
+####Callback Notes
+|Parameter|Notes|
+|---------|-----|
+|error||
+|matchingLinks|An array of `Link` objects matching the query|
 
 ### on()
 Attach an event handler to this link.
