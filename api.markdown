@@ -164,8 +164,12 @@ entire array all the time, and more concurrent. You can of course `save`
 them, and re-write the entire array, but the link itself supports the
 basic JavaScript array mutators.
 
-ArrayLink does this in a novel way, the `snapshot` handed to you is a
-modified JavaScript Array, proxied to intercept the following methods:
+ArrayLink exposes the following methods, which have the same meanings as
+the default JavaScript methods. The difference is that these methods
+notify the Variable Sky server, modify the linked array there, fire
+event `data`, then fire an event `mutate`, allowing you to apply just
+the delta to a local snapshot. This avoids sending an entire array back
+and forth to the server.
 
 * splice
 * sort
@@ -175,9 +179,5 @@ modified JavaScript Array, proxied to intercept the following methods:
 * shift
 * unshift
 
-Collectively 'the mutators', methods that modify an array in place. This
-proxies array transmits these operations on to the server automatically.
-Arrays coming back from Variable Sky are special in this way, and simple
-to use -- they works just like normal arrays.
-
+### Event: mutate
 

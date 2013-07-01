@@ -4,9 +4,9 @@ title: Variable Sky
 ---
 
 ## Problem
-* You want to make a modern, single page, real time application
-* You want to pick your UI framework, or just plain program JavaScript
-* You don't want to be locked into a proprietary cloud
+You want to make a modern, single page, real time application, and to do
+this you need to keep variables and data in synch between multiple
+clients and servers.
 
 ## Solution
 **Variable Sky** is all about building single page
@@ -48,8 +48,8 @@ usersLink.save(stuff);
 This is going to print out `{hi: 'mom'}`. Three times. Huh?
 
 * One from `stuff`
-* One from the `save` `snapshot`
-* One from the `linkedInfo`, which was updated by the `link` snapshot
+* One from `snapshot`
+* One from `linkedInfo`, which was updated by the `link` snapshot
 
 OK, so what happened:
 

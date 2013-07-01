@@ -37,6 +37,10 @@ Variable Sky is an in memory server, using disk as a backup mechanism.
 
 Multiple servers can be joined to a Variable Sky to scale out.
 
+The server is supplied as a Node.js module, so that you can integrate it
+into your existing Connect and Express applications, as well as a simple
+command line wrapper.
+
 ## Linked Data
 Data in Variable Sky is used via links. Clients link to servers to
 receive streaming updates of data. Each client keeps a full copy of
@@ -73,17 +77,6 @@ replicate one another to scale out.
 
 Different operations are available based on the type of data.
 
-* All Values
-  * `save`: writes a new value, which may be any JavaScript value
-  * `remove`: turns a value to undefined, different than saving null
-* Arrays
-  * `splice`: exactly like JavaScript splice, allows you to update
-    arrays in place by index
-  * `reverse`: exactl like JavaScript reverse, reverses an array in
-    place
-  * `push`, `pop`, `shift`, `unshift`: exactly like their JavaScript
-    namesakes, these are convenience wrappers around splice
-
 ## Events
 Events are fired on both clients and servers on every operation. This
 allows you to attach callbacks to handle the data change, doing things
@@ -91,14 +84,14 @@ like redrawing your HTML, hooking into your framework, or calling
 additional logic.
 
 ## Hooks
-Hooks let you intercept operations, by link, and take additional action.
-Think of a href path `/users/*`, with a wildcard. You can hook this
-path, supplying a JavaScript handler function. This function gets a
-chance to modify the data before it is actually stored. This is a great
-place to put validation logic, as well as business application specific
-logic that takes place when data changes, such as sending email,
-triggering notifications, calling external services, or writing to other
-databases.
+Hooks let you intercept operations, with `href` patterns like a web
+server routing table, and take additional action.  Think of a href path
+`/users/*`, with a wildcard. You can hook this path, supplying a
+JavaScript handler function. This function gets a chance to modify the
+data before it is actually stored. This is a great place to put
+validation logic, as well as business application specific logic that
+takes place when data changes, such as sending email, triggering
+notifications, calling external services, or writing to other databases.
 
 Hooks can also be installed on links, in this way reads can be
 intercepted. This is typically most useful on servers, specifically to
