@@ -153,13 +153,6 @@ already fired with an `undefined` `snapshot`.
 |error||
 
 
-## StringLink
-Strings are a bit special, in that you will often want to edit parts of
-them, as well as allow users to concurrently edit them to allow
-collaboration. Variable Sky strings can be used as shared workspaces for
-multiple users to collaborate in real time.
-
-
 ## ArrayLink
 Arrays allow you to do partial updates, more efficient then updating the
 entire array all the time, and more concurrent. You can of course `save`
@@ -198,7 +191,7 @@ than re-read the entire thing.
 
 ### Example
 ```javascript
-var sampleArray = null;
+var sampleArray;
 var sampleLink = VariableSky.link("http://yourserver.io/sample");
 sampleLink.on("data", function(err, snapshot){
   //capture a reference to the server array
@@ -222,4 +215,22 @@ OK, this will print:
 []
 [1]
 ```
+
+
+## StringLink
+Strings are a bit special, in that you will often want to edit parts of
+them, as well as allow users to concurrently edit them to allow
+collaboration. Variable Sky strings can be used as shared workspaces for
+multiple users to collaborate in real time.
+
+### concurrentEdit()
+Enable concurrent editing on a user interface element. Simply call this
+method, and your users will engage in real time concurrent editing.
+
+|Parameter|Notes|
+|---------|-----|
+|element|An editable DOM element|
+
+`element` can be an `INPUT`, `TEXTAREA`, `CodeMirror`, or `ACE`.
+
 
