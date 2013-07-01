@@ -81,6 +81,67 @@ End a security session between client and server in order to 'log out'.
 |error|Every hear of a logout failing? Me either.|
 |info|Optional additional info from the server|
 
+### listen()
+This is how you set up a Variable Sky server inside a Node.js process.
+Using express, you embed Variable Sky into a server process. This lets
+you serve static content, a site, the Variable Sky server, and
+importantly the client library that lets an application connect.
+
+|Parameter|Notes|
+|---------|-----|
+|server|An http server object, this provides network transport|
+|returns|A `Server`, which can be further configured|
+
+An example, verb basic server:
+
+```javascript
+var app = require('express')()
+  , server = require('http').createServer(app)
+  , sky = require('variablesky').listen(server);
+
+server.listen(80);
+
+app.get('/', function (req, res) {
+  res.sendfile(__dirname + '/index.html');
+});
+```
+
+And a very basic client:
+
+```html
+<script src="/variablesky/client.js"></script>
+<script>
+  var sample = VariableSky.link("/sample");
+  sample.on("data", function(error, snapshot){
+    console.log(error, snapshot);
+  )};
+  sample.save("Hi mom!");
+</script>
+```
+
+
+## Server
+On the server, you can _hook_ the events. This is similar to setting up
+routes on an HTTP server, and gives you the chance to intercept and
+modify data coming in from clients before it is sent on to other
+connected clients or stored.
+
+And, it is a great place for you to hook in other systems including:
+
+* REST APIs
+* Web services
+* SQL databases
+* Sending email
+* Custom security schemes
+
+### data()
+
+### saved()
+
+### removed()
+
+### mutated()
+
 
 ## Link
 When you call `link`, you get a `Link`. This object maintains the
@@ -89,6 +150,11 @@ it in order to have snapshots update automatically.
 
 ### href
 The `Link` is to this `href` path. Used for self reference.
+
+### val()
+Get the current value of `Link`, which may be `undefined` if data hasn't
+made it from the server yet. This isn't a substitute for event handling,
+but just a convenience to get at the current value.
 
 ### save()
 Save a new value to a link, this **replaces** the existing value, notifies
@@ -125,6 +191,12 @@ the `href` to logically containing objects as needed.
 |---------|-----|
 |error||
 |matchingLinks|An array of `Link` objects matching the query|
+
+### parent()
+TODO
+
+### child()
+TODO
 
 ### on()
 Attach an event handler to this link.
@@ -180,6 +252,8 @@ Arrays allow you to do partial updates, more efficient then updating the
 entire array all the time, and more concurrent. You can of course `save`
 them, and re-write the entire array, but the link itself supports the
 basic JavaScript array mutators.
+
+### mutators
 
 ArrayLink exposes the following methods, which have the same meanings as
 the default JavaScript methods. The difference is that these methods
