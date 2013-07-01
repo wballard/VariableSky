@@ -152,11 +152,13 @@ already fired with an `undefined` `snapshot`.
 |---------|-----|
 |error||
 
+
 ## StringLink
 Strings are a bit special, in that you will often want to edit parts of
 them, as well as allow users to concurrently edit them to allow
 collaboration. Variable Sky strings can be used as shared workspaces for
 multiple users to collaborate in real time.
+
 
 ## ArrayLink
 Arrays allow you to do partial updates, more efficient then updating the
@@ -180,4 +182,44 @@ and forth to the server.
 * unshift
 
 ### Event: mutate
+Event is fired when an array has been mutated on the server. This will
+fire instead of `data` to avoid sending an entire array. Remember, if
+you call `save`, `data` will fire. If you call a mutator, you will get
+`mutate`.
+
+|Parameter|Notes|
+|---------|-----|
+|error||
+|mutator|A function that you call over an array in order to synch it up|
+
+The trick is the mutator, the server sends you a function that you call
+on your array to catch it up. This allows you to _patch_ an array rather
+than re-read the entire thing.
+
+### Example
+```javascript
+var sampleArray = null;
+var sampleLink = VariableSky.link("http://yourserver.io/sample");
+sampleLink.on("data", function(err, snapshot){
+  //capture a reference to the server array
+  sampleArray = snapshot;
+  console.log(sampleArray);
+});
+sampleLink.on("mutate", function(err, mutator){
+  //here is the fun part
+  mutator(sampleArray);
+  console.log(sampleArray);
+});
+//an initial save, this is an array, a real no fooling array
+sampleLink.save([]);
+//push a value
+sampleLink.push(1);
+```
+
+OK, this will print:
+
+```
+[]
+[1]
+```
 
