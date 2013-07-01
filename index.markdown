@@ -19,14 +19,13 @@ To give you a sense, here is a sample of connecting to data:
 
 ```javascript
 var linkedInfo = null;
-var usersLink = VariableSky.link("http://yourserver.io/info",
-function(err, snapshot){
+var usersLink = VariableSky.link("http://yourserver.io/info");
+//event driven data, everything is asynch
+usersLink.on("data", function(err, snapshot){
   //snapshot is a 'live' variable linked to the server
   //and will start off undefined, we haven't saved anything yet
   //this callback is fired when the server returns data
-  //but this callback is fired every time this variable in
-  //the sky changes
-  //and we store it each time it changes
+  //but this callback is fired every time this variable in the sky changes
   linkedInfo = snapshot;
 });
 
@@ -34,12 +33,15 @@ function(err, snapshot){
 var stuff = {hi: 'mom'};
 //yep, the value from stuff
 console.log(stuff);
-usersLink.save(stuff, function(err, snapshot){
+usersLink.on("saved", function(err, snapshot){
   //this callback is fired after the save has reached the server
-  //now -- this has the value from 'stuff' coming back from the sky
+  //you will still get a "data" event, this event fires when you save
+  //data fires when anyone changes data, and always after "data"
   console.log(snapshot);
   console.log(linkedInfo);
 });
+//send the variable to the sky
+usersLink.save(stuff);
 
 ```
 
