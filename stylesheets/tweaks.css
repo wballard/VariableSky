@@ -15,12 +15,6 @@ body { padding-top: 70px; }
     }
 }
 
-@media (min-width: 1200px) {
-    .sidebar-nav-fixed {
-        width: 18%;
-    }
-}
-
  /* for demo purposes (fixed top navbar placement in the fiddle. Ok to remove */
 
 @media (max-width: 767px) {
