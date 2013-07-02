@@ -177,7 +177,7 @@ app.get('/', function (req, res) {
 //hook behavior
 sky.data("/sample", function(context, response, next){
   //a very simple example of always having a defaut value
-  response = {};
+  response = response || {};
   next();
 }).saved("/sample", function(context, response, next){
   //you can get at the previous and current values
@@ -221,7 +221,7 @@ The value currently stored in the server.
 The original value sent in by the client.
 
 #### removed
-`undefined`
+`undefined`, there is no `val` for a `removed`.
 
 #### mutated
 In this case, `val` contains the arguments that will be passed to the
@@ -314,7 +314,9 @@ the `href` to logically containing objects as needed.
 Returns a `Link` representing the parent.
 
 ### child()
-Returns a `Link` to a child.
+Returns a `Link` to a child. Sometimes you want the child data, just use
+`.` or `[]`, sometimes you want a link to the child, for example setting
+up multiple bound records in an array.
 
 |Parameter|Notes|
 |---------|-----|

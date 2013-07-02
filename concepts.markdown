@@ -3,7 +3,7 @@ layout: default
 title: Concepts
 ---
 
-# Overview
+## Overview
 Variable Sky keeps variables in synch between multiple clients and
 servers. It is at the core a replication solution, keeping variables in
 synch.
@@ -51,21 +51,6 @@ replicas you get via a REST API.
 
 By varying how you link, you get a slice of the total data on the server
 on each client as needed.
-
-## Data Model
-The data model is `JavaScript`, addressed by `href`. This builds on a
-basic assumption that JavaScript variables can be transported via JSON,
-and accessed with a simple `.` syntax `variable.property` or
-`variable.array_property[0]` or `variable['property']`. Simply think of
-`.` as `/` and it all comes together to have fully addressable data.
-
-### Link Examples
-| JavaScript | HREF | Notes |
-| ---------- | ---- | ----- |
-| x.a | x/a | Simple `.` to `/` translation |
-| x['a'] | x/a | Change the named key a href segment, URL encoded if needed |
-| x[0] | x/0 | Array access is just a path with the index number |
-| x[0].b | x/0/b| And access on a array member's properties |
 
 ## Operations
 Operations are the basic units of work that modify linked data. They are
