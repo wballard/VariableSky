@@ -20,13 +20,13 @@
 
 <div class="container main">
   <div class="row">
-    <div class="col-lg-3" id="leftnav">
-      <div class="well sidebar-nav">
+    <div class="col-lg-2" id="leftnav">
+      <div class="well sidebar-nav sidebar-nav-fixed">
         <ul class="nav nav-list" id="toc">
         </ul>
       </div>
     </div>
-    <div class="col-lg-9" id="content">
+    <div class="col-lg-10" id="content">
       {{content}}
     </div>
   </div>
@@ -48,8 +48,6 @@ $('li a').each(function(){
 $(document).on('click', function(event){
   if(event.target.href) {
     setTimeout(function(){
-      console.log(event);
-      console.log($('body').scrollTop());
       $('body').scrollTop($('body').scrollTop() - 50);
     });
   }
@@ -59,17 +57,26 @@ var $nested = null;
 var tocItems = 0;
 $(':header').each(function(){
   if(this.tagName == 'H4') return;
-  var $link = $('<li><a href="#">Link</a></li>');
   var $toc = $('#toc');
-  $link.find('a').attr('href',"#"+this.id).text(this.innerText);
   if(this.tagName == 'H2') {
-    $nested = $('<ul/>');
+    var $link = $('<li class=""><a class="dropdown-toggle" href="#" data-toggle="dropdown"></a></li>');
+    $nested = $('<ul class="dropdown-menu" role="menu"/>');
     $link.append($nested);
+    $link.find('a')
+    .attr('href',"#"+this.id)
+    .text(this.innerText)
+    .attr('data-target', '#');
     $toc.append($link);
     tocItems++;
   }
-  if(this.tagName == 'H3') {
-    $nested.append($link);
+  //self link
+  var $link = $('<li><a href="#"></a></li>');
+  $link.find('a')
+  .attr('href',"#"+this.id)
+  .text(this.innerText);
+  $nested.append($link);
+  if(this.tagName == 'H2'){
+    $nested.append($('<li class="divider"></li>'));
   }
 });
 if(tocItems == 0) {
