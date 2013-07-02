@@ -70,14 +70,16 @@ $(':header').each(function(){
     tocItems++;
   }
   //self link
-  var $link = $('<li><a href="#"></a></li>');
-  $link.find('a')
-  .attr('href',"#"+this.id)
-  .text(this.innerText);
-  $nested.append($link);
-  if(this.tagName == 'H2'){
-    $nested.append($('<li class="divider"></li>'));
-  }
+  if($nested) {
+    var $link = $('<li><a href="#"></a></li>');
+    $link.find('a')
+    .attr('href',"#"+this.id)
+    .text(this.innerText);
+    $nested.append($link);
+    if(this.tagName == 'H2'){
+      $nested.append($('<li class="divider"></li>'));
+    }
+  };
 });
 if(tocItems == 0) {
   $('#leftnav').hide();
