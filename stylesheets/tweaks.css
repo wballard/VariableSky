@@ -8,12 +8,13 @@ body { padding-top: 70px; }
     position:fixed;
     top:60px;
     width: 20%;
+    max-height: 500px;
+    overflow-y: scroll;
 }
 
-@media (max-width: 1090px) {
+@media (max-width: 990px) {
     .sidebar-nav-fixed {
-        position:static;
-        width:auto;
+        display: none;
     }
 }
 

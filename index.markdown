@@ -3,6 +3,11 @@ layout: default
 title: Variable Sky
 ---
 
+<div class="jumbotron">
+<h1>Variable Sky</h1>
+The simple server for real time single page applications
+</div>
+
 ## Problem
 You want to make a modern, single page, real time application, and to do
 this you need to keep variables and data in synch between multiple

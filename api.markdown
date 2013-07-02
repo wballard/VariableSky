@@ -3,8 +3,9 @@ layout: default
 title: API
 ---
 
+## Overview
 
-## Errors
+### Errors
 The Variable Sky API isn't about the DOM, it's about data, and as such
 follows the Node.js convention of `(error, arguments)` to callbacks.
 
@@ -15,8 +16,7 @@ Error objects will always have at least these properties:
 |name|Tired of goofy error numbers? Indeed, all errors will have a name.|
 |message|This is a longer, nerdy, descriptive string that may help programmers, and will certainly confuse users if you show it to them.|
 
-
-## Values
+### Values
 _Any JavaScript value_ means any value that can be successfully
 transmitted over JSON. That's almost the same thing as _any value_, but
 I'm sure if you try you can cook up values that have cycles that just

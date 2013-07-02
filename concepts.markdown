@@ -3,6 +3,7 @@ layout: default
 title: Concepts
 ---
 
+
 ## Overview
 Variable Sky keeps variables in synch between multiple clients and
 servers. It is at the core a replication solution, keeping variables in
