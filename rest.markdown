@@ -51,8 +51,11 @@ curl -X DELETE -H http://yourserver.io/critters/0
 curl http://yourserver.io/critters
 [{"name":"Glorn","kind":"monster"}]
 curl -X PUT -H "Content-Type: application/json" -d '{glorn@yourserver.io: {"name":"Glorn","kind":"monster"}}' http://yourserver.io/critters
-curl http://yourserver.io/critters
+curl http://yourserver.io/critters/glorn@yourserver.io
 {glorn@yourserver.io: {"name":"Glorn","kind":"monster"}}
 curl -X POST -H "Content-Type: application/json" -d '{}' http://yourserver.io/critters
 405
+curl -X PUT -H "Content-Type: application/json" -d 'green' http://yourserver.io/critters/glorn@yourserver.io/color
+curl http://yourserver.io/critters
+{glorn@yourserver.io: {"name":"Glorn","kind":"monster", "color": "green"}}
 ```
