@@ -24,8 +24,9 @@ don't serialize.
 
 
 ## VariableSky
-This is the main object. There is no need to `new` it, you
-just call methods on it. This is how you hook a client to a server.
+This is the main object exposed by the client library. There is no need
+to `new` it, you just call methods on it. This is how you hook a client
+to a server.
 
 ### link()
 Connect to Variable Sky via an `href`, linking to a local variable in
@@ -92,6 +93,72 @@ importantly the client library that lets an application connect.
 |server|An http server object, this provides network transport|
 |returns|A `Server`, which can be further configured|
 
+
+## Server
+The `Server` is created by `listen`. This is the main application object
+that you use to configure logic on a server.
+
+### Hooks
+On the server, you can _hook_ the events. This is similar to setting up
+routes on an HTTP server, and gives you the chance to intercept and
+modify data coming in from clients before it is sent on to other
+connected clients or stored.
+
+And, it is a great place for you to hook in other systems including:
+
+* REST APIs
+* Web services
+* SQL databases
+* Sending email
+* Custom security schemes
+
+Things to know about hooks:
+
+* Hooks are always on an `href` or wildcard pattern
+* Attached hooks fire in a fixed order:
+  1. removed
+  2. mutated
+  3. saved
+  4. data
+* You have multiple hooks of each type on an `href`
+
+A hook is a function, with the following parameters.
+
+|Parameter|Notes|
+|---------|-----|
+|context|A `ServerContext`, containing data about the operation|
+|response|A JavaScript variable that will be returned in the `data` event|
+|next|A callback to fire the next hook in the chain, or to finish|
+
+Inside the hook function you:
+
+1. Use the context to decide what to do
+2. Call other functions as needed
+3. Modify `response` as needed
+4. Call `next` to signal that you are done
+
+All of the hook event methods expose the same signature:
+
+|Parameter|Notes|
+|---------|-----|
+|href|A path, or regular expression, that matches against a `Link.href`|
+|hook|A hook function|
+|returns|The same `Server`, to allow chaining|
+
+### data()
+Hook data reads, this allows you to modify data before it is sent out to
+clients.
+
+### saved()
+Hook data saves, this allows you to modify data before it is saved.
+
+### removed()
+Hook data removes, this allows you to react before data is removed.
+
+### mutated()
+Hook array mutations, allowing you to react to individual array changes.
+
+### Sample Server
 An example, verb basic server:
 
 ```javascript
@@ -99,10 +166,26 @@ var app = require('express')()
   , server = require('http').createServer(app)
   , sky = require('variablesky').listen(server);
 
+//normal web service
 server.listen(80);
 
+//a static web page
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/index.html');
+});
+
+//hook behavior
+sky.data("/sample", function(context, response, next){
+  //a very simple example of always having a defaut value
+  response = {};
+  next();
+}).saved("/sample", function(context, response, next){
+  //you can get at the previous and current values
+  console.log(context.link.prev());
+  console.log(context.link.val());
+  //a modify timestamp
+  response.at = Date.now();
+  next();
 });
 ```
 
@@ -120,27 +203,62 @@ And a very basic client:
 ```
 
 
-## Server
-On the server, you can _hook_ the events. This is similar to setting up
-routes on an HTTP server, and gives you the chance to intercept and
-modify data coming in from clients before it is sent on to other
-connected clients or stored.
+## ServerContext
+Server hooks get an instance of this passed to their hook function.
 
-And, it is a great place for you to hook in other systems including:
+### href
+The `href` of the data being hooked, this will be from `/`, not
+including host, protocol, or port.
 
-* REST APIs
-* Web services
-* SQL databases
-* Sending email
-* Custom security schemes
+### val
+Get the value of the data. Some differences in the value here based on
+the event. Noted below.
 
-### data()
+#### data
+The value currently stored in the server.
 
-### saved()
+#### saved
+The original value sent in by the client.
 
-### removed()
+#### removed
+`undefined`
 
-### mutated()
+#### mutated
+In this case, `val` contains the arguments that will be passed to the
+eventual array `splice`. This lets you redefine the splice.
+
+|Property|Notes|
+|-----|-----|
+|index|Start modifying the array at this index|
+|howMany|Remove this many elements|
+|elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
+
+### prev
+Get the previous value of of the data before this current hook sequence
+started.
+
+For `data`, this will be equal to `val`.
+
+### link()
+Return a `Link` to other data on the server. As we are _in_ the server
+while the hook is running, `val` is already defined and there is no need
+to hook up for events.
+
+Remember that this gives you a snapshot, modifying the contents of `val`
+doesn't save anything to the server.
+
+### parent()
+Creates a `ServerContext` for the containing parent. The returned will
+behave as if hooking a `data` context, with `val === prev`.
+
+### abort()
+Abort the processing of hooks, raising an error, and blocking the
+operation from modifying server state.
+
+|Parameter|Notes|
+|---------|-----|
+|error|An error identifier|
+|message|An error message|
 
 
 ## Link
@@ -151,7 +269,7 @@ it in order to have snapshots update automatically.
 ### href
 The `Link` is to this `href` path. Used for self reference.
 
-### val()
+### val
 Get the current value of `Link`, which may be `undefined` if data hasn't
 made it from the server yet. This isn't a substitute for event handling,
 but just a convenience to get at the current value.
@@ -193,10 +311,14 @@ the `href` to logically containing objects as needed.
 |matchingLinks|An array of `Link` objects matching the query|
 
 ### parent()
-TODO
+Returns a `Link` representing the parent.
 
 ### child()
-TODO
+Returns a `Link` to a child.
+
+|Parameter|Notes|
+|---------|-----|
+|path|A relative path, delimited by /|
 
 ### on()
 Attach an event handler to this link.
@@ -254,7 +376,6 @@ them, and re-write the entire array, but the link itself supports the
 basic JavaScript array mutators.
 
 ### mutators
-
 ArrayLink exposes the following methods, which have the same meanings as
 the default JavaScript methods. The difference is that these methods
 notify the Variable Sky server, modify the linked array there, fire
@@ -269,6 +390,16 @@ and forth to the server.
 * pop
 * shift
 * unshift
+
+### set()
+In addition to the default mutators, you can call `set` to replace a
+single element of an array, avoiding rewriting an entire array to just
+update one object.
+
+|Parameter|Notes|
+|---------|-----|
+|index|Change the element at this index|
+|value|Put this value into the array|
 
 ### Event: mutate
 Event is fired when an array has been mutated on the server. This will
