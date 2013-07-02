@@ -16,35 +16,17 @@
 </head>
 <body>
 
-<div class="navbar navbar-fixed-top">
-  <div class="container">
-    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-    </button>
-    <a class="navbar-brand" href="#">{{site.name}}</a>
-    <div class="nav-collapse collapse navbar-responsive-collapse">
-      <ul class="nav navbar-nav">
-        <li><a href="index.html">Overview</a></li>
-        <li><a href="datamodel.html">Data Model</a></li>
-        <li><a href="concepts.html">Concepts</a></li>
-        <li><a href="api.html">API</a></li>
-        <li><a href="{{site.github}}">Source</a></li>
-      </ul>
-    </div>
-  </div>
-</div>
+{% include nav.html %}
 
 <div class="container main">
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-lg-3" id="leftnav">
       <div class="well sidebar-nav">
         <ul class="nav nav-list" id="toc">
         </ul>
       </div>
     </div>
-    <div class="col-lg-9">
+    <div class="col-lg-9" id="content">
       {{content}}
     </div>
   </div>
@@ -73,22 +55,26 @@ $(document).on('click', function(event){
   }
 });
 //autotoc
-var $nested = null
+var $nested = null;
+var tocItems = 0;
 $(':header').each(function(){
   if(this.tagName == 'H4') return;
   var $link = $('<li><a href="#">Link</a></li>');
   var $toc = $('#toc');
-  console.log(this);
   $link.find('a').attr('href',"#"+this.id).text(this.innerText);
   if(this.tagName == 'H2') {
     $nested = $('<ul/>');
     $link.append($nested);
     $toc.append($link);
+    tocItems++;
   }
   if(this.tagName == 'H3') {
     $nested.append($link);
   }
-})
+});
+if(tocItems == 0) {
+  $('#leftnav').hide();
+}
 $('table').addClass('table table-bordered table-striped');
 </script>
 </html>

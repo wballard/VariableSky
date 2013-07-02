@@ -120,7 +120,9 @@ Things to know about hooks:
   2. mutated
   3. saved
   4. data
-* You have multiple hooks of each type on an `href`
+* You can have multiple hooks of each type on an `href`
+* If you have multiple hooks of each type on the same `href`, they fire
+  in the order they are attached
 
 A hook is a function, with the following parameters.
 
@@ -237,7 +239,8 @@ eventual array `splice`. This lets you redefine the splice.
 Get the previous value of of the data before this current hook sequence
 started.
 
-For `data`, this will be equal to `val`.
+For `data`, this will be equal to `val` since there is no change
+pending.
 
 ### link()
 Return a `Link` to other data on the server. As we are _in_ the server
@@ -248,8 +251,11 @@ Remember that this gives you a snapshot, modifying the contents of `val`
 doesn't save anything to the server.
 
 ### parent()
-Creates a `ServerContext` for the containing parent. The returned will
-behave as if hooking a `data` context, with `val === prev`.
+Creates a `ServerContext` for the containing parent. Use this to go 'up
+and over' to get at more data.
+
+When you ask for a parent, `prev` will hold the actual stored value on
+the server, but `val` will not change.
 
 ### abort()
 Abort the processing of hooks, raising an error, and blocking the

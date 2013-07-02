@@ -3,7 +3,7 @@ layout: default
 title: Data Mode
 ---
 
-## Overview
+# Overview
 Variable Sky is just that: JavaScript variables in the sky. The basic
 idea is a correspondence between JavaScript variables and `href`.
 
@@ -41,7 +41,7 @@ between clients. You get at data thus:
 |/people/b|{firstName: 'Bob', lastName: 'Moon'}|
 |/people/b/friends[0]|a|
 
-## Philosophy
+# Philosophy
 The idea is that a Variable Sky server is literally one big shared
 JavaScript variable, starting from a root `/`, and contains any values
 you can ship over JSON.

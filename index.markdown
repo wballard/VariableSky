@@ -8,12 +8,12 @@ title: Variable Sky
 The simple server for real time single page applications
 </div>
 
-## Problem
+# Problem
 You want to make a modern, single page, real time application, and to do
 this you need to keep variables and data in synch between multiple
 clients and servers.
 
-## Solution
+# Solution
 **Variable Sky** is all about building single page
 applications with a realtime server designed to easily store and
 replicate what you are already working with: _JavaScript variables_.
