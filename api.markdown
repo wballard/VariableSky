@@ -82,21 +82,10 @@ End a security session between client and server in order to 'log out'.
 |error|Every hear of a logout failing? Me either.|
 |info|Optional additional info from the server|
 
-### listen()
-This is how you set up a Variable Sky server inside a Node.js process.
-Using express, you embed Variable Sky into a server process. This lets
-you serve static content, a site, the Variable Sky server, and
-importantly the client library that lets an application connect.
-
-|Parameter|Notes|
-|---------|-----|
-|server|An http server object, this provides network transport|
-|returns|A `Server`, which can be further configured|
-
 
 ## Server
-The `Server` is created by `listen`. This is the main application object
-that you use to configure logic on a server.
+This is the main object you create on the server, hooking into `express`
+to get network transport.
 
 ### Hooks
 On the server, you can _hook_ the events. This is similar to setting up
@@ -158,7 +147,29 @@ Hook data saves, this allows you to modify data before it is saved.
 Hook data removes, this allows you to react before data is removed.
 
 ### mutated()
-Hook array mutations, allowing you to react to individual array changes.
+Hook array mutation
+
+### rest
+This is `express` middleware, `use` this to have the rest API connected.
+
+```javascript
+var app = require('express')(),
+  sky = require('variablesky'),
+  skyserver = new sky.Server();
+
+app.use(skyserver.rest);
+```
+
+### listen()
+This is how you set up a Variable Sky server inside a Node.js process.
+Using express, you embed Variable Sky into a server process. This lets
+you serve static content, a site, the Variable Sky server, and
+importantly the client library that lets an application connect.
+
+|Parameter|Notes|
+|---------|-----|
+|server|An http server object, this provides network transport|
+|returns|`this`, to allow chaining|
 
 ### Sample Server
 An example, verb basic server:
@@ -166,7 +177,11 @@ An example, verb basic server:
 ```javascript
 var app = require('express')()
   , server = require('http').createServer(app)
-  , sky = require('variablesky').listen(server);
+  , sky = require('variablesky'),
+  , skyserver = new sky.Server();
+
+//hook sockets up
+skyserver.listen(server);
 
 //normal web service
 server.listen(80);
