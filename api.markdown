@@ -162,7 +162,7 @@ app.use(skyserver.rest);
 
 ### listen()
 This is how you set up a Variable Sky server inside a Node.js process.
-Using express, you embed Variable Sky into a server process. This lets
+Using `express`, you embed Variable Sky into a server process. This lets
 you serve static content, a site, the Variable Sky server, and
 importantly the client library that lets an application connect.
 
