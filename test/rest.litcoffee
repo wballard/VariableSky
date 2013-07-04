@@ -43,28 +43,31 @@ The REST API.
             request(app)
                 .post('/mounted/message/from')
                 .send('me')
-                .expect(200, done)
+                .expect 200, ->
+                    request(app)
+                        .get('/mounted/message/from')
+                        .expect('Content-Type', /json/)
+                        .expect(200)
+                        .expect(['me'], done)
         it "will let you POST to an array again", (done) ->
             request(app)
                 .post('/mounted/message/from')
                 .send('you')
-                .expect(200, done)
-        it "will let you GET an array", (done) ->
-            request(app)
-                .get('/mounted/message/from')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect(['me', 'you'], done)
+                .expect 200, ->
+                    request(app)
+                        .get('/mounted/message/from')
+                        .expect('Content-Type', /json/)
+                        .expect(200)
+                        .expect(['me', 'you'], done)
         it "will let you DELETE an array index", (done) ->
             request(app)
-                .get('/mounted/message/from/0')
-                .expect(200, done)
-        it "will then let you GET an array", (done) ->
-            request(app)
-                .get('/mounted/message/from')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect(['you'], done)
+                .del('/mounted/message/from/0')
+                .expect 200, ->
+                    request(app)
+                        .get('/mounted/message/from')
+                        .expect('Content-Type', /json/)
+                        .expect(200)
+                        .expect(['you'], done)
         it "will not let you POST to a non array", (done) ->
             request(app)
                 .post('/mounted/message/hi')

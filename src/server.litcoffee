@@ -73,10 +73,17 @@ running the each request's command.
                             switch error.name
                                 when 'NOT_FOUND'
                                     res.send(404, error).end()
+                                when 'NOT_AN_ARRAY'
+                                    res
+                                        .set('Allow', 'GET, PUT, DELETE')
+                                        .send(405, error)
+                                        .end()
                                 else
                                     res.send(500, error).end()
                         else
-                            res.send(200, content).end()
+                            res
+                                .set('Content-Type', 'application/json')
+                                .send(200, JSON.stringify(content)).end()
                     doer todo, handled, next
 
     module.exports.Server = Server
