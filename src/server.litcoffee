@@ -48,6 +48,7 @@ running the each request's command.
                             href: parsePath(req.url)
                         when 'DELETE'
                             command: 'remove'
+                            href: parsePath(req.url)
                         when 'POST'
                             command: 'push'
                             href: parsePath(req.url)
