@@ -39,8 +39,7 @@ some claim abut this being more testable, but I'd be lying :)
 
     class Server
         constructor: ->
-            @processor = new Processor(new Blackboard(),
-                path.join(__dirname, 'commands'))
+            @processor = new Processor()
 
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But

@@ -16,6 +16,7 @@ Commands get to write to the `blackboard` however they see fit.
     fs = require('fs')
     path = require('path')
     util = require('util')
+    Blackboard = require('./blackboard')
 
 The processor, it loads up available commands from a directory, hashing
 them by name without extension, using `require` to load them, so this expects
@@ -23,11 +24,14 @@ that each command module exposes exactly the function taht is the command
 implementation.
 
     class Processor
-        constructor: (@blackboard, commandDirectory) ->
+        constructor: (@blackboard, @options) ->
+            @blackboard = @blackboard or new Blackboard()
+            options = @options = @options or {}
+            options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
             @commands = {}
-            for file in fs.readdirSync(commandDirectory)
+            for file in fs.readdirSync(options.commandDirectory)
                 name = path.basename(file, path.extname(file))
-                @commands[name] = require path.join(commandDirectory, file)
+                @commands[name] = require path.join(options.commandDirectory, file)
 
 Bind a context for a single request, this is a starting point that is separate
 from subsequent commands, and mainly serves to get the blackboard in scope.
@@ -35,6 +39,11 @@ from subsequent commands, and mainly serves to get the blackboard in scope.
         begin: ->
             blackboard = @blackboard
             commands = @commands
+
+The actual command execution function, callers will use this to get the
+processor to do work for them. Two callbacks `handled` and `skipped` called
+respectively if there was a command found for the `todo`.
+
             (todo, handled, skipped) ->
                 if commands[todo.command]
                     commands[todo.command](todo, blackboard, handled)
