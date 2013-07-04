@@ -47,7 +47,7 @@ anyhow, each request sets up a `doer`, which is responsible for actually
 running the each request's command.
 
         rest: (req, res, next) =>
-            doer = @processor.begin()
+            doer = @processor.do
             json req, res, (error) ->
                 if error
                     next(error)

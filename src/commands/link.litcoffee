@@ -12,3 +12,7 @@ otherwise.
                 done(errors.NOT_FOUND(todo.href))
                 return
         done(null, at)
+
+This is a read command, no sense clogging up the journal with it.
+
+    module.exports.DO_NOT_JOURNAL = true
