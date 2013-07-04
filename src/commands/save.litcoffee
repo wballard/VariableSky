@@ -15,5 +15,6 @@ Well, maybe not, maybe it is just _dedicated_.
                     at = at[segment]
                 else
                     at = at[segment] = {}
+            console.log todo.content
             at[_.last(todo.href)] = todo.content
         done()

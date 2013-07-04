@@ -16,7 +16,7 @@ The REST API.
                 .expect({name: 'NOT_FOUND', message: 'message'}, done)
         it "will let you PUT data", (done) ->
             request(app)
-                .post('/mounted/message')
+                .put('/mounted/message')
                 .send({hi: "mom"})
                 .expect(200, done)
         it "will then GET that data back", (done) ->
@@ -31,15 +31,14 @@ The REST API.
                 .expect(200, done)
         it "will let you PUT individual properties", (done) ->
             request(app)
-                .post('/mounted/message/hi')
+                .put('/mounted/message/hi')
                 .send("dad")
-                .expect(200, done)
-        it "will then let you GET again", (done) ->
-            request(app)
-                .get('/mounted/message')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect({hi: "dad"}, done)
+                .expect 200, ->
+                    request(app)
+                        .get('/mounted/message')
+                        .expect('Content-Type', /json/)
+                        .expect(200)
+                        .expect({hi: "dad"}, done)
         it "will let you POST, adding to an array", (done) ->
             request(app)
                 .post('/mounted/message/from')
@@ -73,3 +72,4 @@ The REST API.
                 .expect(405)
                 .expect('Allow', 'GET, PUT, DELETE')
                 .end(done)
+

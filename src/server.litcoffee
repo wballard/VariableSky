@@ -3,8 +3,8 @@ This takes incoming network activity and generates commands, which are then
 sent along to a command processor with a shared memory blackboard.
 
     _ = require('lodash')
-    json = require('express').json()
     path = require('path')
+    errors = require('./errors')
     Blackboard = require('./blackboard')
     Processor = require('./processor')
 
@@ -16,6 +16,21 @@ an array of path segments.
             .map(decodeURIComponent)
             .filter((x) -> x.length)
             .value()
+
+And our own very forgiving version of the connect json middleware
+
+    json = (req, res, next) ->
+        buf = ''
+        req.setEncoding 'utf8'
+        req.on 'data', (chunk) -> buf += chunk
+        req.on 'end', ->
+            try
+                req.body = JSON.parse(buf)
+                next()
+            catch err
+                #didn't send JSON, no problem, welcome to stringville
+                req.body = buf
+                next()
 
 This is the main server object. This is a class to give instancing, I'm not all
 the way sure why you would want to, but you can make multiple of these in a
@@ -39,7 +54,7 @@ running the each request's command.
                     next(error)
                 else
                     todo = switch req.method
-                        when 'POST'
+                        when 'PUT'
                             command: 'save'
                             href: parsePath(req.url)
                             content: req.body
