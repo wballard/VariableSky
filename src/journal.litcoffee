@@ -16,8 +16,9 @@ techniques as a database with write ahead logging.
                     if not error and not key and not value
                         toPlayback.end callback
                     else
-                        playback JSON.parse(value)
-                        toPlayback.next each
+                        playback JSON.parse(value), ->
+                            toPlayback.next each
+                #start the pump
                 toPlayback.next each
 
 Clean shutdown.

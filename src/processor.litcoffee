@@ -133,11 +133,11 @@ Initially, just queue things up to give the journal time to recover.
 And commands are written to a journal, providing durability. The journal is
 given a function to recover each command.
 
-            recover = (todo) =>
-                @emitter.emit 'execute', todo, (error) ->
+            recover = (todo, next) =>
+                @commands[todo.command] todo, @blackboard, (error, todo) =>
                     if error
                         util.error 'recovery error', util.inspect(error)
-                , ->
+                    next()
 
             @journal = new Journal @options, recover, =>
 
