@@ -10,12 +10,14 @@ otherwise.
 
 If you don't find anything, come back undefined -- not null.
 
-                return done()
+                delete todo.val
+                return done null, todo
 
 But if we get all the way down to the tail of the href, then we have a null,
 this is _a value_, not like undefined.
 
-        done(null, at)
+        todo.val = at
+        done null, todo
 
 This is a read command, no sense clogging up the journal with it.
 

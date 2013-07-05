@@ -16,4 +16,4 @@ Well, maybe not, maybe it is just _dedicated_.
                 else
                     at = at[segment] = {}
             at[_.last(todo.href)] = todo.val
-        done(null, null)
+        done null, todo

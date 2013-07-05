@@ -21,4 +21,4 @@ What it won't do is try to push to a non-array, that's an error.
                 tail.push(todo.val)
             else
                 return done errors.NOT_AN_ARRAY(todo.href)
-        done(null, null)
+        done null, todo

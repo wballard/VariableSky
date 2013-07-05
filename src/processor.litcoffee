@@ -11,9 +11,8 @@ blackboard. The signature of an implementation is:
 
 `fn(todo, blackboard, done)`
 
-This is all node callback style `(error, result)` on done. Except there is no
-result, so call `done()` or `done(error)`
-
+This is all node callback style `(error, result)` on done. On success, pass
+back the `todo` with `done(null, todo)`.
 
     fs = require('fs')
     path = require('path')
@@ -97,11 +96,10 @@ The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
             @emitter.on 'executeCore', (todo, handled) =>
-                @commands[todo.command] todo, @blackboard, (error, val) =>
+                @commands[todo.command] todo, @blackboard, (error, todo) =>
                     if error
                         handled(error)
                     else
-                        todo.val = val
                         @emitter.emit 'executeAfter', todo, handled
 
 And the final after phase, last chance to modify the `val` before it is
@@ -171,16 +169,26 @@ The actual command execution function, callers will use this to get the
 processor to do work for them. `todo` is the input, the two callbacks `handled`
 and `skipped` called respectively if there was a command found for the `todo`.
 
+Commands are run, then journaled. This is to isolate the actual memory
+modification from the hooks. Basically, imagine a hook that sends email. Then
+imagine we were playing back input rather than results. Email firehose. Not cool.
+
+Similar case with non-deterministic hooks, like setting a guid or timestamp.
+Hooks only fire the first time, and are not played back / replicated.
+
         do: (todo, handled, skipped) =>
-            if @commands[todo.command]?.DO_NOT_JOURNAL
-                #just go for it
-                @emitter.emit 'do', todo, handled, skipped
-            else
-                #journal, then execute
-                @journal.record todo, (error) =>
-                    if error
-                        handled error
+            @emitter.emit 'do', todo, (error, val) =>
+                if error
+                    handled error
+                else
+                    if @commands[todo.command]?.DO_NOT_JOURNAL
+                        handled null, val
                     else
-                        @emitter.emit 'do', todo, handled, skipped
+                        @journal.record todo, (error) =>
+                            if error
+                                handled error
+                            else
+                                handled null, val
+            , skipped
 
     module.exports = Processor
