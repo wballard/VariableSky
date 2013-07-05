@@ -11,7 +11,7 @@ so is smart enough to tell the difference.
                     at = at[segment]
                 else
                     #fortunately for us, it is already deleted!
-                    return done()
+                    return done(null, null)
             if _.isArray(at)
                 index = Number(_.last(todo.href))
                 if _.isNumber(index)
@@ -22,4 +22,4 @@ so is smart enough to tell the difference.
                     delete at[_.last(todo.href)]
             else
                 delete at[_.last(todo.href)]
-        done()
+        return done(null, null)

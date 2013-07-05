@@ -1,16 +1,20 @@
 Link to content on the blackboard, returning it if possible, erroring
 otherwise.
 
-    errors = require('../errors')
-
     module.exports = (todo, blackboard, done) ->
         at = blackboard
         for segment in todo.href
             if at[segment]
                 at = at[segment]
             else
-                done(errors.NOT_FOUND(todo.href))
-                return
+
+If you don't find anything, come back undefined -- not null.
+
+                return done()
+
+But if we get all the way down to the tail of the href, then we have a null,
+this is _a value_, not like undefined.
+
         done(null, at)
 
 This is a read command, no sense clogging up the journal with it.

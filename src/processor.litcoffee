@@ -18,10 +18,11 @@ result, so call `done()` or `done(error)`
     fs = require('fs')
     path = require('path')
     util = require('util')
+    _ = require('lodash')
     Blackboard = require('./blackboard')
     Journal = require('./journal')
     EventEmitter = require('events').EventEmitter
-
+    director = require('director')
 
     class Processor
         constructor: (@options) ->
@@ -44,6 +45,11 @@ in two interesting cases:
 
             @todos = []
 
+Uses `director` for hook routing for _each command_. Separate routing tables
+for each coomand. Keeps it compact.
+
+            @hooks = {}
+
 The processor, it loads up available commands from a directory, hashing
 them by name without extension, using `require` to load them, so this expects
 that each command module exposes exactly the function taht is the command
@@ -53,17 +59,71 @@ implementation.
             for file in fs.readdirSync(options.commandDirectory)
                 name = path.basename(file, path.extname(file))
                 @commands[name] = require path.join(options.commandDirectory, file)
+                @hooks[name] = new director.http.Router().configure
+                    async: true
+                    notfound: ->
+                        this.req.next()
 
 And, a bit different implementation, this is event driven.
 
             @emitter = new EventEmitter()
 
-The event for actual command execution. This is the 'internal' execution
-event, that just performs the core execution logic.
+The event handling for actual command execution. This is three events
+
+* `executeBefore`
+* `executeCore`
+* `executeAfter`
+
+This event chain provides a place to hook asynchronously.
+
+The start of the sequence. The request extends the todo, providing execution
+context. Most important here is `val`, as before hooks get a chance to override
+this content, which will then be passed along to the core. That's the main
+thing going on, re-writing `val`.
+
+            @emitter.on 'executeBefore', (todo, handled) =>
+                router = @hooks[todo.command]
+                req = _.extend {}, todo,
+                    method: 'before'
+                    headers: {}
+                    url: "/#{todo.href.join('/')}"
+                    next: =>
+                        todo.val = req.val
+                        @emitter.emit 'executeCore', todo, handled
+                res = {}
+                router.dispatch req, res, req.next
+
+The core command execution, here is the writing to the blackboard. These are
+internal commands, not user hooks, so they get to really store data.
+
+            @emitter.on 'executeCore', (todo, handled) =>
+                @commands[todo.command] todo, @blackboard, (error, val) =>
+                    if error
+                        handled(error)
+                    else
+                        todo.val = val
+                        @emitter.emit 'executeAfter', todo, handled
+
+And the final after phase, last chance to modify the `val` before it is
+sent along to any clients.
+
+            @emitter.on 'executeAfter', (todo, handled) =>
+                router = @hooks[todo.command]
+                req = _.extend {}, todo,
+                    method: 'after'
+                    headers: {}
+                    url: "/#{todo.href.join('/')}"
+                    next: =>
+                        handled(null, req.val)
+                res = {}
+                router.dispatch req, res, req.next
+
+The execute event needs to figure if there is even a command registered,
+otherwise this is skipped as unhandled.
 
             @emitter.on 'execute', (todo, handled, skipped) =>
                 if @commands[todo.command]
-                    @commands[todo.command](todo, @blackboard, handled)
+                    @emitter.emit 'executeBefore', todo, handled
                 else
                     skipped()
 
@@ -78,7 +138,7 @@ given a function to recover each command.
             recover = (todo) =>
                 @emitter.emit 'execute', todo, (error) ->
                     if error
-                        util.error error
+                        util.error 'recovery error', util.inspect(error)
                 , ->
 
             @journal = new Journal @options, recover, =>
@@ -100,6 +160,12 @@ Clean shutdown.
 
         shutdown: (callback) ->
             @journal.shutdown callback
+
+After hooks fire when the executed command has completed.
+
+        hookAfter: (command, href, hook) ->
+            @hooks[command].after href, (next) ->
+                hook this.req, next
 
 The actual command execution function, callers will use this to get the
 processor to do work for them. `todo` is the input, the two callbacks `handled`

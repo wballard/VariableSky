@@ -7,6 +7,7 @@ sent along to a command processor with a shared memory blackboard.
     errors = require('./errors')
     Blackboard = require('./blackboard')
     Processor = require('./processor')
+    wrench = require('wrench')
 
 Paths are always something to deal with. Here is the general representation,
 an array of path segments.
@@ -39,12 +40,20 @@ some claim abut this being more testable, but I'd be lying :)
 
     class Server
         constructor: (@options)->
+            @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
+            @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
+            wrench.mkdirSyncRecursive(@options.storageDirectory)
             @processor = new Processor(@options)
 
 Clean server shutdown.
 
         shutdown: (callback) ->
             @processor.shutdown callback
+
+Hook support forwards to the processor:
+
+        link: (href, hook) ->
+            @processor.hookAfter 'link', href, hook
 
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But
@@ -61,7 +70,7 @@ running the each request's command.
                         when 'PUT'
                             command: 'save'
                             href: parsePath(req.url)
-                            content: req.body
+                            val: req.body
                         when 'GET'
                             command: 'link'
                             href: parsePath(req.url)
@@ -71,12 +80,10 @@ running the each request's command.
                         when 'POST'
                             command: 'push'
                             href: parsePath(req.url)
-                            content: req.body
-                    handled = (error, content) ->
+                            val: req.body
+                    handled = (error, val) ->
                         if error
                             switch error.name
-                                when 'NOT_FOUND'
-                                    res.send(404, error).end()
                                 when 'NOT_AN_ARRAY'
                                     res
                                         .set('Allow', 'GET, PUT, DELETE')
@@ -84,10 +91,18 @@ running the each request's command.
                                         .end()
                                 else
                                     res.send(500, error).end()
+
+Reaching the end of the processing with undefined is a 404.
+
+                        else if _.isUndefined(val)
+                            res.send(404, errors.NOT_FOUND(todo.href)).end()
+
+In this case, we have some kind of val, so send it back.
+
                         else
                             res
                                 .set('Content-Type', 'application/json')
-                                .send(200, JSON.stringify(content)).end()
+                                .send(200, JSON.stringify(val)).end()
                     doer todo, handled, next
 
     module.exports.Server = Server

@@ -18,7 +18,7 @@ What it won't do is try to push to a non-array, that's an error.
             if not tail
                 tail = at[_.last(todo.href)] = []
             if _.isArray(tail)
-                tail.push(todo.content)
+                tail.push(todo.val)
             else
                 return done errors.NOT_AN_ARRAY(todo.href)
-        done()
+        done(null, null)

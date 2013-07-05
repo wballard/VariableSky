@@ -9,13 +9,13 @@ sad part is that it doesn't have events and thus no replication.
 The REST API.
 
     options =
-        journalDirectory: path.join __dirname, '.journal'
+        storageDirectory: path.join __dirname, '.test'
 
     describe "REST API", ->
         app = null
         server = null
         before ->
-            wrench.rmdirSyncRecursive options.journalDirectory
+            wrench.rmdirSyncRecursive options.storageDirectory, true
             app = require('express')()
             server = new sky.Server(options)
             app.use '/mounted', server.rest
@@ -87,7 +87,23 @@ The REST API.
                 .expect(405)
                 .expect('Allow', 'GET, PUT, DELETE')
                 .end(done)
+        it "will let you hook data", (done) ->
+            #notice that this is relative
+            server.link '/message', (context, next) ->
+                context.val =
+                    totally: "different"
+                next()
+            server.link '/message', (context, next) ->
+                context.val.double = "hooked"
+                next()
+            request(app)
+                .get('/mounted/message')
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .expect({totally: "different", double: "hooked"}, done)
 
+Fire up again, should have the log playback. This proves we can come back from
+a restart/crash.
 
     describe "REST API durably", ->
         app = null
