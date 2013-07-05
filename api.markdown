@@ -84,8 +84,15 @@ End a security session between client and server in order to 'log out'.
 
 
 ## Server
-This is the main object you create on the server, hooking into `express`
-to get network transport.
+This is the main object you create on the server, `new` it.
+
+|Parameter|Notes|
+|---------|-----|
+|options|An option hash|
+
+|Option|Notes|
+|---------|-----|
+|storageDirectory|Root directory for snapshots and journals, this is used to maintain state|
 
 ### Hooks
 On the server, you can _hook_ the events. This is similar to setting up
@@ -104,11 +111,6 @@ And, it is a great place for you to hook in other systems including:
 Things to know about hooks:
 
 * Hooks are always on an `href` or wildcard pattern
-* Attached hooks fire in a fixed order:
-  1. removed
-  2. mutated
-  3. saved
-  4. data
 * You can have multiple hooks of each type on an `href`
 * If you have multiple hooks of each type on the same `href`, they fire
   in the order they are attached
@@ -124,9 +126,8 @@ A hook is a function, with the following parameters.
 Inside the hook function you:
 
 1. Use the context to decide what to do
-2. Call other functions as needed
-3. Modify `response` as needed
-4. Call `next` to signal that you are done
+2. Modify `response` as needed
+3. Call `next` to signal that you are done
 
 All of the hook event methods expose the same signature:
 
@@ -150,7 +151,7 @@ Hook data removes, this allows you to react before data is removed.
 Hook array mutation
 
 ### rest
-This is `express` middleware, `use` this to have the rest API connected.
+This is `connect` middleware, `use` this to have the rest API connected.
 
 ```javascript
 var app = require('express')(),
