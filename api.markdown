@@ -96,9 +96,10 @@ This is the main object you create on the server, `new` it.
 
 ### Hooks
 On the server, you can _hook_ the events. This is similar to setting up
-routes on an HTTP server, and gives you the chance to intercept and
-modify data coming in from clients before it is sent on to other
-connected clients or stored.
+routes on an HTTP server, and gives you the chance to intercept:
+
+* Reads, before they go back to a client
+* Writes, before they are saved into Variable Sky
 
 And, it is a great place for you to hook in other systems including:
 
@@ -120,14 +121,13 @@ A hook is a function, with the following parameters.
 |Parameter|Notes|
 |---------|-----|
 |context|A `ServerContext`, containing data about the operation|
-|response|A JavaScript variable that will be returned in the `data` event|
 |next|A callback to fire the next hook in the chain, or to finish|
 
 Inside the hook function you:
 
-1. Use the context to decide what to do
-2. Modify `response` as needed
-3. Call `next` to signal that you are done
+1. Use the `context` to decide what to do
+2. Modify `context` as needed
+3. Call `next` to signal that you are done, remember this is mandatory
 
 All of the hook event methods expose the same signature:
 
@@ -139,7 +139,15 @@ All of the hook event methods expose the same signature:
 
 ### data()
 Hook data reads, this allows you to modify data before it is sent out to
-clients.
+clients. The thing here is to change what is in `context.val`, this is
+read interception.
+
+```javascript
+server.data('/myrecord', function(context, next){
+  //force the data to be what you like
+  context.val = "Totally taking over";
+});
+```
 
 ### saved()
 Hook data saves, this allows you to modify data before it is saved.
@@ -221,19 +229,20 @@ And a very basic client:
 ```
 
 
-## ServerContext
+## HookContext
 Server hooks get an instance of this passed to their hook function.
 
 ### href
 The `href` of the data being hooked, this will be from `/`, not
-including host, protocol, or port.
+including host, protocol, or port and is split into an array
 
 ### val
-Get the value of the data. Some differences in the value here based on
-the event. Noted below.
+This is the value the command is working on, and you can modify it to
+change the final result of the command as needed.
 
 #### data
-The value currently stored in the server.
+The value currently stored in the server, change this value to intercept
+what is sent to the client.
 
 #### saved
 The original value sent in by the client.
