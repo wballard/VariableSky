@@ -26,6 +26,8 @@ result, so call `done()` or `done(error)`
     class Processor
         constructor: (@options) ->
             options = @options = @options or {}
+            options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
+            options.journalDirectory = options.journalDirectory or path.join(__dirname, '..', '.journal')
 
 Commands get to write to the `blackboard` however they see fit. Playing back
 a set of commands in the same order against the same starting blackboard should
@@ -34,9 +36,6 @@ deterministic for this to work out.
 
             @blackboard = new Blackboard()
 
-And commands are written to a journal, providing durability.
-
-            @journal = new Journal()
 
 A list of all the commands 'todo'. This provides a place to queue up commands
 in two interesting cases:
@@ -51,7 +50,6 @@ them by name without extension, using `require` to load them, so this expects
 that each command module exposes exactly the function taht is the command
 implementation.
 
-            options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
             @commands = {}
             for file in fs.readdirSync(options.commandDirectory)
                 name = path.basename(file, path.extname(file))
@@ -75,20 +73,22 @@ Initially, just queue things up to give the journal time to recover.
             @emitter.on 'do', () =>
                 @todos.push arguments
 
-Once the journal is fully played back, hook up the direct execution event, no
-more need to queue.
+And commands are written to a journal, providing durability
 
-            @journal.recover =>
+            @journal = new Journal @options, =>
+
+On startup, the journal recovers, and when it is full recovered, connect the
+command handling 'do' directly to 'exec', no more buffering.
+
                 @emitter.removeAllListeners 'do'
                 @emitter.on 'do', (todo, handled, skipped) =>
                     @emitter.emit 'execute', todo, handled, skipped
 
-And forward all queued events.
+Forward all queued events that were buffered up during recovery
 
                 while @todos.length
                     todo = @todos.shift()
-                    todo.unshift 'execute'
-                    @emitter.emit.apply this, todo
+                    @emitter.emit 'execute', todo?[0], todo?[1], todo?[2]
 
 
 The actual command execution function, callers will use this to get the
@@ -101,7 +101,10 @@ and `skipped` called respectively if there was a command found for the `todo`.
                 @emitter.emit 'do', todo, handled, skipped
             else
                 #journal, then execute
-                @journal.record todo, =>
-                    @emitter.emit 'do', todo, handled, skipped
+                @journal.record todo, (error) =>
+                    if error
+                        handled error
+                    else
+                        @emitter.emit 'do', todo, handled, skipped
 
     module.exports = Processor
