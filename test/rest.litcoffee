@@ -2,13 +2,25 @@ The most basic interactions are with REST, this makes a workable server, the onl
 sad part is that it doesn't have events and thus no replication.
 
     request = require 'supertest'
-    app = require('express')()
     sky = require('../index')
-    app.use '/mounted', new sky.Server().rest
+    path = require('path')
+    wrench = require('wrench')
 
 The REST API.
 
+    options =
+        journalDirectory: path.join __dirname, '.journal'
+
     describe "REST API", ->
+        app = null
+        server = null
+        before ->
+            wrench.rmdirSyncRecursive options.journalDirectory
+            app = require('express')()
+            server = new sky.Server(options)
+            app.use '/mounted', server.rest
+        after (done) ->
+            server.shutdown done
         it "404s when you ask for the unknown", (done) ->
             request(app)
                 .get('/mounted/message')
@@ -76,3 +88,19 @@ The REST API.
                 .expect('Allow', 'GET, PUT, DELETE')
                 .end(done)
 
+
+    describe "REST API durably", ->
+        app = null
+        server = null
+        before ->
+            app = require('express')()
+            server = new sky.Server(options)
+            app.use '/mounted', server.rest
+        after (done) ->
+            server.shutdown done
+        it "recovers previous commands", (done) ->
+            request(app)
+                .get('/mounted/message')
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .expect({hi: 'dad', from: ['you']}, done)

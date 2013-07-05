@@ -38,8 +38,13 @@ process and have separate sockets or rest url mount points to them. I'd make
 some claim abut this being more testable, but I'd be lying :)
 
     class Server
-        constructor: ->
-            @processor = new Processor()
+        constructor: (@options)->
+            @processor = new Processor(@options)
+
+Clean server shutdown.
+
+        shutdown: (callback) ->
+            @processor.shutdown callback
 
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But

@@ -8,7 +8,7 @@ techniques as a database with write ahead logging.
     leveldown = require('leveldown')
 
     class Journal
-        constructor: (@options, callback) ->
+        constructor: (@options, playback, callback) ->
             @database = leveldown(@options.journalDirectory)
             @database.open =>
                 toPlayback = @database.iterator()
@@ -16,14 +16,25 @@ techniques as a database with write ahead logging.
                     if not error and not key and not value
                         toPlayback.end callback
                     else
+                        playback JSON.parse(value)
                         toPlayback.next each
                 toPlayback.next each
 
+Clean shutdown.
 
+        shutdown: (callback) ->
+            @database.close callback
+
+Record a command in the journal for later playback.
 
         record: (todo, callback) ->
             #date based key string, these will sort in order
             key = String('00000'+Date.now()).slice(-16)
             @database.put key, JSON.stringify(todo), callback
+
+Throw away all journaled memory.
+
+        reset: ->
+
 
     module.exports = Journal

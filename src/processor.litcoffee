@@ -36,7 +36,6 @@ deterministic for this to work out.
 
             @blackboard = new Blackboard()
 
-
 A list of all the commands 'todo'. This provides a place to queue up commands
 in two interesting cases:
 
@@ -73,9 +72,16 @@ Initially, just queue things up to give the journal time to recover.
             @emitter.on 'do', () =>
                 @todos.push arguments
 
-And commands are written to a journal, providing durability
+And commands are written to a journal, providing durability. The journal is
+given a function to recover each command.
 
-            @journal = new Journal @options, =>
+            recover = (todo) =>
+                @emitter.emit 'execute', todo, (error) ->
+                    if error
+                        util.error error
+                , ->
+
+            @journal = new Journal @options, recover, =>
 
 On startup, the journal recovers, and when it is full recovered, connect the
 command handling 'do' directly to 'exec', no more buffering.
@@ -90,6 +96,10 @@ Forward all queued events that were buffered up during recovery
                     todo = @todos.shift()
                     @emitter.emit 'execute', todo?[0], todo?[1], todo?[2]
 
+Clean shutdown.
+
+        shutdown: (callback) ->
+            @journal.shutdown callback
 
 The actual command execution function, callers will use this to get the
 processor to do work for them. `todo` is the input, the two callbacks `handled`
