@@ -54,6 +54,7 @@ Hook support forwards to the processor:
 
         link: (href, hook) ->
             @processor.hookAfter 'link', href, hook
+            this
 
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But

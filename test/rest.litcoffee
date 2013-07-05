@@ -89,11 +89,11 @@ The REST API.
                 .end(done)
         it "will let you hook data", (done) ->
             #notice that this is relative
-            server.link '/message', (context, next) ->
+            server.link('/message', (context, next) ->
                 context.val =
                     totally: "different"
                 next()
-            server.link '/message', (context, next) ->
+            ).link '/message', (context, next) ->
                 context.val.double = "hooked"
                 next()
             request(app)
