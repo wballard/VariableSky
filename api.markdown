@@ -137,13 +137,13 @@ All of the hook event methods expose the same signature:
 |hook|A hook function|
 |returns|The same `Server`, to allow chaining|
 
-### data()
+### link()
 Hook data reads, this allows you to modify data before it is sent out to
 clients. The thing here is to change what is in `context.val`, this is
 read interception.
 
 ```javascript
-server.data('/myrecord', function(context, next){
+server.link('/myrecord', function(context, next){
   //force the data to be what you like
   context.val = "Totally taking over";
 });
