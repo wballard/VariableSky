@@ -154,6 +154,23 @@ The REST API.
                                     .expect('Content-Type', /text/)
                                     .expect(200)
                                     .expect('Zeus', done)
+        it "will let you hook posting to an array", (done) ->
+            server.splice('/things', (context, next) ->
+                #put in another item for every item
+                console.log 'hookin', context
+                context.val.elements.push 'Another Item'
+                next()
+            )
+            request(app)
+                .post('/mounted/things')
+                .send('Item One')
+                .expect(200)
+                .end ->
+                    request(app)
+                        .get('/mounted/things')
+                        .expect('Content-Type', /text/)
+                        .expect(200)
+                        .expect(['Item', 'Another Item'], done)
 
 
 Fire up again, should have the log playback. This proves we can come back from
@@ -166,6 +183,7 @@ a restart/crash.
             app = require('express')()
             server = new sky.Server(options)
             app.use '/mounted', server.rest
+            console.log 'durable'
         after (done) ->
             server.shutdown done
         it "recovers previous commands", (done) ->

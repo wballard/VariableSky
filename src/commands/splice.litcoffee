@@ -17,8 +17,17 @@ What it won't do is try to push to a non-array, that's an error.
             tail = at[_.last(todo.href)]
             if not tail
                 tail = at[_.last(todo.href)] = []
-            if _.isArray(tail)
-                tail.push(todo.val)
-            else
+            if not _.isArray(tail)
                 return done errors.NOT_AN_ARRAY(todo.href)
+
+This is a fusion of push and splice, by using undefined 'index' parameter
+then just look up the function
+
+            if not todo.val.index?
+                todo.val.index = tail.length
+            todo.val.howMany = todo.val.howMany or 0
+            todo.val.elements = todo.val.elements or []
+            args = _.flatten([todo.val.index, todo.val.howMany, todo.val.elements])
+            console.log args
+            tail.splice.apply tail, args
         done null, todo

@@ -64,6 +64,10 @@ Hook support forwards to the processor:
             @processor.hookBefore 'remove', href, hook
             this
 
+        splice: (href, hook) ->
+            @processor.hookBefore 'splice', href, hook
+            this
+
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But
 anyhow, each request sets up a `doer`, which is responsible for actually
@@ -87,9 +91,14 @@ running the each request's command.
                             command: 'remove'
                             href: parsePath(req.url)
                         when 'POST'
-                            command: 'push'
+                            command: 'splice'
                             href: parsePath(req.url)
-                            val: req.body
+                            val:
+                                elements: do ->
+                                    if _.isArray(req.body)
+                                        req.body
+                                    else
+                                        [req.body]
                     handled = (error, val) ->
                         if error
                             switch error.name

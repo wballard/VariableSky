@@ -26,6 +26,7 @@ back the `todo` with `done(null, todo)`.
 
     class Processor
         constructor: (@options) ->
+            @counter = 0
             options = @options = @options or {}
             options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
             options.journalDirectory = options.journalDirectory or path.join(__dirname, '..', '.journal')
@@ -84,6 +85,8 @@ thing going on, re-writing `val`.
             @emitter.on 'executeBefore', (todo, handled) =>
                 router = @hooks[todo.command]
                 req = _.extend {}, todo,
+                    __before__: true
+                    __req__: @counter++
                     method: 'before'
                     headers: {}
                     url: "/#{todo.href.join('/')}"
@@ -145,6 +148,7 @@ And commands are written to a journal, providing durability. The journal is
 given a function to recover each command.
 
             recover = (todo, next) =>
+                todo.__recovering__ = true
                 @commands[todo.command] todo, @blackboard, (error, todo) =>
                     if error
                         util.error 'recovery error', util.inspect(error)
@@ -194,6 +198,7 @@ Similar case with non-deterministic hooks, like setting a guid or timestamp.
 Hooks only fire the first time, and are not played back / replicated.
 
         do: (todo, handled, skipped) =>
+            todo.__id__ = "#{Date.now()}:#{@counter++}"
             @emitter.emit 'do', todo, (error, val) =>
                 if error
                     handled error
