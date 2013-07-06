@@ -18,8 +18,14 @@ included in your web service applications.
 No specific security is enforced, but you can do anything you like with
 `Express` or `Connect`.
 
+# MIME Types
+
+Javascript objects will be returned as `application/json`. You can also do 
+an `href` directly to a property, such as a string or a number, which will
+come back as `text/plain`.
+
 # GET
-Returns the content at the specified `href` as `application/json`.
+Returns the content at the specified `href`.
 
 * `404` is returned if there is no content
 * `500` is returned if a hook aborts
