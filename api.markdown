@@ -120,7 +120,7 @@ A hook is a function, with the following parameters.
 
 |Parameter|Notes|
 |---------|-----|
-|context|A `ServerContext`, containing data about the operation|
+|context|A `HookContext`, containing data about the operation|
 |next|A callback to fire the next hook in the chain, or to finish|
 
 Inside the hook function you:
@@ -146,16 +146,29 @@ read interception.
 server.link('/myrecord', function(context, next){
   //force the data to be what you like
   context.val = "Totally taking over";
+  next();
 });
 ```
 
-### saved()
-Hook data saves, this allows you to modify data before it is saved.
+### save()
+Hook data saves, this allows you to modify data before it is saved. Any content
+remaining at `context.val` will be actually saved.
 
-### removed()
+```javascript
+server.save('/myrecord', function(context, next){
+  //force the data to be what you like
+  context.val = {
+    name: "Fred",
+    type: "Monster"
+  };
+  next();
+});
+```
+
+### remove()
 Hook data removes, this allows you to react before data is removed.
 
-### mutated()
+### mutate()
 Hook array mutation
 
 ### rest
@@ -201,16 +214,16 @@ app.get('/', function (req, res) {
 });
 
 //hook behavior
-sky.data("/sample", function(context, response, next){
+sky.link("/sample", function(context, next){
   //a very simple example of always having a defaut value
-  response = response || {};
+  context.val = context.val || {};
   next();
-}).saved("/sample", function(context, response, next){
+}).saved("/sample", function(context, next){
   //you can get at the previous and current values
-  console.log(context.link.prev());
-  console.log(context.link.val());
+  console.log(context.link.prev);
+  console.log(context.link.val);
   //a modify timestamp
-  response.at = Date.now();
+  context.val.at = Date.now();
   next();
 });
 ```
