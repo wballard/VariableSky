@@ -17,6 +17,7 @@ back the `todo` with `done(null, todo)`.
     fs = require('fs')
     path = require('path')
     util = require('util')
+    errors = require('./errors')
     _ = require('lodash')
     Blackboard = require('./blackboard')
     Journal = require('./journal')
@@ -89,6 +90,11 @@ thing going on, re-writing `val`.
                     next: =>
                         todo.val = req.val
                         @emitter.emit 'executeCore', todo, handled
+                    abort: ->
+                        if arguments.length
+                            handled this, arguments
+                        else
+                            handled errors.HOOK_ABORTED()
                 res = {}
                 router.dispatch req, res, req.next
 
@@ -111,8 +117,13 @@ sent along to any clients.
                     method: 'after'
                     headers: {}
                     url: "/#{todo.href.join('/')}"
-                    next: =>
+                    next: ->
                         handled(null, req.val)
+                    abort: ->
+                        if arguments.length
+                            handled this, arguments
+                        else
+                            handled errors.HOOK_ABORTED()
                 res = {}
                 router.dispatch req, res, req.next
 

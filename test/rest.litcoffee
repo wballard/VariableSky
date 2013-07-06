@@ -30,11 +30,21 @@ The REST API.
                 .get('/mounted/message')
                 .expect(404)
                 .expect({name: 'NOT_FOUND', message: 'message'}, done)
-        it "will let you PUT data", (done) ->
+        it "will let you PUT structured data", (done) ->
             request(app)
                 .put('/mounted/message')
                 .send({hi: "mom"})
                 .expect(200, done)
+        it "will let you PUT scalar data", (done) ->
+            request(app)
+                .put('/mounted/scalar')
+                .send('bork')
+                .expect(200)
+                .end ->
+                    request(app)
+                        .get('/mounted/scalar')
+                        .expect(200)
+                        .expect('bork', done)
         it "will then GET that data back", (done) ->
             request(app)
                 .get('/mounted/message')
@@ -126,6 +136,24 @@ The REST API.
                         .expect('Content-Type', /json/)
                         .expect(200)
                         .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
+        it "will let you hook a remove", (done) ->
+            server.remove('/immortal', (context, next) ->
+                context.abort()
+                #aborted, no need for next
+            )
+            request(app)
+                .put('/mounted/immortal')
+                .send('Zeus')
+                .expect 200, ->
+                    request(app)
+                        .del('/mounted/immortal')
+                            .expect(500)
+                            .end ->
+                                request(app)
+                                    .get('/mounted/immortal')
+                                    .expect('Content-Type', /text/)
+                                    .expect(200)
+                                    .expect('Zeus', done)
 
 
 Fire up again, should have the log playback. This proves we can come back from

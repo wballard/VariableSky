@@ -60,6 +60,10 @@ Hook support forwards to the processor:
             @processor.hookBefore 'save', href, hook
             this
 
+        remove: (href, hook) ->
+            @processor.hookBefore 'remove', href, hook
+            this
+
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But
 anyhow, each request sets up a `doer`, which is responsible for actually
@@ -105,9 +109,15 @@ Reaching the end of the processing with undefined is a 404.
 In this case, we have some kind of val, so send it back.
 
                         else
-                            res
-                                .set('Content-Type', 'application/json')
-                                .send(200, JSON.stringify(val)).end()
+                            if _.isObject(val)
+                                res
+                                    .set('content-type', 'application/json')
+                                    .send(200, JSON.stringify(val)).end()
+                            else
+                                res
+                                    .set('content-type', 'text/plain')
+                                    .send(200, val).end()
+
                     doer todo, handled, next
 
     module.exports.Server = Server

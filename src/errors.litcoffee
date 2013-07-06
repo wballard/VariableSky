@@ -11,3 +11,7 @@ Error making macros.
         NOT_AN_ARRAY: (href) ->
             name: "NOT_AN_ARRAY"
             message: href.join('/')
+        HOOK_ABORTED: (context) ->
+            name: "HOOK_ABORTED"
+            message: (context?.href or [])?.join('/')
+            context: context
