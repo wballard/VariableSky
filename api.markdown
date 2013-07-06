@@ -166,7 +166,15 @@ server.save('/myrecord', function(context, next){
 ```
 
 ### remove()
-Hook data removes, this allows you to react before data is removed.
+Hook data removes, this allows you to react before data is removed. The 
+most interesting thing to do here is `abort` and prevent a delete.
+
+```javascript
+server.remove('/myrecord', function(context, next){
+  //abort and prevent the delete, no need to call next
+  context.abort();
+});
+```
 
 ### mutate()
 Hook array mutation
