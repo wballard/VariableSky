@@ -10,8 +10,13 @@ but does serve as a pretty nice storage engine.
 This API is _pure_ rest in the sense that each `href` is a resource,
 there are no parameters.
 
-Security is provided by the `Authorization` header, simply pass a valid
-security token as you would to `auth`.
+The REST API is exposed as a `Express` or `Connect` middleware to be
+included in your web service applications.
+
+# Security
+
+No specific security is enforced, but you can do anything you like with
+`Express` or `Connect`.
 
 # GET
 Returns the content at the specified `href` as `application/json`.
