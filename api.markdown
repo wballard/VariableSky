@@ -51,37 +51,6 @@ Variable Sky never gives a `404`, it gives a `Link`, and you can always
 `save` to it.  The Variable Sky server will create objects as needed to
 make sure your data is reachable.
 
-### authenticate()
-Authenticate binds an authentication token, which forms a security
-session between client and server. On the server, you validate or reject
-the token as needed. Variable Sky itself doesn't provide authentication,
-just events to let you hook in authentication systems, such as `OpenID`,
-`OAuth`, or `LDAP`.
-
-|Parameter|Notes|
-|---------|-----|
-|token|Any JavaScript value, this will be sent to the server|
-|callback|This function is called after the server validates or rejects the token|
-
-####Callback Notes
-|Parameter|Notes|
-|---------|-----|
-|error|No news is good news, if the error is blank, you are authenticated|
-|info|Optional additional info from the server|
-
-### unauthenticate()
-End a security session between client and server in order to 'log out'.
-
-|Parameter|Notes|
-|---------|-----|
-|callback|This function is called after the server ends the security session|
-
-####Callback Notes
-|Parameter|Notes|
-|---------|-----|
-|error|Every hear of a logout failing? Me either.|
-|info|Optional additional info from the server|
-
 
 ## Server
 This is the main object you create on the server, `new` it.
