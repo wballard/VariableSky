@@ -159,6 +159,12 @@ Clean shutdown.
         shutdown: (callback) ->
             @journal.shutdown callback
 
+Before hooks fire before the command has started.
+
+        hookBefore: (command, href, hook) ->
+            @hooks[command].before href, (next) ->
+                hook this.req, next
+
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) ->

@@ -6,6 +6,10 @@ sad part is that it doesn't have events and thus no replication.
     path = require('path')
     wrench = require('wrench')
 
+This is a side effect test variable to make sure we are journaling post hook.
+
+    stashAt = 0
+
 The REST API.
 
     options =
@@ -87,20 +91,42 @@ The REST API.
                 .expect(405)
                 .expect('Allow', 'GET, PUT, DELETE')
                 .end(done)
-        it "will let you hook data", (done) ->
+        it "will let you hook a read", (done) ->
             #notice that this is relative
             server.link('/message', (context, next) ->
                 context.val =
                     totally: "different"
                 next()
-            ).link '/message', (context, next) ->
+            ).link('/message', (context, next) ->
                 context.val.double = "hooked"
                 next()
+            )
             request(app)
                 .get('/mounted/message')
                 .expect('Content-Type', /json/)
                 .expect(200)
                 .expect({totally: "different", double: "hooked"}, done)
+        it "will let you hook a write", (done) ->
+            server.save('/withtimestamp', (context, next) ->
+                context.val = context.val or {}
+                #on purpose, make sure we don't double hook, but that
+                #the resulting hook value is saved below with durably.
+                stashAt = context.val.at = Date.now()
+                next()
+            ).save('/withtimestamp', (context, next) ->
+                context.val.name = 'Fred'
+                next()
+            )
+            request(app)
+                .put('/mounted/withtimestamp')
+                .send({type: 'monster'})
+                .expect 200, ->
+                    request(app)
+                        .get('/mounted/withtimestamp')
+                        .expect('Content-Type', /json/)
+                        .expect(200)
+                        .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
+
 
 Fire up again, should have the log playback. This proves we can come back from
 a restart/crash.
@@ -120,3 +146,9 @@ a restart/crash.
                 .expect('Content-Type', /json/)
                 .expect(200)
                 .expect({hi: 'dad', from: ['you']}, done)
+        it "recovers the result of hooks", (done) ->
+            request(app)
+                .get('/mounted/withtimestamp')
+                .expect('Content-Type', /json/)
+                .expect(200)
+                .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)

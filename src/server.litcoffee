@@ -56,6 +56,10 @@ Hook support forwards to the processor:
             @processor.hookAfter 'link', href, hook
             this
 
+        save: (href, hook) ->
+            @processor.hookBefore 'save', href, hook
+            this
+
 Express middleware export for use with REST. Note the =>, this sort of
 this monkeying is why I really don't like objects all that much... But
 anyhow, each request sets up a `doer`, which is responsible for actually
