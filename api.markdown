@@ -84,6 +84,7 @@ Things to know about hooks:
 * You can have multiple hooks of each type on an `href`
 * If you have multiple hooks of each type on the same `href`, they fire
   in the order they are attached
+* **Hooks are always from /, even if you mount at another url**
 
 A hook is a function, with the following parameters.
 
@@ -160,6 +161,8 @@ server.splice('/myarray', function(context, next){
 
 ### rest
 This is `connect` middleware, `use` this to have the rest API connected.
+The middleware is like any other, you can specify a `prefix` url to
+mount it at a point.
 
 ```javascript
 var app = require('express')(),
