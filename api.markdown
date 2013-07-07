@@ -135,7 +135,7 @@ server.save('/myrecord', function(context, next){
 ```
 
 ### remove()
-Hook data removes, this allows you to react before data is removed. The 
+Hook data removes, this allows you to react before data is removed. The
 most interesting thing to do here is `abort` and prevent a delete.
 
 ```javascript
@@ -145,8 +145,18 @@ server.remove('/myrecord', function(context, next){
 });
 ```
 
-### mutate()
-Hook array mutation
+### splice()
+Hook in place array modifications.
+
+```javascript
+server.splice('/myarray', function(context, next){
+  //this makes a 'push' into a double push
+  if (typeof context.val.index == 'undefined') {
+    context.val.elements.push('Second Value');
+  }
+  next();
+});
+```
 
 ### rest
 This is `connect` middleware, `use` this to have the rest API connected.
@@ -224,23 +234,21 @@ Server hooks get an instance of this passed to their hook function.
 
 ### href
 The `href` of the data being hooked, this will be from `/`, not
-including host, protocol, or port and is split into an array
+including host, protocol, or port and is split into an array of
+segments.
 
 ### val
 This is the value the command is working on, and you can modify it to
 change the final result of the command as needed.
 
-#### data
-The value currently stored in the server, change this value to intercept
-what is sent to the client.
+|Event|Notes
+|-----|----|
+|link|The value currently stored in the server, change this value to intercept what is sent to the client|
+|save|The original value sent in by the client|
+|remove|`undefined`, there is no `val` for a `removed`|
+|splice|See below|
 
-#### saved
-The original value sent in by the client.
-
-#### removed
-`undefined`, there is no `val` for a `removed`.
-
-#### mutated
+#### splice
 In this case, `val` contains the arguments that will be passed to the
 eventual array `splice`. This lets you redefine the splice.
 
@@ -262,11 +270,11 @@ Return a `Link` to other data on the server. As we are _in_ the server
 while the hook is running, `val` is already defined and there is no need
 to hook up for events.
 
-Remember that this gives you a snapshot, modifying the contents of `val`
-doesn't save anything to the server.
+**This is real data** making a modification here is just the same as if
+a client did it, except that you are in the server.
 
 ### parent()
-Creates a `ServerContext` for the containing parent. Use this to go 'up
+Creates a `HookContext` for the containing parent. Use this to go 'up
 and over' to get at more data.
 
 When you ask for a parent, `prev` will hold the actual stored value on
@@ -275,6 +283,10 @@ the server, but `val` will not change.
 ### abort()
 Abort the processing of hooks, raising an error, and blocking the
 operation from modifying server state.
+
+All parameters are options, if you just call `abort()` it will fire a
+generic error message. That way you won't be able to track down where
+you aborted. Use an error message.
 
 |Parameter|Notes|
 |---------|-----|
@@ -351,7 +363,7 @@ Attach an event handler to this link.
 |name|The name of the event you want to handle|
 |callback|The event handler callback|
 
-### Event: data
+### Event: link
 Event is fired when any data is changed, including updates you make in
 your client, and most importantly updates made by other clients and
 servers. This notification is the core of real time updates.
@@ -372,7 +384,7 @@ Take `snapshot` and use it in your client program. This callback is the
 place where you move data coming in from the server into the UI
 framework you are using.
 
-### Event: saved
+### Event: save
 Event is fired after `save` reaches the server, and local data is
 updated, after `data`. This is interesting becuase other connected
 clients and servers may be updating data. This event gives you the
@@ -383,13 +395,13 @@ chance to compare against the last value in `data` if needed.
 |error||
 |snapshot|A plain old JavaScript value, returned from Variable Sky.|
 
-### Event: removed
-Event is fired when after `remove` resches the server, `data` would have
-already fired with an `undefined` `snapshot`.
+### Event: remove
+Event is fired when after `remove` reaches the server.
 
 |Parameter|Notes|
 |---------|-----|
 |error||
+|snapshot|A plain old JavaScript value that was removed, returned from Variable Sky.|
 
 
 ## ArrayLink
@@ -402,7 +414,7 @@ basic JavaScript array mutators.
 ArrayLink exposes the following methods, which have the same meanings as
 the default JavaScript methods. The difference is that these methods
 notify the Variable Sky server, modify the linked array there, fire
-event `data`, then fire an event `mutate`, allowing you to apply just
+event `data`, then fire an event `splice`, allowing you to apply just
 the delta to a local snapshot. This avoids sending an entire array back
 and forth to the server.
 
@@ -424,11 +436,11 @@ update one object.
 |index|Change the element at this index|
 |value|Put this value into the array|
 
-### Event: mutate
-Event is fired when an array has been mutated on the server. This will
+### Event: splice
+Event is fired when an array has been in place mutated on the server. This will
 fire instead of `data` to avoid sending an entire array. Remember, if
 you call `save`, `data` will fire. If you call a mutator, you will get
-`mutate`.
+`splice`.
 
 |Parameter|Notes|
 |---------|-----|
@@ -448,8 +460,8 @@ sampleLink.on("data", function(err, snapshot){
   sampleArray = snapshot;
   console.log(sampleArray);
 });
-sampleLink.on("mutate", function(err, mutator){
-  //here is the fun part
+sampleLink.on("splice", function(err, mutator){
+  //here is the fun part, this applies the changes into the array
   mutator(sampleArray);
   console.log(sampleArray);
 });
