@@ -104,12 +104,10 @@ The REST API.
         it "will let you hook a read", (done) ->
             #notice that this is relative
             server.link('/message', (context, next) ->
-                console.log 'readin', context
                 context.val =
                     totally: "different"
                 next()
             ).link('/message', (context, next) ->
-                console.log 'readin2', context
                 context.val.double = "hooked"
                 next()
             )
@@ -169,7 +167,7 @@ The REST API.
                 .end ->
                     request(app)
                         .get('/mounted/things')
-                        .expect('Content-Type', /text/)
+                        .expect('Content-Type', /json/)
                         .expect(200)
                         .expect(['Item One', 'Another Item'], done)
 

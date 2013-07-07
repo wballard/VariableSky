@@ -189,7 +189,7 @@ Before hooks fire before the command has started.
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) ->
-            @afterHooks[command] command, href, (next) ->
+            @afterHooks[command] href, (next) ->
                 hook this.req, next
 
 The actual command execution function, callers will use this to get the
