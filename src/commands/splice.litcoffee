@@ -28,6 +28,5 @@ then just look up the function
             todo.val.howMany = todo.val.howMany or 0
             todo.val.elements = todo.val.elements or []
             args = _.flatten([todo.val.index, todo.val.howMany, todo.val.elements])
-            console.log args
             tail.splice.apply tail, args
         done null, todo

@@ -60,10 +60,16 @@ implementation.
             for file in fs.readdirSync(options.commandDirectory)
                 name = path.basename(file, path.extname(file))
                 @commands[name] = require path.join(options.commandDirectory, file)
-                @hooks[name] = new director.http.Router().configure
-                    async: true
-                    notfound: ->
-                        this.req.next()
+            @beforeHooks = new director.http.Router().configure
+                async: true
+                notfound: ->
+                    this.req.next()
+            @beforeHooks.extend _.keys(@commands)
+            @afterHooks = new director.http.Router().configure
+                async: true
+                notfound: ->
+                    this.req.next()
+            @afterHooks.extend _.keys(@commands)
 
 And, a bit different implementation, this is event driven.
 
@@ -83,11 +89,11 @@ this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
             @emitter.on 'executeBefore', (todo, handled) =>
-                router = @hooks[todo.command]
+                router = @beforeHooks
                 req = _.extend {}, todo,
                     __before__: true
                     __req__: @counter++
-                    method: 'before'
+                    method: todo.command
                     headers: {}
                     url: "/#{todo.href.join('/')}"
                     next: =>
@@ -115,9 +121,9 @@ And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
             @emitter.on 'executeAfter', (todo, handled) =>
-                router = @hooks[todo.command]
+                router = @afterHooks
                 req = _.extend {}, todo,
-                    method: 'after'
+                    method: todo.command
                     headers: {}
                     url: "/#{todo.href.join('/')}"
                     next: ->
@@ -177,13 +183,13 @@ Clean shutdown.
 Before hooks fire before the command has started.
 
         hookBefore: (command, href, hook) ->
-            @hooks[command].before href, (next) ->
+            @beforeHooks[command] href, (next) ->
                 hook this.req, next
 
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) ->
-            @hooks[command].after href, (next) ->
+            @afterHooks[command] command, href, (next) ->
                 hook this.req, next
 
 The actual command execution function, callers will use this to get the

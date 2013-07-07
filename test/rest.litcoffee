@@ -104,10 +104,12 @@ The REST API.
         it "will let you hook a read", (done) ->
             #notice that this is relative
             server.link('/message', (context, next) ->
+                console.log 'readin', context
                 context.val =
                     totally: "different"
                 next()
             ).link('/message', (context, next) ->
+                console.log 'readin2', context
                 context.val.double = "hooked"
                 next()
             )
@@ -157,7 +159,6 @@ The REST API.
         it "will let you hook posting to an array", (done) ->
             server.splice('/things', (context, next) ->
                 #put in another item for every item
-                console.log 'hookin', context
                 context.val.elements.push 'Another Item'
                 next()
             )
@@ -170,7 +171,7 @@ The REST API.
                         .get('/mounted/things')
                         .expect('Content-Type', /text/)
                         .expect(200)
-                        .expect(['Item', 'Another Item'], done)
+                        .expect(['Item One', 'Another Item'], done)
 
 
 Fire up again, should have the log playback. This proves we can come back from
@@ -183,7 +184,6 @@ a restart/crash.
             app = require('express')()
             server = new sky.Server(options)
             app.use '/mounted', server.rest
-            console.log 'durable'
         after (done) ->
             server.shutdown done
         it "recovers previous commands", (done) ->
