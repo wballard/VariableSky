@@ -246,7 +246,7 @@ eventual array `splice`. This lets you redefine the splice.
 
 |Property|Notes|
 |-----|-----|
-|index|Start modifying the array at this index|
+|index|Start modifying the array at this index, if≈ `undefined` modify at the end of the array|
 |howMany|Remove this many elements|
 |elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
 
