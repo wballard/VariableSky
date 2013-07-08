@@ -12,7 +12,7 @@ follows the Node.js convention of `(error, arguments)` to callbacks.
 Error objects will always have at least these properties:
 
 |Property|Notes|
-|---------|-----|
+|--------|-----|
 |name|Tired of goofy error numbers? Indeed, all errors will have a name.|
 |message|This is a longer, nerdy, descriptive string that may help programmers, and will certainly confuse users if you show it to them.|
 
@@ -60,10 +60,10 @@ This is the main object you create on the server, `new` it.
 |options|An option hash|
 
 |Option|Notes|
-|---------|-----|
+|------|-----|
 |storageDirectory|Root directory for snapshots and journals, this is used to maintain state|
 
-### Hooks
+### hook()
 On the server, you can _hook_ the events. This is similar to setting up
 routes on an HTTP server, and gives you the chance to intercept:
 
@@ -96,36 +96,40 @@ A hook is a function, with the following parameters.
 Inside the hook function you:
 
 1. Use the `context` to decide what to do
-2. Modify `context` as needed
+2. Modify `context.val` as needed
 3. Call `next` to signal that you are done, remember this is mandatory
 
 All of the hook event methods expose the same signature:
 
 |Parameter|Notes|
 |---------|-----|
+|event|The named server event to hook|
 |href|A path, or regular expression, that matches against a `Link.href`|
-|hook|A hook function|
+|callback|A hook function|
 |returns|The same `Server`, to allow chaining|
 
-### link()
+Valid values for `event` are below:
+
+
+#### link
 Hook data reads, this allows you to modify data before it is sent out to
 clients. The thing here is to change what is in `context.val`, this is
 read interception.
 
 ```javascript
-server.link('/myrecord', function(context, next){
+server.hook('link', '/myrecord', function(context, next){
   //force the data to be what you like
   context.val = "Totally taking over";
   next();
 });
 ```
 
-### save()
+#### save
 Hook data saves, this allows you to modify data before it is saved. Any content
 remaining at `context.val` will be actually saved.
 
 ```javascript
-server.save('/myrecord', function(context, next){
+server.hook('save', '/myrecord', function(context, next){
   //force the data to be what you like
   context.val = {
     name: "Fred",
@@ -135,22 +139,22 @@ server.save('/myrecord', function(context, next){
 });
 ```
 
-### remove()
+#### remove
 Hook data removes, this allows you to react before data is removed. The
 most interesting thing to do here is `abort` and prevent a delete.
 
 ```javascript
-server.remove('/myrecord', function(context, next){
+server.hook('remove', '/myrecord', function(context, next){
   //abort and prevent the delete, no need to call next
   context.abort();
 });
 ```
 
-### splice()
+#### splice
 Hook in place array modifications.
 
 ```javascript
-server.splice('/myarray', function(context, next){
+server.hook('splice', '/myarray', function(context, next){
   //this makes a 'push' into a double push
   if (typeof context.val.index == 'undefined') {
     context.val.elements.push('Second Value');
@@ -244,8 +248,8 @@ segments.
 This is the value the command is working on, and you can modify it to
 change the final result of the command as needed.
 
-|Event|Notes
-|-----|----|
+|Event|Notes|
+|-----|-----|
 |link|The value currently stored in the server, change this value to intercept what is sent to the client|
 |save|The original value sent in by the client|
 |remove|`undefined`, there is no `val` for a `removed`|
@@ -256,7 +260,7 @@ In this case, `val` contains the arguments that will be passed to the
 eventual array `splice`. This lets you redefine the splice.
 
 |Property|Notes|
-|-----|-----|
+|--------|-----|
 |index|Start modifying the array at this index, if≈ `undefined` modify at the end of the array|
 |howMany|Remove this many elements|
 |elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
