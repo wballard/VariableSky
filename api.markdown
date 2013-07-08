@@ -273,19 +273,13 @@ started.
 |splice|`prev` is the stored server array, about to be modified|
 
 ### link()
-Return a `Link` to other data on the server. As we are _in_ the server
-while the hook is running, `val` is already defined and there is no need
-to hook up for events.
+Return a `Link` to other data on the server, the same as a client.
 
-**This is real data** making a modification here is just the same as if
-a client did it, except that you are in the server.
-
-### parent()
-Creates a `Link` for the containing parent. Use this to go 'up
-and over' to get at more data.
-
-When you ask for a parent, `prev` will hold the actual stored value on
-the server, but `val` will not change.
+Just as a client is in a separate memory space, and updating a linked
+snapshot doesn't modify the server unless you `save`, this link hands
+you a _clone_. OK, so **please do not `context.link('/')`** if you want
+things to be speedy. Unless you have very little data, in which case
+this is OK, hence why it is not forbidden.
 
 ### abort()
 Abort the processing of hooks, raising an error, and blocking the
@@ -303,16 +297,11 @@ you aborted. Use an error message.
 
 ## Link
 When you call `link`, you get a `Link`. This object maintains the
-connection between your client and the server, so you need to hang on to
+connection to data in Variable Sky, so you need to hang on to
 it in order to have snapshots update automatically.
 
 ### href
 The `Link` is to this `href` path. Used for self reference.
-
-### val
-Get the current value of `Link`, which may be `undefined` if data hasn't
-made it from the server yet. This isn't a substitute for event handling,
-but just a convenience to get at the current value.
 
 ### save()
 Save a new value to a link, this **replaces** the existing value, notifies
@@ -380,7 +369,6 @@ or `removed`.
 
 |Parameter|Notes|
 |---------|-----|
-|error||
 |snapshot|A plain old JavaScript value, returned from Variable Sky. This is your data, use it.|
 
 Snapshot is a JavaScript value, and this includes `undefined`, which you
@@ -399,7 +387,6 @@ chance to compare against the last value in `data` if needed.
 
 |Parameter|Notes|
 |---------|-----|
-|error||
 |snapshot|A plain old JavaScript value, returned from Variable Sky.|
 
 ### Event: remove
@@ -407,7 +394,6 @@ Event is fired when after `remove` reaches the server.
 
 |Parameter|Notes|
 |---------|-----|
-|error||
 |snapshot|A plain old JavaScript value that was removed, returned from Variable Sky.|
 
 
