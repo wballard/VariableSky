@@ -103,11 +103,11 @@ The REST API.
                 .end(done)
         it "will let you hook a read", (done) ->
             #notice that this is relative
-            server.link('/message', (context, next) ->
+            server.hook('link', '/message', (context, next) ->
                 context.val =
                     totally: "different"
                 next()
-            ).link('/message', (context, next) ->
+            ).hook('link', '/message', (context, next) ->
                 context.val.double = "hooked"
                 next()
             )
@@ -117,28 +117,28 @@ The REST API.
                 .expect(200)
                 .expect({totally: "different", double: "hooked"}, done)
         it "will let you hook a write", (done) ->
-            server.save('/withtimestamp', (context, next) ->
+            server.hook('save', '/withtimestamp', (context, next) ->
                 context.val = context.val or {}
                 #on purpose, make sure we don't double hook, but that
                 #the resulting hook value is saved below with durably.
                 stashAt = context.val.at = Date.now()
                 next()
-            ).save('/withtimestamp', (context, next) ->
+            ).hook('save', '/withtimestamp', (context, next) ->
                 context.val.name = 'Fred'
                 next()
-            ).save('/withtimestamp', (context, next) ->
+            ).hook('save', '/withtimestamp', (context, next) ->
                 #make type a write once property
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
-            ).save('/withtimestamp', (context, next) ->
+            ).hook('save', '/withtimestamp', (context, next) ->
                 #and link to other data, notice this is root relative,
                 #not mount point relative
                 link = context.link('/hello')
                 link.on 'link', (snapshot) ->
                     context.val.message = snapshot
                     next()
-            ).link('/hello', (context, next) ->
+            ).hook('link', '/hello', (context, next) ->
                 context.val = 'hello'
                 next()
             )
@@ -165,7 +165,7 @@ The REST API.
                                 ).end(done)
 
         it "will let you hook a remove", (done) ->
-            server.remove('/immortal', (context, next) ->
+            server.hook('remove', '/immortal', (context, next) ->
                 context.abort()
                 #aborted, no need for next
             )
@@ -183,7 +183,8 @@ The REST API.
                                     .expect(200)
                                     .expect('Zeus', done)
         it "will let you hook posting to an array", (done) ->
-            server.splice('/things', (context, next) ->
+            server.hook('splice', '/things', (context, next) ->
+                console.log 'splicing'
                 #put in another item for every item
                 context.val.elements.push 'Another Item'
                 next()
@@ -199,7 +200,7 @@ The REST API.
                         .expect(200)
                         .expect(['Item One', 'Another Item'], done)
         it "will give you an error message with hook exceptions on GET", (done) ->
-            server.link('/error', (context, next) ->
+            server.hook('link', '/error', (context, next) ->
                 throw "Oh my!"
             )
             request(app)
@@ -207,7 +208,7 @@ The REST API.
                 .expect(500)
                 .expect('Oh my!', done)
         it "will give you an error message with hook exceptions on PUT", (done) ->
-            server.save('/error', (context, next) ->
+            server.hook('save', '/error', (context, next) ->
                 throw "Oh gosh!"
             )
             request(app)

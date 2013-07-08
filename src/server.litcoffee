@@ -53,22 +53,14 @@ Clean server shutdown.
         shutdown: (callback) ->
             @processor.shutdown callback
 
-Hook support forwards to the processor:
+Hook support forwards to the processor, supports chaining.
 
-        link: (href, hook) ->
-            @processor.hookAfter 'link', href, hook
-            this
-
-        save: (href, hook) ->
-            @processor.hookBefore 'save', href, hook
-            this
-
-        remove: (href, hook) ->
-            @processor.hookBefore 'remove', href, hook
-            this
-
-        splice: (href, hook) ->
-            @processor.hookBefore 'splice', href, hook
+        hook: (event, href, callback) ->
+            switch event
+                when 'link'
+                    @processor.hookAfter event, href, callback
+                else
+                    @processor.hookBefore event, href, callback
             this
 
 Express middleware export for use with REST. Note the =>, this sort of
