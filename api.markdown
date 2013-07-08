@@ -343,18 +343,6 @@ the `href` to logically containing objects as needed.
 |error||
 |matchingLinks|An array of `Link` objects matching the query|
 
-### parent()
-Returns a `Link` representing the parent.
-
-### child()
-Returns a `Link` to a child. Sometimes you want the child data, just use
-`.` or `[]`, sometimes you want a link to the child, for example setting
-up multiple bound records in an array.
-
-|Parameter|Notes|
-|---------|-----|
-|path|A relative path, delimited by /|
-
 ### on()
 Attach an event handler to this link.
 
@@ -402,15 +390,23 @@ Event is fired when after `remove` reaches the server.
 |---------|-----|
 |snapshot|A plain old JavaScript value that was removed, returned from Variable Sky.|
 
+#### splice
+Event is fired when an array has been in place mutated on the server. This will
+fire instead of `data` to avoid sending an entire array. Remember, if
+you call `save`, `data` will fire. If you call a mutator, you will get
+`splice`.
 
-## ArrayLink
-Arrays allow you to do partial updates, more efficient then updating the
-entire array all the time, and more concurrent. You can of course `save`
-them, and re-write the entire array, but the link itself supports the
-basic JavaScript array mutators.
+|Parameter|Notes|
+|---------|-----|
+|error||
+|mutator|A function that you call over an array in order to synch it up|
+
+The trick is the mutator, the server sends you a function that you call
+on your array to catch it up. This allows you to _patch_ an array rather
+than re-read the entire thing.
 
 ### mutators
-ArrayLink exposes the following methods, which have the same meanings as
+Links to arrays exposes the following methods, which have the same meanings as
 the default JavaScript methods. The difference is that these methods
 notify the Variable Sky server, modify the linked array there, fire
 event `data`, then fire an event `splice`, allowing you to apply just
@@ -435,20 +431,6 @@ update one object.
 |index|Change the element at this index|
 |value|Put this value into the array|
 
-### Event: splice
-Event is fired when an array has been in place mutated on the server. This will
-fire instead of `data` to avoid sending an entire array. Remember, if
-you call `save`, `data` will fire. If you call a mutator, you will get
-`splice`.
-
-|Parameter|Notes|
-|---------|-----|
-|error||
-|mutator|A function that you call over an array in order to synch it up|
-
-The trick is the mutator, the server sends you a function that you call
-on your array to catch it up. This allows you to _patch_ an array rather
-than re-read the entire thing.
 
 ### Example
 ```javascript
@@ -477,21 +459,17 @@ OK, this will print:
 [1]
 ```
 
-
-## StringLink
-Strings are a bit special, in that you will often want to edit parts of
-them, as well as allow users to concurrently edit them to allow
-collaboration. Variable Sky strings can be used as shared workspaces for
-multiple users to collaborate in real time.
-
 ### concurrentEdit()
-Enable concurrent editing on a user interface element. Simply call this
-method, and your users will engage in real time concurrent editing.
+Enable concurrent editing of a linked string on a user interface
+element. Simply call this method, and your users will engage in real
+time concurrent editing.
 
 |Parameter|Notes|
 |---------|-----|
 |element|An editable DOM element|
 
 `element` can be an `INPUT`, `TEXTAREA`, `CodeMirror`, or `ACE`.
+
+
 
 
