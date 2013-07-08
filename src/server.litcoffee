@@ -13,10 +13,13 @@ Paths are always something to deal with. Here is the general representation,
 an array of path segments.
 
     parsePath = (path) ->
-        _(path.split('/'))
-            .map(decodeURIComponent)
-            .filter((x) -> x.length)
-            .value()
+        if _.isArray(path)
+            path
+        else
+            _(path.split('/'))
+                .map(decodeURIComponent)
+                .filter((x) -> x.length)
+                .value()
 
 And our own very forgiving version of the connect json middleware
 
@@ -130,3 +133,4 @@ In this case, we have some kind of val, so send it back.
                     doer todo, handled, next
 
     module.exports.Server = Server
+    module.exports.parsePath = parsePath

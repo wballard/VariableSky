@@ -131,7 +131,14 @@ The REST API.
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
+            ).save('/withtimestamp', (context, next) ->
+                #and link to other data, notice this is root relative,
+                #not mount point relative
+                link = context.link('/scalar')
+                context.val.message = link.val
+                next()
             )
+
             request(app)
                 .put('/mounted/withtimestamp')
                 .send({type: 'monster'})
@@ -146,7 +153,13 @@ The REST API.
                                 .get('/mounted/withtimestamp')
                                 .expect('Content-Type', /json/)
                                 .expect(200)
-                                .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
+                                .expect(
+                                    at: stashAt
+                                    name: 'Fred'
+                                    type: 'monster'
+                                    message: 'bork'
+                                ).end(done)
+
         it "will let you hook a remove", (done) ->
             server.remove('/immortal', (context, next) ->
                 context.abort()
@@ -181,6 +194,23 @@ The REST API.
                         .expect('Content-Type', /json/)
                         .expect(200)
                         .expect(['Item One', 'Another Item'], done)
+        it "will give you an error message with hook exceptions on GET", (done) ->
+            server.link('/error', (context, next) ->
+                throw "Oh my!"
+            )
+            request(app)
+                .get('/mounted/error')
+                .expect(500)
+                .expect('Oh my!', done)
+        it "will give you an error message with hook exceptions on PUT", (done) ->
+            server.save('/error', (context, next) ->
+                throw "Oh gosh!"
+            )
+            request(app)
+                .put('/mounted/error')
+                .send('')
+                .expect(500)
+                .expect('Oh gosh!', done)
 
 
 Fire up again, should have the log playback. This proves we can come back from
@@ -206,4 +236,9 @@ a restart/crash.
                 .get('/mounted/withtimestamp')
                 .expect('Content-Type', /json/)
                 .expect(200)
-                .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
+                .expect(
+                    at: stashAt
+                    name: 'Fred'
+                    type: 'monster'
+                    message: 'bork'
+                ).end(done)

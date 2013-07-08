@@ -20,9 +20,34 @@ back the `todo` with `done(null, todo)`.
     errors = require('./errors')
     _ = require('lodash')
     Blackboard = require('./blackboard')
+    Link = require('./link')
     Journal = require('./journal')
     EventEmitter = require('events').EventEmitter
+
     director = require('director')
+
+Used in hooks to provide access to data.
+
+    class HookContext
+        constructor: (todo, blackboard, handled, next) ->
+            _.extend this, todo,
+                method: todo.command
+                headers: {}
+                url: "/#{todo.href.join('/')}"
+                prev: blackboard.valueAt(todo.href)
+                abort: ->
+                    if arguments.length
+                        handled this, arguments
+                    else
+                        handled errors.HOOK_ABORTED()
+                next: next
+
+Build a new link, notice how we get at the blackboard via the parameter
+to construct, but don't evet store it in `this`. Trying really hard to make
+clients to through `Link`.
+
+                link: (href) ->
+                    new Link(blackboard, href)
 
     class Processor
         constructor: (@options) ->
@@ -89,24 +114,14 @@ this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
             @emitter.on 'executeBefore', (todo, handled) =>
-                router = @beforeHooks
-                req = _.extend {}, todo,
-                    __before__: true
-                    __req__: @counter++
-                    method: todo.command
-                    headers: {}
-                    url: "/#{todo.href.join('/')}"
-                    prev: @blackboard.valueAt(todo.href)
-                    next: =>
+                req = new HookContext todo, @blackboard, handled, (error) =>
+                    if error
+                        handled(error)
+                    else
                         todo.val = req.val
                         @emitter.emit 'executeCore', todo, handled
-                    abort: ->
-                        if arguments.length
-                            handled this, arguments
-                        else
-                            handled errors.HOOK_ABORTED()
                 res = {}
-                router.dispatch req, res, req.next
+                @beforeHooks.dispatch req, res, req.next
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
@@ -122,21 +137,13 @@ And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
             @emitter.on 'executeAfter', (todo, handled) =>
-                router = @afterHooks
-                req = _.extend {}, todo,
-                    method: todo.command
-                    headers: {}
-                    url: "/#{todo.href.join('/')}"
-                    prev: @blackboard.valueAt(todo.href)
-                    next: ->
+                req = new HookContext todo, @blackboard, handled, (error) =>
+                    if error
+                        handled(error)
+                    else
                         handled(null, req.val)
-                    abort: ->
-                        if arguments.length
-                            handled this, arguments
-                        else
-                            handled errors.HOOK_ABORTED()
                 res = {}
-                router.dispatch req, res, req.next
+                @afterHooks.dispatch req, res, req.next
 
 The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.
@@ -186,13 +193,19 @@ Before hooks fire before the command has started.
 
         hookBefore: (command, href, hook) ->
             @beforeHooks[command] href, (next) ->
-                hook this.req, next
+                try
+                    hook this.req, next
+                catch error
+                    next error
 
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) ->
             @afterHooks[command] href, (next) ->
-                hook this.req, next
+                try
+                    hook this.req, next
+                catch error
+                    next error
 
 The actual command execution function, callers will use this to get the
 processor to do work for them. `todo` is the input, the two callbacks `handled`
