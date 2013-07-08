@@ -134,8 +134,12 @@ The REST API.
             ).save('/withtimestamp', (context, next) ->
                 #and link to other data, notice this is root relative,
                 #not mount point relative
-                link = context.link('/scalar')
-                context.val.message = link.val
+                link = context.link('/hello')
+                link.on 'link', (snapshot) ->
+                    context.val.message = snapshot
+                    next()
+            ).link('/hello', (context, next) ->
+                context.val = 'hello'
                 next()
             )
 
@@ -157,7 +161,7 @@ The REST API.
                                     at: stashAt
                                     name: 'Fred'
                                     type: 'monster'
-                                    message: 'bork'
+                                    message: 'hello'
                                 ).end(done)
 
         it "will let you hook a remove", (done) ->
@@ -240,5 +244,5 @@ a restart/crash.
                     at: stashAt
                     name: 'Fred'
                     type: 'monster'
-                    message: 'bork'
+                    message: 'hello'
                 ).end(done)

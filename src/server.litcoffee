@@ -102,7 +102,10 @@ running the each request's command.
                                         req.body
                                     else
                                         [req.body]
-                    handled = (error, val) ->
+
+Hand off to the processor. This is the main thing this middleware does.
+
+                    doer todo, (error, val) ->
                         if error
                             switch error.name
                                 when 'NOT_AN_ARRAY'
@@ -111,26 +114,28 @@ running the each request's command.
                                         .send(405, error)
                                         .end()
                                 else
-                                    res.send(500, error).end()
+                                    res
+                                        .send(500, error)
+                                        .end()
 
 Reaching the end of the processing with undefined is a 404.
 
                         else if _.isUndefined(val)
-                            res.send(404, errors.NOT_FOUND(todo.href)).end()
+                            res
+                                .send(404, errors.NOT_FOUND(todo.href))
+                                .end()
 
 In this case, we have some kind of val, so send it back.
 
                         else
                             if _.isObject(val)
                                 res
-                                    .set('content-type', 'application/json')
-                                    .send(200, JSON.stringify(val)).end()
+                                    .json(val)
                             else
                                 res
-                                    .set('content-type', 'text/plain')
-                                    .send(200, val).end()
+                                    .send(val)
 
-                    doer todo, handled, next
+This is end of the line middleward, no `next`.
 
     module.exports.Server = Server
     module.exports.parsePath = parsePath

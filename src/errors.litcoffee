@@ -4,6 +4,9 @@ Error making macros.
         NOT_FOUND: (href) ->
             name: "NOT_FOUND"
             message: href.join('/')
+        NO_SUCH_COMMAND: (command) ->
+            name: "NO_SUCH_COMMAND"
+            message: command
         PARSE_ERROR: (err) ->
             name: "PARSE_ERROR"
             message: "This was no parseable. Sorry"

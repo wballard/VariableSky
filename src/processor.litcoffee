@@ -29,25 +29,25 @@ back the `todo` with `done(null, todo)`.
 Used in hooks to provide access to data.
 
     class HookContext
-        constructor: (todo, blackboard, handled, next) ->
+        constructor: (processor, todo, done, next) ->
             _.extend this, todo,
                 method: todo.command
                 headers: {}
                 url: "/#{todo.href.join('/')}"
-                prev: blackboard.valueAt(todo.href)
+                prev: processor.blackboard.valueAt(todo.href)
                 abort: ->
                     if arguments.length
-                        handled this, arguments
+                        done this, arguments
                     else
-                        handled errors.HOOK_ABORTED()
+                        done errors.HOOK_ABORTED()
                 next: next
 
-Build a new link, notice how we get at the blackboard via the parameter
-to construct, but don't evet store it in `this`. Trying really hard to make
+Build a new link, notice how we get at the process via the parameter
+to construct, but don't even store it in `this`. Trying really hard to make
 clients to through `Link`.
 
                 link: (href) ->
-                    new Link(blackboard, href)
+                    new Link(processor, href)
 
     class Processor
         constructor: (@options) ->
@@ -113,46 +113,46 @@ context. Most important here is `val`, as before hooks get a chance to override
 this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
-            @emitter.on 'executeBefore', (todo, handled) =>
-                req = new HookContext todo, @blackboard, handled, (error) =>
+            @emitter.on 'executeBefore', (todo, done) =>
+                req = new HookContext this, todo, done, (error) =>
                     if error
-                        handled(error)
+                        done(error)
                     else
                         todo.val = req.val
-                        @emitter.emit 'executeCore', todo, handled
+                        @emitter.emit 'executeCore', todo, done
                 res = {}
                 @beforeHooks.dispatch req, res, req.next
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
-            @emitter.on 'executeCore', (todo, handled) =>
+            @emitter.on 'executeCore', (todo, done) =>
                 @commands[todo.command] todo, @blackboard, (error, todo) =>
                     if error
-                        handled(error)
+                        done(error)
                     else
-                        @emitter.emit 'executeAfter', todo, handled
+                        @emitter.emit 'executeAfter', todo, done
 
 And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
-            @emitter.on 'executeAfter', (todo, handled) =>
-                req = new HookContext todo, @blackboard, handled, (error) =>
+            @emitter.on 'executeAfter', (todo, done) =>
+                req = new HookContext this, todo, done, (error) =>
                     if error
-                        handled(error)
+                        done(error)
                     else
-                        handled(null, req.val)
+                        done(null, req.val)
                 res = {}
                 @afterHooks.dispatch req, res, req.next
 
 The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.
 
-            @emitter.on 'execute', (todo, handled, skipped) =>
+            @emitter.on 'execute', (todo, done) =>
                 if @commands[todo.command]
-                    @emitter.emit 'executeBefore', todo, handled
+                    @emitter.emit 'executeBefore', todo, done
                 else
-                    skipped()
+                    done(errors.NO_SUCH_COMMAND())
 
 Initially, just queue things up to give the journal time to recover.
 
@@ -175,14 +175,14 @@ On startup, the journal recovers, and when it is full recovered, connect the
 command handling 'do' directly to 'exec', no more buffering.
 
                 @emitter.removeAllListeners 'do'
-                @emitter.on 'do', (todo, handled, skipped) =>
-                    @emitter.emit 'execute', todo, handled, skipped
+                @emitter.on 'do', (todo, done) =>
+                    @emitter.emit 'execute', todo, done
 
 Forward all queued events that were buffered up during recovery
 
                 while @todos.length
                     todo = @todos.shift()
-                    @emitter.emit 'execute', todo?[0], todo?[1], todo?[2]
+                    @emitter.emit 'execute', todo?[0], todo?[1]
 
 Clean shutdown.
 
@@ -208,8 +208,7 @@ After hooks fire when the executed command has completed.
                     next error
 
 The actual command execution function, callers will use this to get the
-processor to do work for them. `todo` is the input, the two callbacks `handled`
-and `skipped` called respectively if there was a command found for the `todo`.
+processor to do work for them.
 
 Commands are run, then journaled. This is to isolate the actual memory
 modification from the hooks. Basically, imagine a hook that sends email. Then
@@ -218,20 +217,19 @@ imagine we were playing back input rather than results. Email firehose. Not cool
 Similar case with non-deterministic hooks, like setting a guid or timestamp.
 Hooks only fire the first time, and are not played back / replicated.
 
-        do: (todo, handled, skipped) =>
+        do: (todo, done) =>
             todo.__id__ = "#{Date.now()}:#{@counter++}"
             @emitter.emit 'do', todo, (error, val) =>
                 if error
-                    handled error
+                    done error
                 else
                     if @commands[todo.command]?.DO_NOT_JOURNAL
-                        handled null, val
+                        done null, val
                     else
                         @journal.record todo, (error) =>
                             if error
-                                handled error
+                                done error
                             else
-                                handled null, val
-            , skipped
+                                done null, val
 
     module.exports = Processor
