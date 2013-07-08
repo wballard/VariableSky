@@ -363,7 +363,9 @@ Attach an event handler to this link.
 |name|The name of the event you want to handle|
 |callback|The event handler callback|
 
-### Event: link
+Events are listed below.
+
+#### link
 Event is fired when any data is changed, including updates you make in
 your client, and most importantly updates made by other clients and
 servers. This notification is the core of real time updates.
@@ -383,7 +385,7 @@ Take `snapshot` and use it in your client program. This callback is the
 place where you move data coming in from the server into the UI
 framework you are using.
 
-### Event: save
+#### save
 Event is fired after `save` reaches the server, and local data is
 updated, after `data`. This is interesting becuase other connected
 clients and servers may be updating data. This event gives you the
@@ -393,7 +395,7 @@ chance to compare against the last value in `data` if needed.
 |---------|-----|
 |snapshot|A plain old JavaScript value, returned from Variable Sky.|
 
-### Event: remove
+#### remove
 Event is fired when after `remove` reaches the server.
 
 |Parameter|Notes|
