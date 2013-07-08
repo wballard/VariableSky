@@ -265,8 +265,12 @@ eventual array `splice`. This lets you redefine the splice.
 Get the previous value of of the data before this current hook sequence
 started.
 
-For `data`, this will be equal to `val` since there is no change
-pending.
+|Event|Notes
+|-----|----|
+|link|`prev` is the stored server, which will be the same as `val`|
+|save|`prev` is the stored server, about to be replaced|
+|remove|`prev` is the stored server, about to be removed|
+|splice|`prev` is the stored server array, about to be modified|
 
 ### link()
 Return a `Link` to other data on the server. As we are _in_ the server
@@ -277,7 +281,7 @@ to hook up for events.
 a client did it, except that you are in the server.
 
 ### parent()
-Creates a `HookContext` for the containing parent. Use this to go 'up
+Creates a `Link` for the containing parent. Use this to go 'up
 and over' to get at more data.
 
 When you ask for a parent, `prev` will hold the actual stored value on
