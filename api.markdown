@@ -431,8 +431,6 @@ update one object.
 |index|Change the element at this index|
 |value|Put this value into the array|
 
-
-### Example
 ```javascript
 var sampleArray;
 var sampleLink = VariableSky.link("http://yourserver.io/sample");
