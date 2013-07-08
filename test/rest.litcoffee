@@ -126,16 +126,27 @@ The REST API.
             ).save('/withtimestamp', (context, next) ->
                 context.val.name = 'Fred'
                 next()
+            ).save('/withtimestamp', (context, next) ->
+                #make type a write once property
+                if context?.prev?.type
+                    context.val.type = context.prev.type
+                next()
             )
             request(app)
                 .put('/mounted/withtimestamp')
                 .send({type: 'monster'})
-                .expect 200, ->
+                .expect(200)
+                .end ->
                     request(app)
-                        .get('/mounted/withtimestamp')
-                        .expect('Content-Type', /json/)
+                        .put('/mounted/withtimestamp')
+                        .send({type: 'nonmonster'})
                         .expect(200)
-                        .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
+                        .end ->
+                            request(app)
+                                .get('/mounted/withtimestamp')
+                                .expect('Content-Type', /json/)
+                                .expect(200)
+                                .expect({at: stashAt, name: 'Fred', type: 'monster'}, done)
         it "will let you hook a remove", (done) ->
             server.remove('/immortal', (context, next) ->
                 context.abort()

@@ -96,6 +96,7 @@ thing going on, re-writing `val`.
                     method: todo.command
                     headers: {}
                     url: "/#{todo.href.join('/')}"
+                    prev: @blackboard.valueAt(todo.href)
                     next: =>
                         todo.val = req.val
                         @emitter.emit 'executeCore', todo, handled
@@ -126,6 +127,7 @@ sent along to any clients.
                     method: todo.command
                     headers: {}
                     url: "/#{todo.href.join('/')}"
+                    prev: @blackboard.valueAt(todo.href)
                     next: ->
                         handled(null, req.val)
                     abort: ->
