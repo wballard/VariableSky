@@ -134,15 +134,15 @@ The REST API.
             ).hook('save', '/withtimestamp', (context, next) ->
                 #and link to other data, notice this is root relative,
                 #not mount point relative
-                link = context.link('/hello')
-                link.on 'link', (snapshot) ->
-                    context.val.message = snapshot
-                    next()
+                context
+                    .link('/hello')
+                    .on 'link', (snapshot) ->
+                        context.val.message = snapshot
+                        next()
             ).hook('link', '/hello', (context, next) ->
                 context.val = 'hello'
                 next()
             )
-
             request(app)
                 .put('/mounted/withtimestamp')
                 .send({type: 'monster'})
@@ -163,7 +163,27 @@ The REST API.
                                     type: 'monster'
                                     message: 'hello'
                                 ).end(done)
-
+        it "will let you link to other data in a hook, and save it", (done) ->
+            server.hook('save', '/modifier', (context, next) ->
+                #linking to other data, saving it, and only coming out of
+                #the hook when complete
+                context
+                    .link('/modified')
+                    .on('save', (snapshot) ->
+                        next()
+                    )
+                    .save(context.val)
+            )
+            request(app)
+                .put('/mounted/modifier')
+                .send('X')
+                .expect(200)
+                .end ->
+                    request(app)
+                        .get('/mounted/modifier')
+                        .expect(200)
+                        .expect('X')
+                        .end(done)
         it "will let you hook a remove", (done) ->
             server.hook('remove', '/immortal', (context, next) ->
                 context.abort()
@@ -184,7 +204,6 @@ The REST API.
                                     .expect('Zeus', done)
         it "will let you hook posting to an array", (done) ->
             server.hook('splice', '/things', (context, next) ->
-                console.log 'splicing'
                 #put in another item for every item
                 context.val.elements.push 'Another Item'
                 next()

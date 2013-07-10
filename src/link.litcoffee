@@ -13,7 +13,7 @@ an Array mutator.
     EventEmitter = require('events').EventEmitter
 
     class Link extends EventEmitter
-        constructor: (processor, href) ->
+        constructor: (@processor, href) ->
             @href = server.parsePath(href)
             setTimeout =>
                 processor.do {command: 'link', href: @href}, (error, val) =>
@@ -21,5 +21,13 @@ an Array mutator.
                         @emit 'error', error
                     else
                         @emit 'link', _.cloneDeep(val)
+            @save = (value) ->
+                setTimeout =>
+                    processor.do {command: 'save', href: @href, val: value}, (error, val) =>
+                        if error
+                            @emit 'error', error
+                        else
+                            @emit 'save', _.cloneDeep(val)
+                this
 
     module.exports = Link
