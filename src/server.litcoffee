@@ -8,6 +8,7 @@ sent along to a command processor with a shared memory blackboard.
     Blackboard = require('./blackboard')
     Processor = require('./processor')
     wrench = require('wrench')
+    sockjs = require('sockjs')
 
 Paths are always something to deal with. Here is the general representation,
 an array of path segments.
@@ -118,6 +119,7 @@ Reaching the end of the processing with undefined is a 404.
                                 .end()
 
 In this case, we have some kind of val, so send it back.
+This is end of the line middleward, no `next`.
 
                         else
                             if _.isObject(val)
@@ -127,7 +129,12 @@ In this case, we have some kind of val, so send it back.
                                 res
                                     .send(val)
 
-This is end of the line middleward, no `next`.
+        listen: (server, url) ->
+            url = url or '/variablesky'
+            sock = sockjs.createServer()
+            sock.installHandlers server, {prefix: url}
+            sock.on 'connection', ->
+                console.log 'connected'
 
     module.exports.Server = Server
     module.exports.parsePath = parsePath
