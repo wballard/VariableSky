@@ -24,4 +24,6 @@ Test connection and action over a streaming socket.
         it "links to data that is undefined", (done) ->
             client = sky.connect('http://localhost:9999/variablesky')
             link = client.link('/sample')
+            link.on 'link', (val) ->
+                done()
 

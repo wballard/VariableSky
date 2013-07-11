@@ -36,6 +36,12 @@ being a send to server, events coming back are joined later.
             )
             @on href, (message) ->
                 console.log 'go', message
+                if message.error
+                    link.emit 'error', message.error
+                else
+                    switch message.command
+                        when 'link'
+                            link.emit 'link', message.val
             link
 
 
