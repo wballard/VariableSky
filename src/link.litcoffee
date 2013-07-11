@@ -29,5 +29,13 @@ an Array mutator.
                         else
                             @emit 'save', _.cloneDeep(val)
                 this
+            @remove = ->
+                setTimeout =>
+                    processor.do {command: 'remove', href: @href}, (error, val) =>
+                        if error
+                            @emit 'error', error
+                        else
+                            @emit 'remove'
+                this
 
     module.exports = Link

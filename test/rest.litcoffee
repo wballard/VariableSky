@@ -180,10 +180,43 @@ The REST API.
                 .expect(200)
                 .end ->
                     request(app)
-                        .get('/mounted/modifier')
+                        .get('/mounted/modified')
                         .expect(200)
                         .expect('X')
                         .end(done)
+        it "will let you link to other data in a hook, and delete it", (done) ->
+            server.hook('save', '/remover', (context, next) ->
+                #link to some other data and delete it
+                context
+                    .link('/removed')
+                    .on('remove', (snapshot) ->
+                        next()
+                    )
+                    .remove()
+            )
+            #now set up some data that will be deleted by the link
+            request(app)
+                .put('/mounted/removed')
+                .send('X')
+                .expect(200)
+                .end ->
+                    request(app)
+                        .get('/mounted/removed')
+                        .expect('X')
+                        .end ->
+                            #hah -- kill it  with the link
+                            request(app)
+                                .put('/mounted/remover')
+                                .send('Y')
+                                .expect(200)
+                                .end ->
+                                    #yep -- all gone, undefined, 404
+                                    request(app)
+                                        .get('/mounted/removed')
+                                        .expect(404)
+                                        .end done
+
+
         it "will let you hook a remove", (done) ->
             server.hook('remove', '/immortal', (context, next) ->
                 context.abort()
