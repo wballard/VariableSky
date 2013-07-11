@@ -29,7 +29,10 @@
     "leveldown": "~0.6.1",
     "wrench": "~1.5.1",
     "director": "~1.2.0",
-    "growl": "~1.7.0"
+    "growl": "~1.7.0",
+    "browserify": "~2.25.0",
+    "shoe": "0.0.11",
+    "reconnect": "~1.5.0"
   },
   "devDependencies": {
     "mocha": "~1.12.0",
