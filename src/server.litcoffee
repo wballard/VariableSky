@@ -139,6 +139,14 @@ at a given mount point url with the default `/variablesky`
             sock.installHandlers server, {prefix: url}
             sock.on 'connection', (conn) ->
                 conn.on 'data', (message) ->
+                    console.log 'server', message
+                    processor.do message, (error, val) ->
+                        if error
+                            message.error = error
+                        else
+                            message.val = val
+                        console.log 'server sending', message
+                        conn.write JSON.stringify(message)
                 conn.on 'close', ->
 
     module.exports.Server = Server

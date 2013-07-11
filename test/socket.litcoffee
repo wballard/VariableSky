@@ -17,8 +17,11 @@ Test connection and action over a streaming socket.
             server.listen 9999
         after (done) ->
             skyserver.shutdown done
-        it "Connects at all", (done) ->
+        it "connects at all", (done) ->
             client = sky.connect('http://localhost:9999/variablesky')
             client.on 'connection', ->
                 done()
+        it "links to data that is undefined", (done) ->
+            client = sky.connect('http://localhost:9999/variablesky')
+            link = client.link('/sample')
 
