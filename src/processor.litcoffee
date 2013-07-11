@@ -203,7 +203,11 @@ After hooks fire when the executed command has completed.
         hookAfter: (command, href, hook) ->
             @afterHooks[command] href, (next) ->
                 try
-                    hook this.req, next
+                    #params and next
+                    params = _.toArray(arguments)
+                    #but we need to splice in the context
+                    params.splice(-1, 0, this.req)
+                    hook.apply this, params
                 catch error
                     next error
 

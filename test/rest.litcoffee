@@ -215,6 +215,15 @@ The REST API.
                                         .get('/mounted/removed')
                                         .expect(404)
                                         .end done
+        it "lets you have parameters in your hook urls, all web servery", (done) ->
+            server.hook('link', '/things/:id', (id, context, next) ->
+                context.val = id
+                next()
+            )
+            request(app)
+                .get('/mounted/things/1')
+                .expect('1')
+                .end done
 
 
         it "will let you hook a remove", (done) ->
