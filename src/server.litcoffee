@@ -129,12 +129,17 @@ This is end of the line middleward, no `next`.
                                 res
                                     .send(val)
 
+This is a web socket listen, attached to a running express/http server
+at a given mount point url with the default `/variablesky`
+
         listen: (server, url) ->
             url = url or '/variablesky'
+            processor = @processor
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
-            sock.on 'connection', ->
-                console.log 'connected'
+            sock.on 'connection', (conn) ->
+                conn.on 'data', (message) ->
+                conn.on 'close', ->
 
     module.exports.Server = Server
     module.exports.parsePath = parsePath
