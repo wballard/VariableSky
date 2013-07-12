@@ -8,13 +8,13 @@ the data over the wire to a client as JSON. This is to keep behavior the
 same on client as on server, in that you must `save`, `remove`, `set`, or call
 an Array mutator.
 
-    server = require('./server')
+    parsePath = require('./util.litcoffee').parsePath
     _ = require('lodash')
     EventEmitter = require('events').EventEmitter
 
     class Link extends EventEmitter
         constructor: (@processor, href) ->
-            @href = server.parsePath(href)
+            @href = parsePath(href)
             setTimeout =>
                 processor.do {command: 'link', href: @href}, (error, val) =>
                     if error

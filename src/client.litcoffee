@@ -2,7 +2,7 @@ This is the client library, focused on a socket interface.
 
     EventEmitter = require('events').EventEmitter
     sockjsclient = require('sockjs-client')
-    Link = require('./link')
+    Link = require('./link.litcoffee')
 
     class Client extends EventEmitter
         constructor: (url) ->
@@ -17,8 +17,6 @@ to the correct link, by href.
             @sock.on 'data', (message) =>
                 message = JSON.parse(message)
                 @emit "/#{(message.href or []).join('/')}", message
-                console.log "/#{(message.href or []).join('/')}", message
-                @emit 'yep'
 
 Create a new data link to the server.
 
@@ -30,12 +28,10 @@ being a send to server, events coming back are joined later.
             sock = @sock
             link = new Link(
                 do: (todo) ->
-                    console.log todo
                     sock.write todo
                 , href
             )
             @on href, (message) ->
-                console.log 'go', message
                 if message.error
                     link.emit 'error', message.error
                 else

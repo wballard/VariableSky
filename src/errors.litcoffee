@@ -18,3 +18,6 @@ Error making macros.
             name: "HOOK_ABORTED"
             message: (context?.href or [])?.join('/')
             context: context
+        LOOKS_LIKE_EXPRESS: () ->
+            name: "LOOKS_LIKE_EXPRESS"
+            message: "Looks like you passed an express app rather than a result from require('http').createServer(app)"

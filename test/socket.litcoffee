@@ -1,6 +1,7 @@
 Test connection and action over a streaming socket.
 
     sky = require('../index')
+    request = require 'supertest'
     path = require('path')
     should = require('chai').should()
 
@@ -18,6 +19,13 @@ Test connection and action over a streaming socket.
             server.listen 9999
         after (done) ->
             skyserver.shutdown done
+        it "serves a browser client library", (done) ->
+            request(app)
+                .get('/variablesky/client')
+                .expect(200)
+                .expect('Content-Type', /javascript/)
+                .expect(/Client/)
+                .end done
         it "connects at all", (done) ->
             client = sky.connect('http://localhost:9999/variablesky')
             client.on 'connection', ->

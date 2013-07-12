@@ -9,18 +9,9 @@ sent along to a command processor with a shared memory blackboard.
     Processor = require('./processor')
     wrench = require('wrench')
     sockjs = require('sockjs')
-
-Paths are always something to deal with. Here is the general representation,
-an array of path segments.
-
-    parsePath = (path) ->
-        if _.isArray(path)
-            path
-        else
-            _(path.split('/'))
-                .map(decodeURIComponent)
-                .filter((x) -> x.length)
-                .value()
+    eyes = require('eyes')
+    browserify = require('browserify')
+    parsePath = require('./util').parsePath
 
 And our own very forgiving version of the connect json middleware
 
@@ -133,21 +124,37 @@ This is a web socket listen, attached to a running express/http server
 at a given mount point url with the default `/variablesky`
 
         listen: (server, url) ->
+            if 'function' is typeof server
+                throw errors.LOOKS_LIKE_EXPRESS()
             url = url or '/variablesky'
+
+If this looks like connect or express, install a client library handler.
+
+            if server._events.request.use
+                server._events.request.use path.join(url, 'client'),  (req, res, next) ->
+                    bundle = browserify()
+                        .transform(require('coffeeify'))
+                        .add(path.join(__dirname, 'client.litcoffee'))
+                        .bundle()
+                    bundle.pipe(res)
+                    bundle.on 'end', ->
+                        console.log 'end'
+                        res.end()
+                    res.set('Content-Type', 'application/javascript')
+
+And, install the socket processing.
+
             processor = @processor
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
             sock.on 'connection', (conn) ->
                 conn.on 'data', (message) ->
-                    console.log 'server', message
                     processor.do message, (error, val) ->
                         if error
                             message.error = error
                         else
                             message.val = val
-                        console.log 'server sending', message
                         conn.write JSON.stringify(message)
                 conn.on 'close', ->
 
     module.exports.Server = Server
-    module.exports.parsePath = parsePath
