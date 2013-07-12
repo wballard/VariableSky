@@ -4,6 +4,7 @@ Test connection and action over a streaming socket.
     request = require 'supertest'
     path = require('path')
     should = require('chai').should()
+    Browser = require('zombie')
 
     options =
         storageDirectory: path.join __dirname, '.test'
@@ -19,22 +20,24 @@ Test connection and action over a streaming socket.
             server.listen 9999
         after (done) ->
             skyserver.shutdown done
+        it "serves a browser client library page", (done) ->
+            browser = new Browser()
+            browser.debug = true
+            browser.runScripts = true
+            browser.visit 'http://localhost:9999/variablesky.client.html', ->
+                browser.success.should.be.ok
+                done()
+            , (err) ->
+                if err
+                    console.log 'ERRRRR', err
+                    done()
         it "serves a browser client library", (done) ->
             request(app)
                 .get('/variablesky/client')
                 .expect(200)
                 .expect('Content-Type', /javascript/)
                 .expect(/Client/)
-                .end done
-        it "connects at all", (done) ->
-            client = sky.connect('http://localhost:9999/variablesky')
-            client.on 'connection', ->
-                done()
-        it "links to data that is undefined", (done) ->
-            client = sky.connect('http://localhost:9999/variablesky')
-            link = client
-                .link('/sample')
-                .on 'link', (val) ->
-                    should.not.exist val
-                    done()
+                .end (err, res) ->
+                    client = Function(res.text).call(this)
+                    end()
 

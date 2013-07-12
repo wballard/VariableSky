@@ -1,21 +1,23 @@
 This is the client library, focused on a socket interface.
 
     EventEmitter = require('events').EventEmitter
-    sockjsclient = require('sockjs-client')
+    SockJS = require('../lib/sockjs')
     Link = require('./link.litcoffee')
 
     class Client extends EventEmitter
         constructor: (url) ->
             url = url or '/variablesky'
-            @sock = sockjsclient.create(url)
-            @sock.on 'connection', =>
+            console.log SockJS
+            @sock = new SockJS(url)
+            console.log @sock
+            @sock.onopen = =>
                 @emit 'connection'
 
 Incoming messages from the socket, the trick here is to send them
 to the correct link, by href.
 
-            @sock.on 'data', (message) =>
-                message = JSON.parse(message)
+            @sock.onmessage = (e) =>
+                message = JSON.parse(e.data)
                 @emit "/#{(message.href or []).join('/')}", message
 
 Create a new data link to the server.
@@ -45,3 +47,8 @@ being a send to server, events coming back are joined later.
         new Client(url)
 
     module.exports = connect
+
+    if window?
+        browser =
+            connect: connect
+        window.variablesky = window.VariableSky = browser

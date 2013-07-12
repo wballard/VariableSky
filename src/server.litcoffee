@@ -12,6 +12,7 @@ sent along to a command processor with a shared memory blackboard.
     eyes = require('eyes')
     browserify = require('browserify')
     parsePath = require('./util').parsePath
+    connect = require('connect')
 
 And our own very forgiving version of the connect json middleware
 
@@ -35,6 +36,7 @@ some claim abut this being more testable, but I'd be lying :)
 
     class Server
         constructor: (@options)->
+            @options = @options or {}
             @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
@@ -128,17 +130,20 @@ at a given mount point url with the default `/variablesky`
                 throw errors.LOOKS_LIKE_EXPRESS()
             url = url or '/variablesky'
 
-If this looks like connect or express, install a client library handler.
+If this looks like connect or express, install a client library handler and
+and self check sample page.
 
             if server._events.request.use
-                server._events.request.use path.join(url, 'client'),  (req, res, next) ->
+                client = "#{path.join(url)}.client"
+                server._events.request.use "#{client}.html", (req, res, next) ->
+                    res.sendfile(path.join(__dirname, 'client.html'))
+                server._events.request.use client,  (req, res, next) ->
                     bundle = browserify()
                         .transform(require('coffeeify'))
                         .add(path.join(__dirname, 'client.litcoffee'))
                         .bundle()
                     bundle.pipe(res)
                     bundle.on 'end', ->
-                        console.log 'end'
                         res.end()
                     res.set('Content-Type', 'application/javascript')
 

@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+require('coffee-script');
+var sky = require('../index');
+var app = require('express')();
+var server = require('http').createServer(app);
+var skyserver = new sky.Server()
+skyserver.listen(server);
+server.listen(9999);
