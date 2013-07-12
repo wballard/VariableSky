@@ -28,4 +28,14 @@ describe("Socket API", function() {
         })
         .save({'a': 1});
     });
+
+    it("can save data, then remove data", function(done){
+        conn.link('/test')
+        .on('remove', function(snapshot){
+            should.not.exist(snapshot);
+            done();
+        })
+        .save({'a': 1})
+        .remove();
+    });
 })
