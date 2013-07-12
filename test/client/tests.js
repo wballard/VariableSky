@@ -16,7 +16,6 @@ describe("Socket API", function() {
     it("can get undefined data", function(done){
         conn.link('/test')
         .on('link', function(snapshot){
-            console.log('linked');
             done();
         });
     });
