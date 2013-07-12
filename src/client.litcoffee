@@ -7,9 +7,7 @@ This is the client library, focused on a socket interface.
     class Client extends EventEmitter
         constructor: (url) ->
             url = url or '/variablesky'
-            console.log SockJS
             @sock = new SockJS(url)
-            console.log @sock
             @sock.onopen = =>
                 @emit 'connection'
 
@@ -17,7 +15,10 @@ Incoming messages from the socket, the trick here is to send them
 to the correct link, by href.
 
             @sock.onmessage = (e) =>
+                console.log 'client message', e
                 message = JSON.parse(e.data)
+                console.log message.href
+                console.log 'on client', "/#{(message.href or []).join('/')}", message
                 @emit "/#{(message.href or []).join('/')}", message
 
 Create a new data link to the server.
@@ -30,7 +31,8 @@ being a send to server, events coming back are joined later.
             sock = @sock
             link = new Link(
                 do: (todo) ->
-                    sock.write todo
+                    console.log 'do', todo
+                    sock.send JSON.stringify(todo)
                 , href
             )
             @on href, (message) ->

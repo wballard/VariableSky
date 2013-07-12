@@ -135,8 +135,8 @@ and self check sample page.
 
             if server._events.request.use
                 client = "#{path.join(url)}.client"
-                server._events.request.use "#{client}.html", (req, res, next) ->
-                    res.sendfile(path.join(__dirname, 'client.html'))
+                server._events.request.use path.join(client, 'test'),
+                    connect.static(path.join(__dirname, '../test/client'))
                 server._events.request.use client,  (req, res, next) ->
                     bundle = browserify()
                         .transform(require('coffeeify'))
@@ -154,12 +154,14 @@ And, install the socket processing.
             sock.installHandlers server, {prefix: url}
             sock.on 'connection', (conn) ->
                 conn.on 'data', (message) ->
+                    console.log 'start server', message
                     processor.do message, (error, val) ->
                         if error
                             message.error = error
                         else
                             message.val = val
-                        conn.write JSON.stringify(message)
+                        console.log 'end server', message
+                        conn.write message
                 conn.on 'close', ->
 
     module.exports.Server = Server

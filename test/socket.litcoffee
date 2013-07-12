@@ -20,24 +20,14 @@ Test connection and action over a streaming socket.
             server.listen 9999
         after (done) ->
             skyserver.shutdown done
-        it "serves a browser client library page", (done) ->
+        it "serves a browser client self test page", (done) ->
             browser = new Browser()
             browser.debug = true
             browser.runScripts = true
-            browser.visit 'http://localhost:9999/variablesky.client.html', ->
+            browser.visit 'http://localhost:9999/variablesky.client/test/index.html', ->
                 browser.success.should.be.ok
                 done()
             , (err) ->
                 if err
                     console.log 'ERRRRR', err
                     done()
-        it "serves a browser client library", (done) ->
-            request(app)
-                .get('/variablesky/client')
-                .expect(200)
-                .expect('Content-Type', /javascript/)
-                .expect(/Client/)
-                .end (err, res) ->
-                    client = Function(res.text).call(this)
-                    end()
-
