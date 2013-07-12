@@ -1,10 +1,10 @@
 describe("Socket API", function() {
     var conn;
+    should = chai.should();
 
     before(function(done){
         conn = variablesky.connect();
         conn.on('connection', function(){
-            console.log("connected...", conn);
             done();
         });
     });
@@ -18,5 +18,14 @@ describe("Socket API", function() {
         .on('link', function(snapshot){
             done();
         });
+    });
+
+    it("can save data, then read it back", function(done){
+        conn.link('/test')
+        .on('save', function(snapshot){
+            snapshot.a.should.equal(1);
+            done();
+        })
+        .save({'a': 1});
     });
 })

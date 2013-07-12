@@ -39,9 +39,9 @@ being a send to server, events coming back are joined later.
                 if message.error
                     link.emit 'error', message.error
                 else
-                    switch message.command
-                        when 'link'
-                            link.emit 'link', message.val
+                    #fire an event that is 'post' the command running with
+                    #the same name, clients can then react to modified data
+                    link.emit message.command, message.val
             link
 
 
