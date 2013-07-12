@@ -2,6 +2,7 @@ Test connection and action over a streaming socket.
 
     sky = require('../index')
     path = require('path')
+    should = require('chai').should()
 
     options =
         storageDirectory: path.join __dirname, '.test'
@@ -23,7 +24,9 @@ Test connection and action over a streaming socket.
                 done()
         it "links to data that is undefined", (done) ->
             client = sky.connect('http://localhost:9999/variablesky')
-            link = client.link('/sample')
-            link.on 'link', (val) ->
-                done()
+            link = client
+                .link('/sample')
+                .on 'link', (val) ->
+                    should.not.exist val
+                    done()
 
