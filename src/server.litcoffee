@@ -7,6 +7,7 @@ sent along to a command processor with a shared memory blackboard.
     errors = require('./errors')
     Blackboard = require('./blackboard')
     Processor = require('./processor')
+    Journal = require('./journal')
     wrench = require('wrench')
     sockjs = require('sockjs')
     eyes = require('eyes')
@@ -47,12 +48,48 @@ some claim abut this being more testable, but I'd be lying :)
             @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
+            wrench.mkdirSyncRecursive(@options.journalDirectory)
             @processor = new Processor(@options)
+            @processor.commands.link = require('./commands/link')
+            @processor.commands.save = require('./commands/save')
+            @processor.commands.remove = require('./commands/remove')
+            @processor.commands.splice = require('./commands/splice')
+
+And now the journal, intially set up to queue commands until we are recovered.
+
+            @doer = @processor.enqueue
+
+And commands are written to a journal, providing durability. The journal is
+given a function to recover each command.
+
+            recover = (todo, next) =>
+                todo.__recovering__ = true
+                @processor.directExecute todo, (error, todo) =>
+                    if error
+                        util.error 'recovery error', util.inspect(error)
+                    next()
+
+On startup, the journal recovers, and when it is full recovered, connect the
+command handling `do` directly, no more `enqueue`.
+
+            @journal = new Journal @options, recover, =>
+                console.log 'recovered'
+                @processor.drain()
+                @doer = @processor.do
+            @processor.on 'done', (todo, val) =>
+                if @processor.commands[todo.command]?.DO_NOT_JOURNAL
+                    #nothing to do
+                else
+                    @journal.record todo, (error) =>
+                        if error
+                            @emit 'error', error, todo
+                        else
+                            @emit 'journal', todo
 
 Clean server shutdown.
 
         shutdown: (callback) ->
-            @processor.shutdown callback
+            @journal.shutdown callback
 
 Hook support forwards to the processor, supports chaining.
 
@@ -70,8 +107,7 @@ anyhow, each request sets up a `doer`, which is responsible for actually
 running the each request's command.
 
         rest: (req, res, next) =>
-            doer = @processor.do
-            json req, res, (error) ->
+            json req, res, (error) =>
                 if error
                     next(error)
                 else
@@ -98,7 +134,7 @@ running the each request's command.
 
 Hand off to the processor. This is the main thing this middleware does.
 
-                    doer todo, (error, val, todo) ->
+                    @doer todo, (error, val, todo) ->
                         if error
                             switch error.name
                                 when 'NOT_AN_ARRAY'
@@ -167,14 +203,14 @@ from one another on the server.
 
     class Connection
         constructor: (@conn, server) ->
-            server.processor.on 'journal', @relay
+            server.on 'journal', @relay
             @conn.on 'data', (message) =>
                 todo = JSON.parse(message)
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
-                server.processor.do todo, (error, val, todo) =>
+                server.doer todo, (error, val, todo) =>
                     if error
                         todo.error = error
                     else
@@ -187,7 +223,7 @@ A successfull command, echoed back.
 On close, unhook from listening to the journal.
 
             @conn.on 'close', =>
-                server.processor.removeListener 'journal', @relay
+                server.removeListener 'journal', @relay
 
 When the server has journaled data, there is a state change. This is an interesting
 listening case, time to relay data along to the client.

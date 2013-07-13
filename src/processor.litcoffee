@@ -3,8 +3,8 @@ then dispatches commands to those implementations. Having this central
 processor provides:
 
 * A blackboard, which is the shared context for commands to 'store' state
-* A place to journal commands, for later playback
 * Command lookup, so we can have command implementations just be functions
+* Hooks to intercept before and after commands, assuming that a todo has a `.href`
 
 Commands are really just middleware, but instead of a response, they get a
 blackboard. The signature of an implementation is:
@@ -22,7 +22,6 @@ back the `todo` with `done(null, todo)`.
     assert = require('assert')
     Blackboard = require('./blackboard')
     Link = require('./link')
-    Journal = require('./journal')
     EventEmitter = require('events').EventEmitter
 
     director = require('director')
@@ -52,10 +51,8 @@ clients to through `Link`.
 
     class Processor extends EventEmitter
         constructor: (@options) ->
+            @todos = []
             @counter = 0
-            options = @options = @options or {}
-            options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
-            options.journalDirectory = options.journalDirectory or path.join(__dirname, '..', '.journal')
 
 Commands get to write to the `blackboard` however they see fit. Playing back
 a set of commands in the same order against the same starting blackboard should
@@ -63,14 +60,6 @@ result in the same state. Should. Which is to say, you need to make commands
 deterministic for this to work out.
 
             @blackboard = new Blackboard()
-
-A list of all the commands 'todo'. This provides a place to queue up commands
-in two interesting cases:
-
-* Startup, not cool to run new commands until fully recovered
-* Distributed, commands coming in from other processess replicas
-
-            @todos = []
 
 Uses `director` for hook routing for _each command_. Separate routing tables
 for each coomand. Keeps it compact.
@@ -83,19 +72,14 @@ that each command module exposes exactly the function taht is the command
 implementation.
 
             @commands = {}
-            for file in fs.readdirSync(options.commandDirectory)
-                name = path.basename(file, path.extname(file))
-                @commands[name] = require path.join(options.commandDirectory, file)
             @beforeHooks = new director.http.Router().configure
                 async: true
                 notfound: ->
                     this.req.next()
-            @beforeHooks.extend _.keys(@commands)
             @afterHooks = new director.http.Router().configure
                 async: true
                 notfound: ->
                     this.req.next()
-            @afterHooks.extend _.keys(@commands)
 
 The event handling for actual command execution. This is three events
 
@@ -152,45 +136,10 @@ otherwise this is skipped as unhandled.
                 else
                     done(errors.NO_SUCH_COMMAND())
 
-Initially, just queue things up to give the journal time to recover.
-
-            @on 'do', () =>
-                @todos.push arguments
-
-And commands are written to a journal, providing durability. The journal is
-given a function to recover each command.
-
-            recover = (todo, next) =>
-                todo.__recovering__ = true
-                @commands[todo.command] todo, @blackboard, (error, todo) =>
-                    if error
-                        util.error 'recovery error', util.inspect(error)
-                    next()
-
-            @journal = new Journal @options, recover, =>
-
-On startup, the journal recovers, and when it is full recovered, connect the
-command handling 'do' directly to 'exec', no more buffering.
-
-                @removeAllListeners 'do'
-                @on 'do', (todo, done) =>
-                    @emit 'execute', todo, done
-
-Forward all queued events that were buffered up during recovery
-
-                while @todos.length
-                    todo = @todos.shift()
-                    @emit 'execute', todo?[0], todo?[1]
-
-Clean shutdown.
-
-        shutdown: (callback) ->
-            @journal.shutdown callback
-
 Before hooks fire before the command has started.
 
-        hookBefore: (command, href, hook) ->
-            @beforeHooks[command] href, (next) ->
+        hookBefore: (command, href, hook) =>
+            @beforeHooks.on command, href, (next) =>
                 try
                     hook this.req, next
                 catch error
@@ -198,8 +147,8 @@ Before hooks fire before the command has started.
 
 After hooks fire when the executed command has completed.
 
-        hookAfter: (command, href, hook) ->
-            @afterHooks[command] href, (next) ->
+        hookAfter: (command, href, hook) =>
+            @afterHooks.on command, href, (next) =>
                 try
                     #params and next
                     params = _.toArray(arguments)
@@ -208,6 +157,16 @@ After hooks fire when the executed command has completed.
                     hook.apply this, params
                 catch error
                     next error
+
+Direct execution, without any hooks -- useful for recovery.
+
+        directExecute: (todo, done) =>
+            command = @commands[todo.command]
+            if command
+                command todo, @blackboard, done
+            else
+                done(errors.NO_SUCH_COMMAND())
+
 
 The actual command execution function, callers will use this to get the
 processor to do work for them.
@@ -222,18 +181,23 @@ Hooks only fire the first time, and are not played back / replicated.
         do: (todo, done) =>
             assert _.isObject(todo), _.isFunction(done), "todo and done must be an object and a function, respectively"
             todo.__id__ = "#{Date.now()}:#{@counter++}"
-            @emit 'do', todo, (error, val) =>
+            @emit 'execute', todo, (error, val) =>
                 if error
                     done error, undefined, todo
                 else
-                    if @commands[todo.command]?.DO_NOT_JOURNAL
-                        done null, val, todo
-                    else
-                        @journal.record todo, (error) =>
-                            if error
-                                done error, undefined, todo
-                            else
-                                @emit 'journal', todo
-                                done null, val, todo
+                    @emit 'done', todo, val
+                    done null, val, todo
+
+Queue up todo items for later processing.
+
+        enqueue: (todo, done) =>
+            @todos.push {todo: todo, done: done}
+
+Drain the queued items.
+
+        drain: =>
+            while @todos.length
+                queued = @todos.shift()
+                @do queued.todo, queued.done
 
     module.exports = Processor
