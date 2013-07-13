@@ -14,8 +14,12 @@
     <script>mocha.setup('bdd')</script>
     <script type="text/javascript" src="./variablesky.client"></script>
     <script type="text/literate-coffeescript" src="tests.litcoffee"></script>
-    <script>
-      mocha.run();
+    <script type="text/coffeescript">
+      window.process =
+        stdout:
+            write: (x) -> console.log(x)
+      mocha.setup({ ui: 'bdd', reporter: 'spec' })
+      mocha.run()
     </script>
   </body>
 </html>
