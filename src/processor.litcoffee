@@ -139,7 +139,9 @@ otherwise this is skipped as unhandled.
 Before hooks fire before the command has started.
 
         hookBefore: (command, href, hook) =>
-            @beforeHooks.on command, href, (next) =>
+            if not @beforeHooks[command]
+                @beforeHooks.extend [command]
+            @beforeHooks[command] href, (next) ->
                 try
                     hook this.req, next
                 catch error
@@ -148,7 +150,9 @@ Before hooks fire before the command has started.
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) =>
-            @afterHooks.on command, href, (next) =>
+            if not @afterHooks[command]
+                @afterHooks.extend [command]
+            @afterHooks[command] href, (next) ->
                 try
                     #params and next
                     params = _.toArray(arguments)
