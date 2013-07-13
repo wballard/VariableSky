@@ -13,6 +13,7 @@ sent along to a command processor with a shared memory blackboard.
     browserify = require('browserify')
     parsePath = require('./util').parsePath
     connect = require('connect')
+    EventEmitter = require('events').EventEmitter
 
 And our own very forgiving version of the connect json middleware
 
@@ -34,7 +35,7 @@ the way sure why you would want to, but you can make multiple of these in a
 process and have separate sockets or rest url mount points to them. I'd make
 some claim abut this being more testable, but I'd be lying :)
 
-    class Server
+    class Server extends EventEmitter
         constructor: (@options)->
             @options = @options or {}
             @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
@@ -152,15 +153,13 @@ And, install the socket processing.
             processor = @processor
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
-            sock.on 'connection', (conn) ->
-                conn.on 'data', (message) ->
-                    console.log 'start server', message
-                    processor.do message, (error, val) ->
+            sock.on 'connection', (conn) =>
+                conn.on 'data', (message) =>
+                    processor.do message, (error, val) =>
                         if error
                             message.error = error
                         else
                             message.val = val
-                        console.log 'end server', message
                         conn.write message
                 conn.on 'close', ->
 

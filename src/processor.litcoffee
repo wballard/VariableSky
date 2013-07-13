@@ -49,7 +49,7 @@ clients to through `Link`.
                 link: (href) ->
                     new Link(processor, href)
 
-    class Processor
+    class Processor extends EventEmitter
         constructor: (@options) ->
             @counter = 0
             options = @options = @options or {}
@@ -96,10 +96,6 @@ implementation.
                     this.req.next()
             @afterHooks.extend _.keys(@commands)
 
-And, a bit different implementation, this is event driven.
-
-            @emitter = new EventEmitter()
-
 The event handling for actual command execution. This is three events
 
 * `executeBefore`
@@ -113,30 +109,30 @@ context. Most important here is `val`, as before hooks get a chance to override
 this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
-            @emitter.on 'executeBefore', (todo, done) =>
+            @on 'executeBefore', (todo, done) =>
                 req = new HookContext this, todo, done, (error) =>
                     if error
                         done(error)
                     else
                         todo.val = req.val
-                        @emitter.emit 'executeCore', todo, done
+                        @emit 'executeCore', todo, done
                 res = {}
                 @beforeHooks.dispatch req, res, req.next
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
-            @emitter.on 'executeCore', (todo, done) =>
+            @on 'executeCore', (todo, done) =>
                 @commands[todo.command] todo, @blackboard, (error, todo) =>
                     if error
                         done(error)
                     else
-                        @emitter.emit 'executeAfter', todo, done
+                        @emit 'executeAfter', todo, done
 
 And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
-            @emitter.on 'executeAfter', (todo, done) =>
+            @on 'executeAfter', (todo, done) =>
                 req = new HookContext this, todo, done, (error) =>
                     if error
                         done(error)
@@ -148,15 +144,15 @@ sent along to any clients.
 The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.
 
-            @emitter.on 'execute', (todo, done) =>
+            @on 'execute', (todo, done) =>
                 if @commands[todo.command]
-                    @emitter.emit 'executeBefore', todo, done
+                    @emit 'executeBefore', todo, done
                 else
                     done(errors.NO_SUCH_COMMAND())
 
 Initially, just queue things up to give the journal time to recover.
 
-            @emitter.on 'do', () =>
+            @on 'do', () =>
                 @todos.push arguments
 
 And commands are written to a journal, providing durability. The journal is
@@ -174,15 +170,15 @@ given a function to recover each command.
 On startup, the journal recovers, and when it is full recovered, connect the
 command handling 'do' directly to 'exec', no more buffering.
 
-                @emitter.removeAllListeners 'do'
-                @emitter.on 'do', (todo, done) =>
-                    @emitter.emit 'execute', todo, done
+                @removeAllListeners 'do'
+                @on 'do', (todo, done) =>
+                    @emit 'execute', todo, done
 
 Forward all queued events that were buffered up during recovery
 
                 while @todos.length
                     todo = @todos.shift()
-                    @emitter.emit 'execute', todo?[0], todo?[1]
+                    @emit 'execute', todo?[0], todo?[1]
 
 Clean shutdown.
 
@@ -223,7 +219,7 @@ Hooks only fire the first time, and are not played back / replicated.
 
         do: (todo, done) =>
             todo.__id__ = "#{Date.now()}:#{@counter++}"
-            @emitter.emit 'do', todo, (error, val) =>
+            @emit 'do', todo, (error, val) =>
                 if error
                     done error
                 else
@@ -234,6 +230,7 @@ Hooks only fire the first time, and are not played back / replicated.
                             if error
                                 done error
                             else
+                                @emit 'journal', todo
                                 done null, val
 
     module.exports = Processor

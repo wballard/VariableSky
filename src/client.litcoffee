@@ -15,10 +15,7 @@ Incoming messages from the socket, the trick here is to send them
 to the correct link, by href.
 
             @sock.onmessage = (e) =>
-                console.log 'client message', e
                 message = JSON.parse(e.data)
-                console.log message.href
-                console.log 'on client', "/#{(message.href or []).join('/')}", message
                 @emit "/#{(message.href or []).join('/')}", message
 
 Create a new data link to the server.
@@ -30,8 +27,8 @@ being a send to server, events coming back are joined later.
 
             sock = @sock
             link = new Link(
-                do: (todo) ->
-                    console.log 'do', todo
+                do: (todo) =>
+                    @emit 'do', todo
                     sock.send JSON.stringify(todo)
                 , href
             )
