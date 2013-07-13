@@ -16,7 +16,6 @@ to the correct link, by href.
 
             @sock.onmessage = (e) =>
                 message = JSON.parse(e.data)
-                console.log message
                 @emit "/#{(message.href or []).join('/')}", message
 
 Create a new data link to the server.

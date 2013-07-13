@@ -48,10 +48,6 @@ some claim abut this being more testable, but I'd be lying :)
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             @processor = new Processor(@options)
-            @processor.on 'journal', (todo) =>
-                console.log 'going to relay', @connections
-                for id, connection of (@connections or {})
-                    connection.relay todo
 
 Clean server shutdown.
 
@@ -164,37 +160,39 @@ And, install the socket processing.
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
             sock.on 'connection', (conn) =>
-                new Connection(conn, this, @processor.do)
+                new Connection(conn, this)
 
 A single server side connection instance, isolates the state of each client
 from one another on the server.
 
     class Connection
-        constructor: (@conn, server, doer) ->
-            @id = "#{Date.now()}:#{counter++}"
-            server.connections[@id] = this
+        constructor: (@conn, server) ->
+            server.processor.on 'journal', @relay
             @conn.on 'data', (message) =>
-                console.log typeof message
                 todo = JSON.parse(message)
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
-                doer todo, (error, val, todo) =>
+                server.processor.do todo, (error, val, todo) =>
                     if error
                         todo.error = error
                     else
                         todo.val = val
+
+A successfull command, echoed back.
+
                     @conn.write JSON.stringify(todo)
+
+On close, unhook from listening to the journal.
+
             @conn.on 'close', =>
-                delete server.connections[@id]
-                console.log 'CLOSE'
+                server.processor.removeListener 'journal', @relay
 
 When the server has journaled data, there is a state change. This is an interesting
 listening case, time to relay data along to the client.
 
         relay: (todo) ->
             console.log 'relay', todo
-            @conn.write {}
 
     module.exports.Server = Server

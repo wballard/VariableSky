@@ -34,9 +34,15 @@ eventing, so we simulate these with two connections.
             .save a: 1
 
         it "can remove previously saved data", (done) ->
-            link = conn.link('/testremove').on 'remove', (snapshot) ->
-                should.not.exist(snapshot)
-                done()
+            link = conn.link('/testremove').on('remove', (snapshot) ->
+                console.log 'remove', snapshot
+            )
+            .on('link', (snapshot) ->
+                console.log 'link', snapshot
+            )
+            .on('save', (snapshot) ->
+                console.log 'save', snapshot
+            )
             .save(a: 1)
             .remove()
 
