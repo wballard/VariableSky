@@ -12,8 +12,14 @@ sent along to a command processor with a shared memory blackboard.
     eyes = require('eyes')
     browserify = require('browserify')
     parsePath = require('./util').parsePath
+    packPath = require('./util').packPath
     connect = require('connect')
     EventEmitter = require('events').EventEmitter
+
+
+A counter for identifiers.
+
+    counter = 0
 
 And our own very forgiving version of the connect json middleware
 
@@ -36,12 +42,16 @@ process and have separate sockets or rest url mount points to them. I'd make
 some claim abut this being more testable, but I'd be lying :)
 
     class Server extends EventEmitter
-        constructor: (@options)->
+        constructor: (@options) ->
             @options = @options or {}
             @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             @processor = new Processor(@options)
+            @processor.on 'journal', (todo) =>
+                console.log 'going to relay', @connections
+                for id, connection of (@connections or {})
+                    connection.relay todo
 
 Clean server shutdown.
 
@@ -92,7 +102,7 @@ running the each request's command.
 
 Hand off to the processor. This is the main thing this middleware does.
 
-                    doer todo, (error, val) ->
+                    doer todo, (error, val, todo) ->
                         if error
                             switch error.name
                                 when 'NOT_AN_ARRAY'
@@ -127,6 +137,7 @@ This is a web socket listen, attached to a running express/http server
 at a given mount point url with the default `/variablesky`
 
         listen: (server, url) ->
+            @connections = {}
             if 'function' is typeof server
                 throw errors.LOOKS_LIKE_EXPRESS()
             url = url or '/variablesky'
@@ -150,17 +161,40 @@ and self check sample page.
 
 And, install the socket processing.
 
-            processor = @processor
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
             sock.on 'connection', (conn) =>
-                conn.on 'data', (message) =>
-                    processor.do message, (error, val) =>
-                        if error
-                            message.error = error
-                        else
-                            message.val = val
-                        conn.write message
-                conn.on 'close', ->
+                new Connection(conn, this, @processor.do)
+
+A single server side connection instance, isolates the state of each client
+from one another on the server.
+
+    class Connection
+        constructor: (@conn, server, doer) ->
+            @id = "#{Date.now()}:#{counter++}"
+            server.connections[@id] = this
+            @conn.on 'data', (message) =>
+                console.log typeof message
+                todo = JSON.parse(message)
+
+Handing off to the processor, the only interesting thing is echoing
+the complete command back out to the client over the socket.
+
+                doer todo, (error, val, todo) =>
+                    if error
+                        todo.error = error
+                    else
+                        todo.val = val
+                    @conn.write JSON.stringify(todo)
+            @conn.on 'close', =>
+                delete server.connections[@id]
+                console.log 'CLOSE'
+
+When the server has journaled data, there is a state change. This is an interesting
+listening case, time to relay data along to the client.
+
+        relay: (todo) ->
+            console.log 'relay', todo
+            @conn.write {}
 
     module.exports.Server = Server

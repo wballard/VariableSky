@@ -16,6 +16,7 @@ to the correct link, by href.
 
             @sock.onmessage = (e) =>
                 message = JSON.parse(e.data)
+                console.log message
                 @emit "/#{(message.href or []).join('/')}", message
 
 Create a new data link to the server.
@@ -41,11 +42,22 @@ being a send to server, events coming back are joined later.
                     link.emit message.command, message.val
             link
 
+Polite close. My money is you never remember to call this, so the server
+has a close connection timeout anyhow.
+
+        close: ->
+            @sock.close()
+
+This is the main exported factory API to connect, you can feed this `()` and
+it will connect to the default relative location, which is almost always what
+you want.
 
     connect = (url) ->
         new Client(url)
 
     module.exports = connect
+
+Export to the browser when used in `browserify`.
 
     if window?
         browser =

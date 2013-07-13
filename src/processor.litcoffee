@@ -55,6 +55,7 @@ clients to through `Link`.
             options = @options = @options or {}
             options.commandDirectory = options.commandDirectory or path.join(__dirname, 'commands')
             options.journalDirectory = options.journalDirectory or path.join(__dirname, '..', '.journal')
+            console.log options
 
 Commands get to write to the `blackboard` however they see fit. Playing back
 a set of commands in the same order against the same starting blackboard should
@@ -145,9 +146,13 @@ The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.
 
             @on 'execute', (todo, done) =>
-                if @commands[todo.command]
+                command = @commands[todo.command]
+                console.log 'die execute', todo, command, todo.command
+                if command
+                    console.log 'will execute', todo, @commands, command
                     @emit 'executeBefore', todo, done
                 else
+                    console.log 'die fucker', todo.command
                     done(errors.NO_SUCH_COMMAND())
 
 Initially, just queue things up to give the journal time to recover.
@@ -220,17 +225,21 @@ Hooks only fire the first time, and are not played back / replicated.
         do: (todo, done) =>
             todo.__id__ = "#{Date.now()}:#{@counter++}"
             @emit 'do', todo, (error, val) =>
+                console.log 'fuck off do', error, val, todo, @commands
                 if error
-                    done error
+                    done error, undefined, todo
                 else
+                    console.log 'fuck off journal', todo
                     if @commands[todo.command]?.DO_NOT_JOURNAL
-                        done null, val
+                        done null, val, todo
                     else
+                        console.log 'will journal', todo
                         @journal.record todo, (error) =>
                             if error
-                                done error
+                                done error, undefined, todo
                             else
+                                console.log 'will journal'
                                 @emit 'journal', todo
-                                done null, val
+                                done null, val, todo
 
     module.exports = Processor

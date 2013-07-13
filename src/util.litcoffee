@@ -13,3 +13,8 @@ an array of path segments.
                 .map(decodeURIComponent)
                 .filter((x) -> x.length)
                 .value()
+
+And sometimes you have a parsed path and just want a string for it.
+
+    module.exports.packPath = (pathArray) ->
+        "/#{pathArray.join('/')}"

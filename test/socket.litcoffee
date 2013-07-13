@@ -5,19 +5,21 @@ Test connection and action over a streaming socket.
     path = require('path')
     should = require('chai').should()
     Browser = require('zombie')
+    wrench = require('wrench')
 
     options =
-        storageDirectory: path.join __dirname, '.test'
+        storageDirectory: path.join __dirname, '.sockettest'
 
     describe "Socket API", ->
         app = null
         skyserver = null
-        before ->
+        before (done) ->
+            wrench.rmdirSyncRecursive options.storageDirectory, true
             app = require('express')()
             server = require('http').createServer(app)
             skyserver = new sky.Server(options)
             skyserver.listen server
-            server.listen 9999
+            server.listen 9999, done
         after (done) ->
             skyserver.shutdown done
         it "serves a browser client self test page", (done) ->

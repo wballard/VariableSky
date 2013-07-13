@@ -15,6 +15,11 @@ eventing, so we simulate these with two connections.
                 otherConn.on 'connection', ->
                     done()
 
+        after (done) ->
+            conn.close()
+            otherConn.close()
+            done()
+
         it "can connect", (done) ->
             done()
 
@@ -38,5 +43,8 @@ eventing, so we simulate these with two connections.
         it "will notifiy other connections on save", (done) ->
             conn.link('/testcross').on 'link', (snapshot) ->
                 done() if snapshot
-            otherConn.link('/testcross').save 'Hi'
+            otherConn.link('/testcross')
+            .on('save', ->
+            )
+            .save 'Hi'
 
