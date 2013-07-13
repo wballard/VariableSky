@@ -145,7 +145,7 @@ and self check sample page.
                     bundle.pipe(res)
                     bundle.on 'end', ->
                         res.end()
-                    res.set('Content-Type', 'application/javascript')
+                    res.set('Content-Type', 'text/javascript')
 
 And, install the socket processing.
 
