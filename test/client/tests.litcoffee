@@ -28,14 +28,17 @@ eventing, so we simulate these with two connections.
                 done()
 
         it "can save data, and read it back", (done) ->
-            conn.link('/testback').on 'save', (snapshot) ->
+            conn.link('/testback').on('save', (snapshot) ->
                 snapshot.a.should.equal(1)
                 done()
-            .save a: 1
+            )
+            .save(a: 1)
 
         it "can remove previously saved data", (done) ->
-            link = conn.link('/testremove').on('remove', (snapshot) ->
+            link = conn.link('/testremove')
+            .on('remove', (snapshot) ->
                 console.log 'remove', snapshot
+                done()
             )
             .on('link', (snapshot) ->
                 console.log 'link', snapshot
@@ -47,10 +50,9 @@ eventing, so we simulate these with two connections.
             .remove()
 
         it "will notifiy other connections on save", (done) ->
-            conn.link('/testcross').on 'link', (snapshot) ->
-                done() if snapshot
-            otherConn.link('/testcross')
-            .on('save', ->
+            conn.link('/testcross').on('save', (snapshot) ->
+                done()
             )
-            .save 'Hi'
+            otherConn.link('/testcross')
+            .save('Hi')
 

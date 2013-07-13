@@ -49,6 +49,9 @@ some claim abut this being more testable, but I'd be lying :)
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
+
+Set up a processor with the server based commands.
+
             @processor = new Processor(@options)
             @processor.commands.link = require('./commands/server/link')
             @processor.commands.save = require('./commands/server/save')
@@ -175,7 +178,7 @@ at a given mount point url with the default `/variablesky`
             url = url or '/variablesky'
 
 If this looks like connect or express, install a client library handler and
-and self check sample page.
+and self check sample page. Detect connect/express with the presence of `use`.
 
             if server._events.request.use
                 client = "#{path.join(url)}.client"
@@ -191,7 +194,8 @@ and self check sample page.
                         res.end()
                     res.set('Content-Type', 'text/javascript')
 
-And, install the socket processing.
+And, install the socket processing, this hands off to a `Connection` which is
+a per client/connection abstraction.
 
             sock = sockjs.createServer()
             sock.installHandlers server, {prefix: url}
@@ -203,9 +207,19 @@ from one another on the server.
 
     class Connection
         constructor: (@conn, server) ->
+            @linkHrefs = {}
             server.on 'journal', @relay
             @conn.on 'data', (message) =>
                 todo = JSON.parse(message)
+
+Spy for links. This informs you which clients need which messages.
+
+                if todo.command is 'link'
+                    pathSegments = _.clone(todo.href)
+                    href = packPath(pathSegments)
+                    if not @linkHrefs[href]
+                        console.log 'woot', packPath todo.href
+                        @linkHrefs[href] = true
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
@@ -216,8 +230,10 @@ the complete command back out to the client over the socket.
                     else
                         todo.val = val
 
-A successfull command, echoed back.
+A successful link command, echoed back. Only direct respond on the link command
+otherwise we are just listening for `journal` events.
 
+                if todo.command is 'link'
                     @conn.write JSON.stringify(todo)
 
 On close, unhook from listening to the journal.
@@ -226,9 +242,15 @@ On close, unhook from listening to the journal.
                 server.removeListener 'journal', @relay
 
 When the server has journaled data, there is a state change. This is an interesting
-listening case, time to relay data along to the client.
+listening case, time to relay data along to the client if there is any prefix match,
+from there the client can sort it out... so this early exits on the first and
+any match.
 
-        relay: (todo) ->
-            console.log 'relay', todo
+        relay: (todo) =>
+            updatedHref = packPath(todo.href)
+            for href, ignore of @linkHrefs
+                if updatedHref.indexOf(href) is 0
+                    @conn.write JSON.stringify(todo)
+                    return
 
     module.exports.Server = Server
