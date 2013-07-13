@@ -50,10 +50,10 @@ some claim abut this being more testable, but I'd be lying :)
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
             @processor = new Processor(@options)
-            @processor.commands.link = require('./commands/link')
-            @processor.commands.save = require('./commands/save')
-            @processor.commands.remove = require('./commands/remove')
-            @processor.commands.splice = require('./commands/splice')
+            @processor.commands.link = require('./commands/server/link')
+            @processor.commands.save = require('./commands/server/save')
+            @processor.commands.remove = require('./commands/server/remove')
+            @processor.commands.splice = require('./commands/server/splice')
 
 And now the journal, intially set up to queue commands until we are recovered.
 
