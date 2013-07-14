@@ -212,7 +212,8 @@ from one another on the server.
             @conn.on 'data', (message) =>
                 todo = JSON.parse(message)
 
-Spy for links. This informs you which clients need which messages.
+Spy for links. This informs you which clients need which messages by doing
+a prefix match against all the linked data in this connection.
 
                 if todo.command is 'link'
                     pathSegments = _.clone(todo.href)
