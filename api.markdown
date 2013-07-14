@@ -3,7 +3,18 @@ layout: default
 title: API
 ---
 
+
 ## Overview
+
+### Client Library
+A VariableSky server automatically exposes a client library relative to
+the socket mount point. Assuming defaults:
+
+```html
+<script type="text/javascript" src="%%yourserver%%/variablesky.client"></script>
+```
+
+Which will connect to `%%yourserver%%/variablesky`.
 
 ### Errors
 The Variable Sky API isn't about the DOM, it's about data, and as such
@@ -28,18 +39,35 @@ This is the main object exposed by the client library. There is no need
 to `new` it, you just call methods on it. This is how you hook a client
 to a server.
 
+### connect()
+Set up a connection from your client to a variable sky server.
+
+|Parameter|Notes|
+|---------|-----|
+|href|This is the URL to the root of a VariableSky server, defaults to /variablesky|
+|returns|A `Connection`|
+
+## Connection
+This object is a connection/session to variable sky. You use it to
+`link` data as well as inspect the `val` of replicated data from the
+server.
+
+### val
+The current value of the server, across all active links. Think of this
+as a slice of all the data on the server, limited to just the data you
+have linked, and replicated.
+
 ### link()
-Connect to Variable Sky via an `href`, linking to a local variable in
+Connect to data via an `href`, linking to a local variable in
 your client program via a callback.
 
 In a typical program, you will have a lot of calls to `link` in order to
-get different pieces of data. In order to unlink, just let go of the
-returned `Link` object.
+get different pieces of data.
 
 |Parameter|Notes|
 |---------|-----|
 |href|This is an URL to your Variable Sky server, pointing to the desired data.|
-|returns|A `Link`, which may be a subtype.|
+|returns|A `Link`|
 
 ####Return Notes
 The return value of this function is a `Link`, not actual data. Holding
@@ -208,11 +236,11 @@ app.get('/', function (req, res) {
 });
 
 //hook behavior
-sky.link("/sample", function(context, next){
+sky.hook("link", "/sample", function(context, next){
   //a very simple example of always having a defaut value
   context.val = context.val || {};
   next();
-}).saved("/sample", function(context, next){
+}).hook("save", "/sample", function(context, next){
   //you can get at the previous and current values
   console.log(context.link.prev);
   console.log(context.link.val);
@@ -225,11 +253,12 @@ sky.link("/sample", function(context, next){
 And a very basic client:
 
 ```html
-<script src="/variablesky/client.js"></script>
+<script src="/variablesky.client"></script>
 <script>
-  var sample = VariableSky.link("/sample");
-  sample.on("data", function(error, snapshot){
-    console.log(error, snapshot);
+  var conn = VariableSky.connect();
+  var sample = conn.link("/sample");
+  sample.on("link", function(snapshot){
+    console.log(snapshot);
   )};
   sample.save("Hi mom!");
 </script>
@@ -307,6 +336,9 @@ it in order to have snapshots update automatically.
 ### href
 The `Link` is to this `href` path. Used for self reference.
 
+### val
+The current value of the link, as replicated from the server.
+
 ### save()
 Save a new value to a link, this **replaces** the existing value, notifies
 the server, and then replicates to all clients.
@@ -351,7 +383,8 @@ Attach an event handler to this link.
 |name|The name of the event you want to handle|
 |callback|The event handler callback|
 
-Events are listed below.
+Events are listed below. In all cases `this` in the events refers to the
+`Link` itself.
 
 #### link
 Event is fired when any data is changed, including updates you make in
@@ -363,7 +396,7 @@ or `removed`.
 
 |Parameter|Notes|
 |---------|-----|
-|snapshot|A plain old JavaScript value, returned from Variable Sky. This is your data, use it.|
+|snapshot|A plain old JavaScript value, returned from Variable Sky, that is the value at the link|
 
 Snapshot is a JavaScript value, and this includes `undefined`, which you
 can think of as like a `404`, and `null`, which is when you actually
@@ -373,18 +406,19 @@ Take `snapshot` and use it in your client program. This callback is the
 place where you move data coming in from the server into the UI
 framework you are using.
 
+When this event fires `snapshot` is identical to `val`.
+
 #### save
 Event is fired after `save` reaches the server, and local data is
 updated, after `data`. This is interesting becuase other connected
-clients and servers may be updating data. This event gives you the
-chance to compare against the last value in `data` if needed.
+clients and servers may be updating data.
 
 |Parameter|Notes|
 |---------|-----|
 |snapshot|A plain old JavaScript value, returned from Variable Sky.|
 
 #### remove
-Event is fired when after `remove` reaches the server.
+Event is fired after `remove` reaches the server.
 
 |Parameter|Notes|
 |---------|-----|
@@ -397,13 +431,13 @@ you call `save`, `data` will fire. If you call a mutator, you will get
 `splice`.
 
 |Parameter|Notes|
-|---------|-----|
-|error||
-|mutator|A function that you call over an array in order to synch it up|
+|--------|-----|
+|index|Start modifying the array at this index, if≈ `undefined` modify at the end of the array|
+|howMany|Remove this many elements|
+|elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
 
-The trick is the mutator, the server sends you a function that you call
-on your array to catch it up. This allows you to _patch_ an array rather
-than re-read the entire thing.
+This event gives you data about a partial update, with arguments you can
+pass to `Array.splice`, the entire updated array is at `Link.val`.
 
 ### mutators
 Links to arrays exposes the following methods, which have the same meanings as
@@ -434,15 +468,15 @@ update one object.
 ```javascript
 var sampleArray;
 var sampleLink = VariableSky.link("http://yourserver.io/sample");
-sampleLink.on("data", function(err, snapshot){
+sampleLink.on("link", function(snapshot){
   //capture a reference to the server array
   sampleArray = snapshot;
   console.log(sampleArray);
 });
-sampleLink.on("splice", function(err, mutator){
+sampleLink.on("splice", function(index, howMany, elements){
   //here is the fun part, this applies the changes into the array
-  mutator(sampleArray);
-  console.log(sampleArray);
+  console.log(index, howMany, elements);
+  console.log(this.val);
 });
 //an initial save, this is an array, a real no fooling array
 sampleLink.save([]);

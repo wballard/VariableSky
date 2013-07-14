@@ -4,8 +4,9 @@ title: Data Mode
 ---
 
 # Overview
-Variable Sky is just that: JavaScript variables in the sky. The basic
-idea is a correspondence between JavaScript variables and `href`.
+Variable Sky is just that: JavaScript variables in the sky. The server
+and your client application use the same data. Variable Sky keeps them
+in synch.
 
 This builds on a basic assumption that JavaScript variables can be
 transported via JSON, and accessed with a simple `.` syntax
@@ -44,7 +45,8 @@ between clients. You get at data thus:
 # Philosophy
 The idea is that a Variable Sky server is literally one big shared
 JavaScript variable, starting from a root `/`, and contains any values
-you can ship over JSON.
+you can ship over JSON. you `link` to this data, which causes it to
+replicate between all attached clients and the server.
 
 In practice, this lets you define records, stored by key in a JavaScript
 hash, then look those records up, modify them, and save them back to the

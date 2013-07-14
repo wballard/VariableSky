@@ -23,38 +23,40 @@ between multiple JavaScript programs, including clients and servers.
 To give you a sense, here is a sample of connecting to data:
 
 ```javascript
-var linkedInfo = null;
-var usersLink = VariableSky.link("http://yourserver.io/info");
+var conn = VariableSky.connect()
+var usersLink = conn.link("http://yourserver.io/info");
 //event driven data, everything is asynch
-usersLink.on("data", function(err, snapshot){
+usersLink.on("link", function(snapshot){
   //snapshot is a 'live' variable linked to the server
   //and will start off undefined, we haven't saved anything yet
-  //this callback is fired when the server returns data
-  //but this callback is fired every time this variable in the sky changes
-  linkedInfo = snapshot;
+  //this callback is fired when the server returns data for your link
+  //a well as any time the linked data changes from any client
 });
 
 //... your app happens here, pay attention to the variable names
 var stuff = {hi: 'mom'};
 //yep, the value from stuff
 console.log(stuff);
-usersLink.on("saved", function(err, snapshot){
+usersLink.on("save", function(snapshot){
   //this callback is fired after the save has reached the server
   //you will still get a "data" event, this event fires when you save
   //data fires when anyone changes data, and always after "data"
   console.log(snapshot);
-  console.log(linkedInfo);
+  console.log(usersLink.val);
+  console.log(conn.val.info)
 });
 //send the variable to the sky
 usersLink.save(stuff);
 
 ```
 
-This is going to print out `{hi: 'mom'}`. Three times. Huh?
+This is going to print out `{hi: 'mom'}`. **Four times**. Huh?
 
 * One from `stuff`
 * One from `snapshot`
-* One from `linkedInfo`, which was updated by the `link` snapshot
+* One from `usersLink`, which was replicated in via `save` from the
+  server
+* One from `conn`, which keeps a root reference to all data replicated.
 
 OK, so what happened:
 
