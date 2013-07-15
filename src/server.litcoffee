@@ -257,7 +257,6 @@ from there the client can sort it out... so this early exits on the first and
 any match.
 
         relay: (todo, done) =>
-            console.log 'relay', todo
             @conn.write JSON.stringify(todo)
             done()
 

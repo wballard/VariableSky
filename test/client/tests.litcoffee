@@ -73,8 +73,8 @@ eventing, so we simulate these with two connections.
         it "will notify higher up / parent links when child data changes", (done) ->
             #a parent link
             conn.link('/parenty').on('change', (snapshot) ->
+                #the parent sees the child value change. neat
                 snapshot.hi.should.equal('mom')
-                snapshot.should.not.equal(this.val)
                 done()
             )
             #a child save

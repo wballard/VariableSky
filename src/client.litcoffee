@@ -47,12 +47,11 @@ to the correct link, by href.
                     if error and error.name isnt 'NO_SUCH_COMMAND'
                         @emit 'error', error
                     else
-                        console.log packPath(todo.href), todo
-                        @emit packPath(todo.href), todo
+                        @router.dispatch 'fromserver', packPath(todo.href), todo, ->
 
 Create a new data link to the server.
 
-        link: (href) ->
+        link: (href) =>
 
 This shims a client side processor into the link which is all about 'do'
 being a send to server, events coming back are joined later.
@@ -61,21 +60,24 @@ being a send to server, events coming back are joined later.
                 do: (todo) =>
                     @sock.send JSON.stringify(todo)
                 , href
-                , => @removeListener href, routeToLink
+                , => @router.off 'fromserver', href, routeToLink
             )
-            routeToLink = (message) =>
+            routeToLink = (message, done) =>
                 if message.error
                     link.emit 'error', message.error
+                    done(error)
                 else
                     #fire an event that is 'post' the command running with
                     #the same name, clients can then react to modified deltas
+                    #but only on an exact match
                     link.emit message.command, message.val
                     #the link now has the current value from the blackboard
-                    link.val = @processor.blackboard.valueAt(message.href)
+                    link.val = @processor.blackboard.valueAt(href)
                     if @processor.commands[message.command]
                         #and changed data event, pointing into the blackboard
-                        link.emit 'change', @processor.blackboard.valueAt(message.href)
-            @on href, routeToLink
+                        link.emit 'change', @processor.blackboard.valueAt(href)
+                    done()
+            @router.on 'fromserver', href, routeToLink
             link
 
 Polite close. My money is you never remember to call this, so the server

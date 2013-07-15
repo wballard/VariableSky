@@ -22,6 +22,14 @@ call `done(error)`, which ends the callback link chain.
             chain.push newLink
             @methods[method] = chain
 
+Goodbye, cruel route.
+
+        off: (method, route, callback) ->
+            chain = @methods[method] or []
+            @methods[method] = _.reject(chain, (x) ->
+                x.route == route and x.callback == callback
+            )
+
 Match a route and a link on the chain. This works on strings.
 
         match: (dispatchRoute, linkRoute) ->
