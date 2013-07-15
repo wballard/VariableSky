@@ -48,14 +48,13 @@ Create a new data link to the server.
 This shims a client side processor into the link which is all about 'do'
 being a send to server, events coming back are joined later.
 
-            sock = @sock
-            processor = @processor
             link = new Link(
-                do: (todo) ->
-                    sock.send JSON.stringify(todo)
+                do: (todo) =>
+                    @sock.send JSON.stringify(todo)
                 , href
+                , => @removeListener href, messageMatched
             )
-            @on href, (message) ->
+            messageMatched = (message) =>
                 if message.error
                     link.emit 'error', message.error
                 else
@@ -63,10 +62,11 @@ being a send to server, events coming back are joined later.
                     #the same name, clients can then react to modified deltas
                     link.emit message.command, message.val
                     #the link now has the current value from the blackboard
-                    link.val = processor.blackboard.valueAt(message.href)
-                    if processor.commands[message.command]
+                    link.val = @processor.blackboard.valueAt(message.href)
+                    if @processor.commands[message.command]
                         #and changed data event, pointing into the blackboard
-                        link.emit 'change', processor.blackboard.valueAt(message.href)
+                        link.emit 'change', @processor.blackboard.valueAt(message.href)
+            @on href, messageMatched
             link
 
 Polite close. My money is you never remember to call this, so the server
@@ -74,6 +74,7 @@ has a close connection timeout anyhow.
 
         close: ->
             @sock.close()
+            @removeAllListeners()
 
 This is the main exported factory API to connect, you can feed this `()` and
 it will connect to the default relative location, which is almost always what

@@ -64,8 +64,19 @@ eventing, so we simulate these with two connections.
                 snapshot.hi.should.equal('mom')
                 snapshot.should.equal(this.val)
                 snapshot.should.equal(conn.val.replicated)
+                this.close()
                 done()
             )
             #the save
             otherConn.link('/replicated')
             .save(hi: 'mom')
+
+        it "will replicate deleted variables between connection", (done) ->
+            conn.link('/replicated').on('change', (snapshot) ->
+                should.not.exist(snapshot)
+                should.not.exist(this.val)
+                should.not.exist(conn.val.replicated)
+                done()
+            )
+            #the remove
+            otherConn.link('/replicated').remove()

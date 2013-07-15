@@ -13,7 +13,7 @@ an Array mutator.
     EventEmitter = require('events').EventEmitter
 
     class Link extends EventEmitter
-        constructor: (@processor, href) ->
+        constructor: (@processor, href, @onClose) ->
             @href = parsePath(href)
             setTimeout =>
                 processor.do {command: 'link', href: @href}, (error, val) =>
@@ -37,5 +37,9 @@ an Array mutator.
                         else
                             @emit 'remove'
                 this
+
+        close: ->
+            @onClose()
+            @removeAllListeners()
 
     module.exports = Link
