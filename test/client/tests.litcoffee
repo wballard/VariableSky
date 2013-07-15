@@ -35,16 +35,18 @@ eventing, so we simulate these with two connections.
             .save(a: 1)
 
         it "can remove previously saved data", (done) ->
+            fired = {}
             link = conn.link('/testremove')
             .on('remove', (snapshot) ->
-                console.log 'remove', snapshot
+                fired.link.should.exist
+                fired.save.should.exist
                 done()
             )
             .on('link', (snapshot) ->
-                console.log 'link', snapshot
+                fired.link = true
             )
             .on('save', (snapshot) ->
-                console.log 'save', snapshot
+                fired.save = true
             )
             .save(a: 1)
             .remove()
@@ -61,7 +63,7 @@ eventing, so we simulate these with two connections.
             conn.link('/replicated').on('change', (snapshot) ->
                 snapshot.hi.should.equal('mom')
                 snapshot.should.equal(this.val)
-                snapshot.should.equal(conn.replicated)
+                snapshot.should.equal(conn.val.replicated)
                 done()
             )
             #the save

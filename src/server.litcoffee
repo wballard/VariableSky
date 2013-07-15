@@ -218,7 +218,6 @@ a prefix match against all the linked data in this connection.
                     pathSegments = _.clone(todo.href)
                     href = packPath(pathSegments)
                     if not @linkHrefs[href]
-                        console.log 'woot', packPath todo.href
                         @linkHrefs[href] = true
 
 Handing off to the processor, the only interesting thing is echoing
