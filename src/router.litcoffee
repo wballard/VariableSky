@@ -4,7 +4,7 @@ and dispatch on named strings to callbacks.
     EventEmitter = require('events').EventEmitter
     _ = require('lodash')
 
-    class Router extends EventEmitter
+    class ExactRouter extends EventEmitter
         constructor: () ->
             @methods = {}
 
@@ -16,15 +16,16 @@ call `done(error)`, which ends the callback link chain.
 
         on: (method, route, callback) ->
             chain = @methods[method] or []
-            chain.push
+            newLink =
                 route: route
                 callback: callback
+            chain.push newLink
             @methods[method] = chain
 
 Match a route and a link on the chain. This works on strings.
 
         match: (dispatchRoute, linkRoute) ->
-            return dispatchRoute ==  linkRoute
+            return dispatchRoute == linkRoute
 
 Fire all installed callbacks, if any for the method and route. Each callback is fired until
 they are all done calling `done()`, or you hit an error, in which case `done(error)` is called.
@@ -32,8 +33,9 @@ they are all done calling `done()`, or you hit an error, in which case `done(err
 If there are no matching callbacks, `done()` is called. No news is good news.
 
         dispatch: (method, route, context, done) ->
-
             links = @methods[method] or []
+
+Each link is a step in the route chain.
 
             step = (index) =>
 
@@ -64,4 +66,11 @@ Start it up, iteration will then stepwise callback.
 
             step(0)
 
-    module.exports = Router
+Special case for prefix matches. Used for hierarchial data routing.
+
+    class PrefixRouter extends ExactRouter
+        match: (dispatchRoute, linkRoute) ->
+            (dispatchRoute + '/').indexOf(linkRoute + '/') is 0
+
+    module.exports.ExactRouter = ExactRouter
+    module.exports.PrefixRouter = PrefixRouter

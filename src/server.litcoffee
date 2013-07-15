@@ -8,6 +8,7 @@ sent along to a command processor with a shared memory blackboard.
     Blackboard = require('./blackboard')
     Processor = require('./processor')
     Journal = require('./journal')
+    Router = require('./router').PrefixRouter
     wrench = require('wrench')
     sockjs = require('sockjs')
     eyes = require('eyes')
@@ -206,8 +207,14 @@ from one another on the server.
 
     class Connection
         constructor: (@conn, server) ->
-            @linkHrefs = {}
-            server.on 'journal', @relay
+            @router = new Router()
+
+When the server says it has journaled something, we need to route it to clients.
+
+            server.on 'journal', @route
+
+Connection data handling, parse out the messages and dispatch them.
+
             @conn.on 'data', (message) =>
                 todo = JSON.parse(message)
 
@@ -215,10 +222,8 @@ Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
 
                 if todo.command is 'link'
-                    pathSegments = _.clone(todo.href)
-                    href = packPath(pathSegments)
-                    if not @linkHrefs[href]
-                        @linkHrefs[href] = true
+                    href = packPath(todo.href)
+                    @router.on 'journal', href, @relay
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
@@ -240,16 +245,20 @@ On close, unhook from listening to the journal.
             @conn.on 'close', =>
                 server.removeListener 'journal', @relay
 
+When a message comes by, route it.
+
+        route: (todo) =>
+            href = packPath(todo.href)
+            @router.dispatch 'journal', href, todo, ->
+
 When the server has journaled data, there is a state change. This is an interesting
 listening case, time to relay data along to the client if there is any prefix match,
 from there the client can sort it out... so this early exits on the first and
 any match.
 
-        relay: (todo) =>
-            updatedHref = packPath(todo.href)
-            for href, ignore of @linkHrefs
-                if updatedHref.indexOf(href) is 0
-                    @conn.write JSON.stringify(todo)
-                    return
+        relay: (todo, done) =>
+            console.log 'relay', todo
+            @conn.write JSON.stringify(todo)
+            done()
 
     module.exports.Server = Server

@@ -4,6 +4,7 @@ This is the client library, focused on a socket interface.
     SockJS = require('../lib/sockjs')
     Processor = require('./processor.litcoffee')
     Link = require('./link.litcoffee')
+    Router = require('./router.litcoffee').PrefixRouter
     packPath = require('./util.litcoffee').packPath
 
 Yes. On purpose. Appeases browserify.
@@ -26,6 +27,13 @@ but for a single user.
 
             @val = @processor.blackboard
 
+A router, used to fire events to the right links as messages come back
+from the server.
+
+            @router = new Router()
+
+And a socket, so we can actually talk to the server.
+
             @sock = new SockJS(url)
             @sock.onopen = =>
                 @emit 'connection'
@@ -34,12 +42,13 @@ Incoming messages from the socket, the trick here is to send them
 to the correct link, by href.
 
             @sock.onmessage = (e) =>
-                message = JSON.parse(e.data)
-                @processor.do message, (error) =>
+                todo = JSON.parse(e.data)
+                @processor.do todo, (error) =>
                     if error and error.name isnt 'NO_SUCH_COMMAND'
                         @emit 'error', error
                     else
-                        @emit packPath(message.href), message
+                        console.log packPath(todo.href), todo
+                        @emit packPath(todo.href), todo
 
 Create a new data link to the server.
 
@@ -52,9 +61,9 @@ being a send to server, events coming back are joined later.
                 do: (todo) =>
                     @sock.send JSON.stringify(todo)
                 , href
-                , => @removeListener href, messageMatched
+                , => @removeListener href, routeToLink
             )
-            messageMatched = (message) =>
+            routeToLink = (message) =>
                 if message.error
                     link.emit 'error', message.error
                 else
@@ -66,7 +75,7 @@ being a send to server, events coming back are joined later.
                     if @processor.commands[message.command]
                         #and changed data event, pointing into the blackboard
                         link.emit 'change', @processor.blackboard.valueAt(message.href)
-            @on href, messageMatched
+            @on href, routeToLink
             link
 
 Polite close. My money is you never remember to call this, so the server

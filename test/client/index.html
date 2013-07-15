@@ -11,11 +11,10 @@
     <script src="mocha.js"></script>
     <script src="chai.js"></script>
     <script src="coffee-script.js"></script>
-    <script>mocha.setup('bdd')</script>
     <script type="text/javascript" src="./variablesky.client"></script>
     <script type="text/literate-coffeescript" src="tests.litcoffee"></script>
     <script type="text/coffeescript">
-      mocha.setup({ ui: 'bdd', reporter: 'html', timeout: 5000 })
+      mocha.setup({ ui: 'bdd', reporter: 'spec', bail: true })
       mocha.run()
     </script>
   </body>

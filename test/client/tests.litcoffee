@@ -70,6 +70,16 @@ eventing, so we simulate these with two connections.
             otherConn.link('/replicated')
             .save(hi: 'mom')
 
+        it "will notify higher up / parent links when child data changes", (done) ->
+            #a parent link
+            conn.link('/parenty').on('change', (snapshot) ->
+                snapshot.hi.should.equal('mom')
+                snapshot.should.not.equal(this.val)
+                done()
+            )
+            #a child save
+            otherConn.link('/parenty/hi').save('mom')
+
         it "will replicate deleted variables between connection", (done) ->
             hasSaved = false
             hasRemoved = false

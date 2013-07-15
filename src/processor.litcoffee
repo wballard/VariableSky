@@ -22,7 +22,7 @@ back the `todo` with `done(null, todo)`.
     assert = require('assert')
     Blackboard = require('./blackboard.litcoffee')
     Link = require('./link.litcoffee')
-    Router = require('./router.litcoffee')
+    Router = require('./router.litcoffee').ExactRouter
     EventEmitter = require('events').EventEmitter
     packPath = require('./util.litcoffee').packPath
 
