@@ -29,10 +29,7 @@
     "leveldown": "~0.6.1",
     "wrench": "~1.5.1",
     "browserify": "~2.25.0",
-    "shoe": "0.0.11",
-    "reconnect": "~1.5.0",
     "sockjs": "~0.3.7",
-    "event-stream": "~3.0.15",
     "eyes": "~0.1.8",
     "coffeeify": "~0.5.1",
     "connect": "~2.8.4"
