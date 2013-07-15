@@ -17,30 +17,26 @@ back the `todo` with `done(null, todo)`.
     fs = require('fs')
     path = require('path')
     util = require('util')
-    errors = require('./errors')
+    errors = require('./errors.litcoffee')
     _ = require('lodash')
     assert = require('assert')
-    Blackboard = require('./blackboard')
-    Link = require('./link')
+    Blackboard = require('./blackboard.litcoffee')
+    Link = require('./link.litcoffee')
+    Router = require('./router.litcoffee')
     EventEmitter = require('events').EventEmitter
-
-    director = require('director')
+    packPath = require('./util.litcoffee').packPath
 
 Used in hooks to provide access to data.
 
     class HookContext
-        constructor: (processor, todo, done, next) ->
+        constructor: (processor, todo, done) ->
             _.extend this, todo,
-                method: todo.command
-                headers: {}
-                url: "/#{todo.href.join('/')}"
                 prev: processor.blackboard.valueAt(todo.href)
                 abort: ->
                     if arguments.length
                         done this, arguments
                     else
                         done errors.HOOK_ABORTED()
-                next: next
 
 Build a new link, notice how we get at the process via the parameter
 to construct, but don't even store it in `this`. Trying really hard to make
@@ -50,7 +46,7 @@ clients to through `Link`.
                     new Link(processor, href)
 
     class Processor extends EventEmitter
-        constructor: (@options) ->
+        constructor: () ->
             @todos = []
             @counter = 0
 
@@ -72,14 +68,8 @@ that each command module exposes exactly the function taht is the command
 implementation.
 
             @commands = {}
-            @beforeHooks = new director.http.Router().configure
-                async: true
-                notfound: ->
-                    this.req.next()
-            @afterHooks = new director.http.Router().configure
-                async: true
-                notfound: ->
-                    this.req.next()
+            @beforeHooks = new Router()
+            @afterHooks = new Router()
 
 The event handling for actual command execution. This is three events
 
@@ -95,14 +85,13 @@ this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
             @on 'executeBefore', (todo, done) =>
-                req = new HookContext this, todo, done, (error) =>
+                req = new HookContext this, todo, done
+                @beforeHooks.dispatch todo.command, packPath(req.href), req, (error) =>
                     if error
                         done(error)
                     else
                         todo.val = req.val
                         @emit 'executeCore', todo, done
-                res = {}
-                @beforeHooks.dispatch req, res, req.next
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
@@ -118,13 +107,12 @@ And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
             @on 'executeAfter', (todo, done) =>
-                req = new HookContext this, todo, done, (error) =>
+                req = new HookContext this, todo, done
+                @afterHooks.dispatch todo.command, packPath(req.href), req, (error) =>
                     if error
                         done(error)
                     else
                         done(null, req.val)
-                res = {}
-                @afterHooks.dispatch req, res, req.next
 
 The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.
@@ -139,28 +127,12 @@ otherwise this is skipped as unhandled.
 Before hooks fire before the command has started.
 
         hookBefore: (command, href, hook) =>
-            if not @beforeHooks[command]
-                @beforeHooks.extend [command]
-            @beforeHooks[command] href, (next) ->
-                try
-                    hook this.req, next
-                catch error
-                    next error
+            @beforeHooks.on command, href, hook
 
 After hooks fire when the executed command has completed.
 
         hookAfter: (command, href, hook) =>
-            if not @afterHooks[command]
-                @afterHooks.extend [command]
-            @afterHooks[command] href, (next) ->
-                try
-                    #params and next
-                    params = _.toArray(arguments)
-                    #but we need to splice in the context
-                    params.splice(-1, 0, this.req)
-                    hook.apply this, params
-                catch error
-                    next error
+            @afterHooks.on command, href, hook
 
 Direct execution, without any hooks -- useful for recovery.
 
@@ -170,7 +142,6 @@ Direct execution, without any hooks -- useful for recovery.
                 command todo, @blackboard, done
             else
                 done(errors.NO_SUCH_COMMAND())
-
 
 The actual command execution function, callers will use this to get the
 processor to do work for them.

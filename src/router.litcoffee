@@ -1,0 +1,67 @@
+Yes. I broke down and made a router. This is asynchronous only, and focused on context
+and dispatch on named strings to callbacks.
+
+    EventEmitter = require('events').EventEmitter
+    _ = require('lodash')
+
+    class Router extends EventEmitter
+        constructor: () ->
+            @methods = {}
+
+For a named method, install a route. If matched, fire callback. If multiple routes
+are installed, they will be called in order asynchronously as each callback completes.
+
+Callbacks are of the form `(context, done)`, if all is well, call `done()`, otherwise
+call `done(error)`, which ends the callback link chain.
+
+        on: (method, route, callback) ->
+            chain = @methods[method] or []
+            chain.push
+                route: route
+                callback: callback
+            @methods[method] = chain
+
+Match a route and a link on the chain. This works on strings.
+
+        match: (dispatchRoute, linkRoute) ->
+            return dispatchRoute ==  linkRoute
+
+Fire all installed callbacks, if any for the method and route. Each callback is fired until
+they are all done calling `done()`, or you hit an error, in which case `done(error)` is called.
+
+If there are no matching callbacks, `done()` is called. No news is good news.
+
+        dispatch: (method, route, context, done) ->
+
+            links = @methods[method] or []
+
+            step = (index) =>
+
+End of iteration, fire the final callback without error.
+
+                if index > (links.length-1)
+                    done()
+                else
+
+Match or not, either way advance along the links. Unless there is an error
+which calls back error. This looks for both explicit error callbacks as well
+as escaping exceptions.
+
+                    link = links[index]
+                    if @match(route, link.route)
+                        try
+                            link.callback context, (error) ->
+                                if error
+                                    done(error)
+                                else
+                                    step(index+1)
+                        catch error
+                            done(error)
+                    else
+                        step(index+1)
+
+Start it up, iteration will then stepwise callback.
+
+            step(0)
+
+    module.exports = Router

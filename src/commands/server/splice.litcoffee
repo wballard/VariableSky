@@ -4,7 +4,7 @@ in a sense trying really hard like save.
 What it won't do is try to push to a non-array, that's an error.
 
     _ = require('lodash')
-    errors = require('../../errors')
+    errors = require('../../errors.litcoffee')
 
     module.exports = (todo, blackboard, done) ->
         if todo?.href.length

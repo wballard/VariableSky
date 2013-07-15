@@ -215,17 +215,6 @@ The REST API.
                                         .get('/mounted/removed')
                                         .expect(404)
                                         .end done
-        it "lets you have parameters in your hook urls, all web servery", (done) ->
-            server.hook('link', '/things/:id', (id, context, next) ->
-                context.val = id
-                next()
-            )
-            request(app)
-                .get('/mounted/things/1')
-                .expect('1')
-                .end done
-
-
         it "will let you hook a remove", (done) ->
             server.hook('remove', '/immortal', (context, next) ->
                 context.abort()
@@ -260,7 +249,7 @@ The REST API.
                         .expect('Content-Type', /json/)
                         .expect(200)
                         .expect(['Item One', 'Another Item'], done)
-        it "will give you an error message with hook exceptions on GET", (done) ->
+        it "will give you an error message with hook exceptions", (done) ->
             server.hook('link', '/error', (context, next) ->
                 throw "Oh my!"
             )
@@ -268,16 +257,14 @@ The REST API.
                 .get('/mounted/error')
                 .expect(500)
                 .expect('Oh my!', done)
-        it "will give you an error message with hook exceptions on PUT", (done) ->
-            server.hook('save', '/error', (context, next) ->
-                throw "Oh gosh!"
+        it "will give you an error message with hook error callbacks", (done) ->
+            server.hook('link', '/error', (context, next) ->
+                next("Oh my!")
             )
             request(app)
-                .put('/mounted/error')
-                .send('')
+                .get('/mounted/error')
                 .expect(500)
-                .expect('Oh gosh!', done)
-
+                .expect('Oh my!', done)
 
 Fire up again, should have the log playback. This proves we can come back from
 a restart/crash.

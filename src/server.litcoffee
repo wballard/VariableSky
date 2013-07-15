@@ -17,7 +17,6 @@ sent along to a command processor with a shared memory blackboard.
     connect = require('connect')
     EventEmitter = require('events').EventEmitter
 
-
 A counter for identifiers.
 
     counter = 0
@@ -52,7 +51,7 @@ some claim abut this being more testable, but I'd be lying :)
 
 Set up a processor with the server based commands.
 
-            @processor = new Processor(@options)
+            @processor = new Processor()
             @processor.commands.link = require('./commands/server/link')
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')

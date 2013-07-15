@@ -49,10 +49,21 @@ eventing, so we simulate these with two connections.
             .save(a: 1)
             .remove()
 
-        it "will notifiy other connections on save", (done) ->
+        it "will notify other connections on save", (done) ->
             conn.link('/testcross').on('save', (snapshot) ->
                 done()
             )
             otherConn.link('/testcross')
             .save('Hi')
 
+        it "will replicate variables between connections", (done) ->
+            #the connection that is going to get another's save
+            conn.link('/replicated').on('change', (snapshot) ->
+                snapshot.hi.should.equal('mom')
+                snapshot.should.equal(this.val)
+                snapshot.should.equal(conn.replicated)
+                done()
+            )
+            #the save
+            otherConn.link('/replicated')
+            .save(hi: 'mom')

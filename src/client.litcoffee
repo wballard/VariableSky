@@ -2,11 +2,30 @@ This is the client library, focused on a socket interface.
 
     EventEmitter = require('events').EventEmitter
     SockJS = require('../lib/sockjs')
+    Processor = require('./processor.litcoffee')
     Link = require('./link.litcoffee')
+
+Yes. On purpose. Appeases browserify.
+
+    link = require('./commands/server/link.litcoffee')
+    save = require('./commands/server/save.litcoffee')
+    remove = require('./commands/server/remove.litcoffee')
+    splice = require('./commands/server/splice.litcoffee')
 
     class Client extends EventEmitter
         constructor: (url) ->
             url = url or '/variablesky'
+
+A client has a command processor, in a way it is just like a server
+but for a single user.
+
+            @processor = new Processor()
+            @processor.commands.link = link
+            @processor.commands.save = save
+            @processor.commands.remove = remove
+            @processor.commands.splice = splice
+
+
             @sock = new SockJS(url)
             @sock.onopen = =>
                 @emit 'connection'
