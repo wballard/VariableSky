@@ -34,24 +34,37 @@ from the server.
 
 And a socket, so we can actually talk to the server.
 
-            @sock = new WebSocket(url)
-            @sock.onopen = =>
-                @emit 'open'
-            @sock.onclose = =>
-                @emit 'close'
-            @sock.onerror = (error) =>
-                @emit 'error', error
+            @forcedClose = false
 
-Incoming messages from the socket, the trick here is to send them
-to the correct link, by href.
+            connect = =>
+                console.log "connect", url
+                @sock = new WebSocket(url)
+                timeout = setTimeout =>
+                    @sock.close()
+                    console.log "reconnecting"
+                , 1000
+                @sock.onopen = =>
+                    console.log 'open'
+                    clearTimeout timeout
+                    @emit 'open'
+                @sock.onclose = =>
+                    console.log 'close'
+                    clearTimeout timeout
+                    @emit 'close'
+                    if not @forcedClose
+                        connect()
+                @sock.onerror = (error) =>
+                    console.log 'error', error
+                    @emit 'error', error
+                @sock.onmessage = (e) =>
+                    todo = JSON.parse(e.data)
+                    @processor.do todo, (error) =>
+                        if error and error.name isnt 'NO_SUCH_COMMAND'
+                            @emit 'error', error
+                        else
+                            @router.dispatch 'fromserver', packPath(todo.href), todo, ->
 
-            @sock.onmessage = (e) =>
-                todo = JSON.parse(e.data)
-                @processor.do todo, (error) =>
-                    if error and error.name isnt 'NO_SUCH_COMMAND'
-                        @emit 'error', error
-                    else
-                        @router.dispatch 'fromserver', packPath(todo.href), todo, ->
+            connect()
 
 Create a new data link to the server.
 
@@ -88,6 +101,7 @@ Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.
 
         close: ->
+            @forcedClose = true
             @sock.close()
             @removeAllListeners()
 

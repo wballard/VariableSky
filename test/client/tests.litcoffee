@@ -1,3 +1,19 @@
+
+    window.holdopen = connToBeOrphaned = null
+
+    describe "Client Library", ->
+        connToBeOrphaned = null
+        before (done) ->
+            connToBeOrphaned = variablesky.connect()
+            connToBeOrphaned.once 'open', ->
+                done()
+        it "should auto reconnect", (done) ->
+            #this should fire on the reconnect
+            connToBeOrphaned.on 'open', ->
+                done()
+            #HAVOC, poke under the hood to pretend a disconnect
+            connToBeOrphaned.sock.close()
+
 Test scenarios that use the client library from a browser.
 
     describe "Socket API", ->
