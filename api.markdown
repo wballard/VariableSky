@@ -45,12 +45,14 @@ Set up a connection from your client to a variable sky server.
 |Parameter|Notes|
 |---------|-----|
 |href|This is the URL to the root of a VariableSky server, defaults to /variablesky|
-|returns|A `Connection`|
+|returns|A `Client`|
 
-## Connection
+## Client
 This object is a connection/session to variable sky. You use it to
 `link` data as well as inspect the `val` of replicated data from the
 server.
+
+This client tries to stay connected, automatically reconnecting and restoring all linked state.
 
 ### val
 The current value of the server, across all active links. Think of this
@@ -79,6 +81,28 @@ Variable Sky never gives a `404`, it gives a `Link`, and you can always
 `save` to it.  The Variable Sky server will create objects as needed to
 make sure your data is reachable.
 
+### close()
+Close off the connection, this will end attempts to reconnect.
+
+### on()
+Attach an event handler to this connection.
+
+|Parameter|Notes|
+|---------|-----|
+|name|The name of the event you want to handle|
+|callback|The event handler callback|
+
+Events are listed below. In all cases `this` in the events refers to the
+`Client` itself.
+
+#### open
+Fired when the connection is open and good to go.
+
+#### close
+Fired when the connection is closed and no longer active.
+
+#### error
+Fired on any socket reported error.
 
 ## Server
 This is the main object you create on the server, `new` it.
