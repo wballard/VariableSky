@@ -95,8 +95,8 @@ being a send to server, events coming back are joined later.
                     #the link now has the current value from the blackboard
                     link.val = @processor.blackboard.valueAt(href)
                     if @processor.commands[message.command]
-                        #and changed data event, pointing into the blackboard
-                        link.emit 'change', @processor.blackboard.valueAt(href)
+                        #and the linked data has changed, refresh the link
+                        link.emit 'link', @processor.blackboard.valueAt(href)
                     done()
             @router.on 'fromserver', href, routeToLink
             link

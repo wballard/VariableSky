@@ -87,7 +87,7 @@ eventing, so we simulate these with two connections.
 
         it "will replicate variables between connections", (done) ->
             #the connection that is going to get another's save
-            conn.link('/replicated').on('change', (snapshot) ->
+            conn.link('/replicated').on('link', (snapshot) ->
                 snapshot.hi.should.equal('mom')
                 snapshot.should.equal(this.val)
                 snapshot.should.equal(conn.val.replicated)
@@ -98,11 +98,14 @@ eventing, so we simulate these with two connections.
             .save(hi: 'mom')
 
         it "will notify higher up / parent links when child data changes", (done) ->
-            #a parent link
-            conn.link('/parenty').on('change', (snapshot) ->
+            #a parent link, link fires on intial link, and then on the save
+            #so we pop in a counter
+            times = 0
+            conn.link('/parenty').on('link', (snapshot) ->
                 #the parent sees the child value change. neat
-                snapshot.hi.should.equal('mom')
-                done()
+                if times++ > 0
+                    snapshot.hi.should.equal('mom')
+                    done()
             )
             #a child save
             otherConn.link('/parenty/hi').save('mom')
@@ -117,12 +120,14 @@ eventing, so we simulate these with two connections.
             .on('remove', ->
                 hasRemoved = true
             )
-            .on('change', (snapshot) ->
+            .on('link', (snapshot) ->
                 if hasSaved and hasRemoved
                     should.not.exist(snapshot)
                     should.not.exist(this.val)
                     should.not.exist(conn.val.delicated)
                     done()
+                    #interlock this test so the final change does not fire
+                    hasSaved = false
             )
             #the remove
             otherConn.link('/delicated')
