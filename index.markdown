@@ -24,7 +24,7 @@ To give you a sense, here is a sample of connecting to data:
 
 ```javascript
 var conn = VariableSky.connect()
-var usersLink = conn.link("http://yourserver.io/info");
+var usersLink = conn.link("/info");
 //event driven data, everything is asynch
 usersLink.on("link", function(snapshot){
   //snapshot is a 'live' variable linked to the server
@@ -32,7 +32,6 @@ usersLink.on("link", function(snapshot){
   //this callback is fired when the server returns data for your link
   //a well as any time the linked data changes from any client
 });
-
 //... your app happens here, pay attention to the variable names
 var stuff = {hi: 'mom'};
 //yep, the value from stuff
@@ -47,7 +46,6 @@ usersLink.on("save", function(snapshot){
 });
 //send the variable to the sky
 usersLink.save(stuff);
-
 ```
 
 This is going to print out `{hi: 'mom'}`. **Four times**. Huh?

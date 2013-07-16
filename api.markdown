@@ -240,6 +240,11 @@ importantly the client library that lets an application connect.
 |server|An http server object, this provides network transport|
 |returns|`this`, to allow chaining|
 
+### link()
+Return a `Link` to other data on the server. Server links are
+_superuser_, designed to let you modify any data you see fit in your
+server configuration, including changing permissions.
+
 ### Sample Server
 An example, verb basic server:
 
