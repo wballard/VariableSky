@@ -14,7 +14,7 @@ Yes. On purpose. Appeases browserify.
 
     class Client extends EventEmitter
         constructor: (url) ->
-            defaultUrl = "ws#{document.location.origin.slice(4)}/variablesky"
+            defaultUrl = "ws://#{window.document.location.host}/variablesky"
             url = url or defaultUrl
 
 A client has a command processor, in a way it is just like a server
