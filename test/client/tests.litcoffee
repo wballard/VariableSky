@@ -1,5 +1,6 @@
 
     window.holdopen = connToBeOrphaned = null
+    should = chai.should()
 
     describe "Client Library", ->
         connToBeOrphaned = null
@@ -9,17 +10,27 @@
                 done()
         it "should auto reconnect", (done) ->
             #this should fire on the reconnect
-            connToBeOrphaned.on 'open', ->
+            connToBeOrphaned.once 'open', ->
                 done()
             #HAVOC, poke under the hood to pretend a disconnect
             connToBeOrphaned.sock.close()
+        it "should re-link data", (done) ->
+            link = connToBeOrphaned.link('/reco').save('yeah')
+            #after the re-open, hook up again for another link
+            connToBeOrphaned.once 'open', ->
+                link.once 'link', (snapshot) ->
+                    snapshot.should.equal('yeah')
+                    done()
+            #force close, which will then re-open, then re-link...
+            link.once('save', ->
+                connToBeOrphaned.sock.close()
+            )
 
 Test scenarios that use the client library from a browser.
 
     describe "Socket API", ->
         conn = null
         otherConn = null
-        should = chai.should()
 
 Two connections, there are a lot of scenarios that are about cross browser
 eventing, so we simulate these with two connections.

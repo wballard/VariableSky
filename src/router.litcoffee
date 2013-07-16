@@ -30,6 +30,11 @@ Goodbye, cruel route.
                 x.route == route and x.callback == callback
             )
 
+All the routes in the router.
+
+        all: (method) =>
+            @methods[method] or []
+
 Match a route and a link on the chain. This works on strings.
 
         match: (dispatchRoute, linkRoute) ->

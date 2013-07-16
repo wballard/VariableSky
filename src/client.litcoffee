@@ -5,6 +5,7 @@ This is the client library, focused on a socket interface.
     Link = require('./link.litcoffee')
     Router = require('./router.litcoffee').PrefixRouter
     packPath = require('./util.litcoffee').packPath
+    parsePath = require('./util.litcoffee').parsePath
 
 Yes. On purpose. Appeases browserify.
 
@@ -37,24 +38,21 @@ And a socket, so we can actually talk to the server.
             @forcedClose = false
 
             connect = =>
-                console.log "connect", url
                 @sock = new WebSocket(url)
                 timeout = setTimeout =>
                     @sock.close()
-                    console.log "reconnecting"
                 , 1000
                 @sock.onopen = =>
-                    console.log 'open'
                     clearTimeout timeout
                     @emit 'open'
+                    @relink()
                 @sock.onclose = =>
-                    console.log 'close'
                     clearTimeout timeout
                     @emit 'close'
                     if not @forcedClose
+                        @emit 'reconnect'
                         connect()
                 @sock.onerror = (error) =>
-                    console.log 'error', error
                     @emit 'error', error
                 @sock.onmessage = (e) =>
                     todo = JSON.parse(e.data)
@@ -65,6 +63,12 @@ And a socket, so we can actually talk to the server.
                             @router.dispatch 'fromserver', packPath(todo.href), todo, ->
 
             connect()
+
+Refresh all links.
+
+        relink: =>
+            for each in @router.all('fromserver')
+                @sock.send JSON.stringify({command: 'link', href: parsePath(each.route)})
 
 Create a new data link to the server.
 
