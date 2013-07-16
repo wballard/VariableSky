@@ -197,9 +197,10 @@ The middleware is like any other, you can specify a `prefix` url to
 mount it at a point.
 
 ```javascript
-var app = require('express')(),
+var app = require('connect')(),
   sky = require('variablesky'),
-  skyserver = new sky.Server();
+  skyserver = new sky.Server(),
+  server = require('http').createServer(app).listen(9999);
 
 app.use(skyserver.rest);
 ```
@@ -219,16 +220,13 @@ importantly the client library that lets an application connect.
 An example, verb basic server:
 
 ```javascript
-var app = require('express')()
-  , server = require('http').createServer(app)
-  , sky = require('variablesky'),
-  , skyserver = new sky.Server();
+var app = require('connect')(),
+  sky = require('variablesky'),
+  skyserver = new sky.Server(),
+  server = require('http').createServer(app).listen(9999);
 
-//hook sockets up
-skyserver.listen(server);
-
-//normal web service
-server.listen(80);
+//hook sockets up to both app and server -- it serves a client library
+skyserver.listen(app, server);
 
 //a static web page
 app.get('/', function (req, res) {
