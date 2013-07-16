@@ -360,6 +360,8 @@ When you call `link`, you get a `Link`. This object maintains the
 connection to data in Variable Sky, so you need to hang on to
 it in order to have snapshots update automatically.
 
+All `Link` methods return `this` so you can chain.
+
 ### href
 The `Link` is to this `href` path. Used for self reference.
 
@@ -529,6 +531,41 @@ time concurrent editing.
 
 `element` can be an `INPUT`, `TEXTAREA`, `CodeMirror`, or `ACE`.
 
+### allowWrite()
+Grant write access to one or more users/groups.
 
+|Parameter|Notes|
+|---------|-----|
+|ids...|One or more ids of users or groups|
 
+### allowRead()
+Grant read access to one or more users/groups.
 
+|Parameter|Notes|
+|---------|-----|
+|ids...|One or more ids of users or groups|
+
+### denyWrite()
+Subtract previous write access from one or more users/groups.
+
+|Parameter|Notes|
+|---------|-----|
+|ids...|One or more ids of users or groups|
+
+### denyRead()
+Subtract previous read access from one or more users/groups.
+
+|Parameter|Notes|
+|---------|-----|
+|ids...|One or more ids of users or groups|
+
+### takeOwnership()
+This only works for the system identity in a server based call, but lets
+you reclaim data.
+
+### changeOnwership()
+Appoint a user/group as the owner.
+
+|Parameter|Notes|
+|---------|-----|
+|id|A user or group to own the data|

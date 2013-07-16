@@ -54,7 +54,29 @@ There are just two:
 * read
 * write
 
-Owners can do anything, including granting access to other users.
+Only owners can change the permissions, but you can change the owner
+from yourself to a group.
 
-Read and write permissions are granted via [Link](./api.html#Link)
+Read and write permissions are granted via [Link](./api.html#Link). For
+the most part, you will grant permissions on data you create and own to
+other users or groups.
 
+## Securing
+Two basic approaches, and you can use them both:
+
+In your sever, where you set up your hooks, you can set permissions from
+a `link()`. The server runs as system, and can poke at anything.
+
+```javascript
+var server = new Server();
+//sharing with fred
+server.link('/mine').takeOwnership().allowWrite('fred').allowRead('fred');
+//giving to fred
+server.link('/freds').changeOwnership('fred');
+//keeping out those pesky smurfs
+server.link('/nosmurfs').allowRead('cats').denyRead('smurfs');
+```
+
+And, in a client, you can call the same methods on a link, however they
+will always be as a user, not the system, so you can't poke at just
+anything -- only at your own.
