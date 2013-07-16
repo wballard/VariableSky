@@ -1,7 +1,6 @@
 This is the client library, focused on a socket interface.
 
     EventEmitter = require('events').EventEmitter
-    SockJS = require('../lib/sockjs')
     Processor = require('./processor.litcoffee')
     Link = require('./link.litcoffee')
     Router = require('./router.litcoffee').PrefixRouter
@@ -15,7 +14,8 @@ Yes. On purpose. Appeases browserify.
 
     class Client extends EventEmitter
         constructor: (url) ->
-            url = url or '/variablesky'
+            defaultUrl = "ws#{document.location.origin.slice(4)}/variablesky"
+            url = url or defaultUrl
 
 A client has a command processor, in a way it is just like a server
 but for a single user.
@@ -34,9 +34,13 @@ from the server.
 
 And a socket, so we can actually talk to the server.
 
-            @sock = new SockJS(url)
+            @sock = new WebSocket(url)
             @sock.onopen = =>
-                @emit 'connection'
+                @emit 'open'
+            @sock.onclose = =>
+                @emit 'close'
+            @sock.onerror = (error) =>
+                @emit 'error', error
 
 Incoming messages from the socket, the trick here is to send them
 to the correct link, by href.

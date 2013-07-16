@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 require('coffee-script');
+var port = 9999;
 var sky = require('../index');
-var app = require('express')();
-var server = require('http').createServer(app);
+var app = require('connect')();
+var server = require('http').createServer(app).listen(port);
 var skyserver = new sky.Server()
-skyserver.listen(server);
-server.listen(9999);
+skyserver.listen(app, server);
+console.log("Listening at ws://localhost:" + port + "/variablesky for WebSocket");

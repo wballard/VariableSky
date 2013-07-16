@@ -10,13 +10,13 @@ sent along to a command processor with a shared memory blackboard.
     Journal = require('./journal')
     Router = require('./router').PrefixRouter
     wrench = require('wrench')
-    sockjs = require('sockjs')
     eyes = require('eyes')
     browserify = require('browserify')
     parsePath = require('./util').parsePath
     packPath = require('./util').packPath
     connect = require('connect')
     EventEmitter = require('events').EventEmitter
+    WebSocketServer = require('ws').Server
 
 A counter for identifiers.
 
@@ -138,67 +138,79 @@ running the each request's command.
 Hand off to the processor. This is the main thing this middleware does.
 
                     @doer todo, (error, val, todo) ->
-                        if error
-                            switch error.name
-                                when 'NOT_AN_ARRAY'
-                                    res
-                                        .set('Allow', 'GET, PUT, DELETE')
-                                        .send(405, error)
-                                        .end()
-                                else
-                                    res
-                                        .send(500, error)
-                                        .end()
+
+Special case, this has an error code for array operations.
+
+                        if error and error.name is 'NOT_AN_ARRAY'
+                            res.setHeader('Allow', 'GET, PUT, DELETE')
+                            res.statusCode = 405
+                            res.end(JSON.stringify(error))
+
+General purpose errors.
+
+                        else if error
+                            res.statusCode = 500
+                            if _.isObject(error)
+                                res.setHeader('Content-Type', 'application/json')
+                                res.end(JSON.stringify(error))
+                            else
+                                res.setHeader('Content-Type', 'text/main')
+                                res.end(error)
 
 Reaching the end of the processing with undefined is a 404.
 
                         else if _.isUndefined(val)
-                            res
-                                .send(404, errors.NOT_FOUND(todo.href))
-                                .end()
+                            console.log 'not found'
+                            res.statusCode = 404
+                            res.setHeader('Content-Type', 'application/json')
+                            res.end(JSON.stringify(errors.NOT_FOUND(todo.href)), 'utf8')
 
 In this case, we have some kind of val, so send it back.
 This is end of the line middleward, no `next`.
 
                         else
                             if _.isObject(val)
-                                res
-                                    .json(val)
+                                res.setHeader('Content-Type', 'application/json')
+                                res.end(JSON.stringify(val))
                             else
-                                res
-                                    .send(val)
+                                res.setHeader('Content-Type', 'text/main')
+                                res.end("#{val}")
 
-This is a web socket listen, attached to a running express/http server
-at a given mount point url with the default `/variablesky`
+This is a web socket listen, attached to a connect application
+at a given mount point url with the default `/variablesky`.
 
-        listen: (server, url) ->
+        listen: (app, server, url) ->
             @connections = {}
-            if 'function' is typeof server
-                throw errors.LOOKS_LIKE_EXPRESS()
+            if not app.use
+                throw errors.NOT_AN_APP()
+
             url = url or '/variablesky'
 
 If this looks like connect or express, install a client library handler and
 and self check sample page. Detect connect/express with the presence of `use`.
 
-            if server._events.request.use
+            if app.use
                 client = "#{path.join(url)}.client"
-                server._events.request.use path.join(client, 'test'),
+                app.use path.join(client, 'test'),
                     connect.static(path.join(__dirname, '../test/client'))
-                server._events.request.use client,  (req, res, next) ->
+                app.use client,  (req, res, next) ->
+                    res.setHeader('Content-Type', 'text/javascript')
                     bundle = browserify()
                         .transform(require('coffeeify'))
                         .add(path.join(__dirname, 'client.litcoffee'))
                         .bundle()
                     bundle.pipe(res)
+                    bundle.on 'error', (error) ->
+                        res.statusCode = 500
+                        res.end("#{error}")
                     bundle.on 'end', ->
+                        res.statusCode = 404
                         res.end()
-                    res.set('Content-Type', 'text/javascript')
 
 And, install the socket processing, this hands off to a `Connection` which is
 a per client/connection abstraction.
 
-            sock = sockjs.createServer()
-            sock.installHandlers server, {prefix: url}
+            sock = new WebSocketServer(server: server, path: url)
             sock.on 'connection', (conn) =>
                 new Connection(conn, this)
 
@@ -215,7 +227,7 @@ When the server says it has journaled something, we need to route it to clients.
 
 Connection data handling, parse out the messages and dispatch them.
 
-            @conn.on 'data', (message) =>
+            @conn.on 'message', (message) =>
                 todo = JSON.parse(message)
 
 Spy for links. This informs you which clients need which messages by doing
@@ -238,12 +250,15 @@ A successful link command, echoed back. Only direct respond on the link command
 otherwise we are just listening for `journal` events.
 
                 if todo.command is 'link'
-                    @conn.write JSON.stringify(todo)
+                    @conn.send JSON.stringify(todo)
 
 On close, unhook from listening to the journal.
 
             @conn.on 'close', =>
                 server.removeListener 'journal', @relay
+
+            @conn.on 'error', (error) =>
+                console.log 'server error', error
 
 When a message comes by, route it.
 
@@ -257,7 +272,7 @@ from there the client can sort it out... so this early exits on the first and
 any match.
 
         relay: (todo, done) =>
-            @conn.write JSON.stringify(todo)
+            @conn.send JSON.stringify(todo)
             done()
 
     module.exports.Server = Server

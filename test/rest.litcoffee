@@ -5,6 +5,7 @@ sad part is that it doesn't have events and thus no replication.
     sky = require('../index')
     path = require('path')
     wrench = require('wrench')
+    connect = require('connect')
 
 This is a side effect test variable to make sure we are journaling post hook.
 
@@ -20,7 +21,7 @@ The REST API.
         server = null
         before ->
             wrench.rmdirSyncRecursive options.storageDirectory, true
-            app = require('express')()
+            app = connect()
             server = new sky.Server(options)
             app.use '/mounted', server.rest
         after (done) ->
@@ -273,7 +274,7 @@ a restart/crash.
         app = null
         server = null
         before ->
-            app = require('express')()
+            app = connect()
             server = new sky.Server(options)
             app.use '/mounted', server.rest
         after (done) ->

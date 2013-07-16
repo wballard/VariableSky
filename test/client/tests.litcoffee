@@ -10,9 +10,9 @@ eventing, so we simulate these with two connections.
 
         before (done) ->
             conn = variablesky.connect()
-            conn.on 'connection', ->
+            conn.on 'open', ->
                 otherConn = variablesky.connect()
-                otherConn.on 'connection', ->
+                otherConn.on 'open', ->
                     done()
 
         after (done) ->
