@@ -41,50 +41,50 @@ The REST API.
                 context.val.double = "hooked"
                 next()
             )
-            client.link('message').on('link', (snapshot) ->
+            client.link('message', (error, snapshot) ->
                 snapshot.totally.should.equal('different')
                 snapshot.double.should.equal('hooked')
                 done()
             )
         it "will let you hook a write", (done) ->
             server.hook('save', 'withtimestamp', (context, next) ->
+                console.log 'hook 1'
                 context.val = context.val or {}
                 #on purpose, make sure we don't double hook, but that
                 #the resulting hook value is saved below with durably.
                 stashAt = context.val.at = Date.now()
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
+                console.log 'hook 2'
                 context.val.name = 'Fred'
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
-                console.log 'in the hook', context
+                console.log 'hook 3'
                 #make type a write once property
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
-                #and link to other data, notice this is root relative,
-                #not mount point relative
-                context
-                    .link('hello')
-                    .on 'link', (snapshot) ->
-                        context.val.message = snapshot
-                        next()
+                console.log 'hook 4'
+                #and link to other data, looping back to the server
+                context.link('hello', (snapshot) ->
+                    console.log 'hook 4 linko'
+                    context.val.message = snapshot
+                    next()
+                )
             ).hook('link', 'hello', (context, next) ->
                 context.val = 'hello'
                 next()
             )
-            client.link('withtimestamp')
-                .save({type: 'monster'})
-                .save({type: 'nonmonster'})
-                .on('link', (snapshot) ->
-                    ###
-                                    at: stashAt
-                                    name: 'Fred'
-                                    type: 'monster'
-                                    message: 'hello'
-                    ###
-                )
+            client.link('withtimestamp', (error, snapshot) ->
+                console.log 'snappy', snapshot
+                ###
+                                at: stashAt
+                                name: 'Fred'
+                                type: 'monster'
+                                message: 'hello'
+                ###
+            ).save({type: 'monster'}).save({type: 'nonmonster'})
         it "will let you link to other data in a hook, and save it", (done) ->
             server.hook('save', '/modifier', (context, next) ->
                 #linking to other data, saving it, and only coming out of

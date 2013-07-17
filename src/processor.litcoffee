@@ -43,8 +43,8 @@ Build a new link, notice how we get at the process via the parameter
 to construct, but don't even store it in `this`. Trying really hard to make
 clients to through `Link`.
 
-                link: (path) ->
-                    new Link(processor, path)
+                link: (path, done) ->
+                    new Link(processor, path, done)
 
     class Processor extends EventEmitter
         constructor: () ->
@@ -129,6 +129,7 @@ thing going on, re-writing `val`.
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
+                        console.log 'execo', @side, todo.command
                         @commands[todo.command] todo, @blackboard, (error, todo) =>
                             if error
                                 done error, undefined, todo
@@ -137,11 +138,17 @@ internal commands, not user hooks, so they get to really store data.
 And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
+                                console.log 'execed', @side, todo.command
                                 @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                                     if error
                                         done error, undefined, todo
                                     else
                                         done undefined, req.val, todo
+                                        console.log 'done', @side, todo.command
+
+An event, let's us hook up a journal.
+
+                                        @emit 'done', req.val, todo
             else
                 done errors.NO_SUCH_COMMAND(), undefined, todo
 

@@ -10,32 +10,29 @@ an Array mutator.
 
     parsePath = require('./util.litcoffee').parsePath
     _ = require('lodash')
-    EventEmitter = require('events').EventEmitter
 
-    class Link extends EventEmitter
-        constructor: (@processor, path, @onClose) ->
+    class Link
+        constructor: (@processor, path, @dataCallback, @onClose) ->
             @path = parsePath(path)
-            setTimeout =>
-                processor.do {command: 'link', path: @path}, (error, val) =>
-                    if error
-                        @emit 'error', error
-                    else
-                        @emit 'link', _.cloneDeep(val)
+            processor.do {command: 'link', path: @path}, (error, val) =>
+                if error
+                    @dataCallback error
+                else
+                    console.log 'linko is his nameo'
+                    @dataCallback undefined, _.cloneDeep(val)
             @save = (value) ->
-                setTimeout =>
-                    processor.do {command: 'save', path: @path, val: value}, (error, val) =>
-                        if error
-                            @emit 'error', error
-                        else
-                            @emit 'save', _.cloneDeep(val)
+                processor.do {command: 'save', path: @path, val: value}, (error, val) =>
+                    if error
+                        @dataCallback error
+                    else
+                        @dataCallback undefined, _.cloneDeep(val)
                 this
             @remove = ->
-                setTimeout =>
-                    processor.do {command: 'remove', path: @path}, (error, val) =>
-                        if error
-                            @emit 'error', error
-                        else
-                            @emit 'remove'
+                processor.do {command: 'remove', path: @path}, (error, val) =>
+                    if error
+                        @dataCallback error
+                    else
+                        @dataCallback undefined, undefined
                 this
 
         close: ->

@@ -77,9 +77,10 @@ On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
             @journal = new Journal @options, recover, =>
+                console.log 'recovered'
                 @processor.drain()
                 @doer = @processor.do
-            @processor.on 'done', (todo, val) =>
+            @processor.on 'done', (val, todo) =>
                 if @processor.commands[todo.command]?.DO_NOT_JOURNAL
                     #nothing to do
                 else
@@ -170,6 +171,7 @@ Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
                 server.doer todo, (error, val, todo) =>
+                    console.log 'back in the server'
                     if error
                         todo.error = error
                     else

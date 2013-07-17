@@ -11,6 +11,7 @@ This is the client library, focused on a socket interface.
 
 Yes. On purpose. Appeases browserify.
 
+    linkcommand =
     save = require('./commands/server/save.litcoffee')
     remove = require('./commands/server/remove.litcoffee')
     splice = require('./commands/server/splice.litcoffee')
@@ -27,6 +28,8 @@ A client has a command processor, in a way it is just like a server
 but for a single user.
 
             @processor = new Processor()
+            @processor.commands.link = require('./commands/client/link.litcoffee')
+            console.log @processor.commands.link
             @processor.commands.save = save
             @processor.commands.remove = remove
             @processor.commands.splice = splice
@@ -78,7 +81,7 @@ Refresh all links.
 
 Create a new data link to the server.
 
-        link: (path) =>
+        link: (path, done) =>
 
 This shims a client side processor into the link which is all about 'do'
 being a send to server, events coming back are joined later.
@@ -87,23 +90,18 @@ being a send to server, events coming back are joined later.
                 do: (todo) =>
                     @sock.send JSON.stringify(todo)
                 , path
+                , done
                 , => @router.off 'fromserver', path, routeToLink
             )
-            routeToLink = (message, done) =>
+            routeToLink = (message) =>
+                console.log 'back in the client'
                 if message.error
                     link.emit 'error', message.error
                     done(error)
                 else
-                    #fire an event that is 'post' the command running with
-                    #the same name, clients can then react to modified deltas
-                    #but only on an exact match
-                    link.emit message.command, message.val
                     #the link now has the current value from the blackboard
                     link.val = @processor.blackboard.valueAt(path)
-                    if @processor.commands[message.command]
-                        #and the linked data has changed, refresh the link
-                        link.emit 'link', @processor.blackboard.valueAt(path)
-                    done()
+                    done undefined, link.val
             @router.on 'fromserver', path, routeToLink
             link
 

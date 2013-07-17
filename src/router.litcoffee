@@ -1,10 +1,9 @@
 Yes. I broke down and made a router. This is asynchronous only, and focused on context
 and dispatch on named strings to callbacks.
 
-    EventEmitter = require('events').EventEmitter
     _ = require('lodash')
 
-    class ExactRouter extends EventEmitter
+    class ExactRouter
         constructor: () ->
             @methods = {}
 
