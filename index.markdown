@@ -24,7 +24,7 @@ To give you a sense, here is a sample of connecting to data:
 
 ```javascript
 var conn = VariableSky.connect()
-var usersLink = conn.link("/info");
+var usersLink = conn.link("info");
 //event driven data, everything is asynch
 usersLink.on("link", function(snapshot){
   //snapshot is a 'live' variable linked to the server

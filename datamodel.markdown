@@ -36,16 +36,21 @@ OK -- just some plain old data. Now, Variable Sky creates a server that
 holds these variables in a server so they can be shared and synched
 between clients. You get at data thus:
 
-|HREF|Value|
-|----|-----|
-|/people/1/firstName|Fred|
-|/people/b|{firstName: 'Bob', lastName: 'Moon'}|
-|/people/b/friends[0]|a|
+Just a tiny bit different than plain JavaScript, `.` is the delimiter,
+and any name is allowed. So, you can have a path like this:
+
+```
+people.012.name
+```
+
+Normal JavaScript would forbid you to have an int as a name, but we know
+what you meant, and will translate that into a string key `["012"]`
+becuase, well, you typed a string with `.` in it.
 
 # Philosophy
 The idea is that a Variable Sky server is literally one big shared
-JavaScript variable, starting from a root `/`, and contains any values
-you can ship over JSON. you `link` to this data, which causes it to
+JavaScript variable, starting from a root, and contains any values
+you can ship over JSON. You `link` to this data, which causes it to
 replicate between all attached clients and the server.
 
 In practice, this lets you define records, stored by key in a JavaScript
@@ -67,4 +72,5 @@ you think about your applications, this makes sense. You have:
 And that's about it, because that is it -- that's all you can make in
 JavaScript. So Variable Sky lets you store it without needing another
 data model. And it lets you *share* it between multiple clients to
-create real time single page apps.
+create real time single page apps with automatic data replication. Every
+client sees the data changes automatically.

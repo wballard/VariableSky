@@ -4,16 +4,13 @@ title: Security
 ---
 
 
-## Overview
-Variable Sky security model is similar to a file system, it's all about
-Authentication and Authorization.
-
 ## Authentication
 Variable Sky operates over Web Sockets, upgrading from an initial HTTP
 Connection. As such, you can use pretty much any authentication
-mechansim, as long as it results in setting `req.user`, which then
-exposes a `req.user.id`. This is picked up by the server Web
-Socket to bind an identity to a client->server connection.
+mechansim, as long as it results in setting `req.user` via
+connect/express, which then exposes a `req.user.id`. This is picked up
+by the server Web Socket to bind an identity to a client->server
+connection.
 
 A good choice is [Passport](http://passportjs.org), which lets you plug
 in all kinds of stuff. The basics:
@@ -32,27 +29,35 @@ ownership.
 
 ## Users and Groups
 Users are individuals, Groups are sets of users. These are stored in
-Variable Sky as special 'hidden' data in `/.users/` and `/.groups`,
+Variable Sky as special 'hidden' data in `$.users/` and `$.groups`,
 owned by the system itself, not any specific user.
 
-Users are stored with the pattern `/.users/{{userid}}`, and set to be
-readable by everyone, and writable only by the system itself.
+Users are stored with the pattern `$.users.{{userid}}`, and set to be
+readable by everyone, and writable only by the system itself, owned by
+the system. Users are created automatically as new authenticated users
+are detected via `req.user`.
 
-Groups are stored with the pattern `/.groups/{{groupid}}/{{userid}}`
+Groups are stored with the pattern `$.groups.{{groupid}}.{{userid}}`
 with one entry for each group member. Groups are created by users, not
 the system. The idea is that users create groups as needed to share
-data.
+data. They are owned and permissioned like any other data.
+
+There is a group `everyone` that is implicitly everyone.
 
 ## Ownership
 Data you create, you own. The only exception being if you are not logged
 in, in chich case there is no owner. Owners can do anything they like to
 the data, and unowned data is open access.
 
+Ownership defaults to the system for anonymous users, readable and
+writeable by `everyone`.
+
 ## Permissions
 There are just three:
 
 * read - get the data at a link on down
 * write - replace all the data at a link, recursively as you can replace
+* delete - undefine and destroy the value
 * extend - add new data properties to a link, but not replace others
 
 Only owners can change the permissions, but you can change the owner
@@ -62,20 +67,29 @@ Permissions are granted via [Link](./api.html#Link). For
 the most part, you will grant permissions on data you create and own to
 other users or groups.
 
+## Inheritance
+Permissions are a sparse tree, so for any Link, the permissions are
+computed by finding the most specific path available. Permissions are
+not stored unless they are explicity set.
+
+These are stored in `$.permissions`, using Variable Sky itself to store
+the permissions. These are owned by the system and cannot be modified
+directly.
+
 ## Securing
 Two basic approaches, and you can use them both:
 
 In your sever, where you set up your hooks, you can set permissions from
-a `link()`. The server runs as system, and can poke at anything.
+a `Server.link()`. The server runs as system, and can poke at anything.
 
 ```javascript
 var server = new Server();
 //sharing with fred
-server.link('/mine').takeOwnership().allowWrite('fred').allowRead('fred');
+server.link('mine').takeOwnership().allow('write, 'fred').allow('read', 'fred');
 //giving to fred
-server.link('/freds').changeOwnership('fred');
+server.link('freds').changeOwnership('fred');
 //keeping out those pesky smurfs
-server.link('/nosmurfs').allowRead('cats').denyRead('smurfs');
+server.link('nosmurfs').allow('read', 'cats').deny('read', 'smurfs');
 ```
 
 And, in a client, you can call the same methods on a link, however they

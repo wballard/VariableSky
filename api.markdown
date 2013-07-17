@@ -4,18 +4,13 @@ title: API
 ---
 
 
-## Overview
-
-### Client Library
+## Client Library
 A VariableSky server automatically exposes a client library relative to
 the socket mount point. Assuming defaults:
 
 ```html
 <script type="text/javascript" src="%%yourserver%%/variablesky.client"></script>
 ```
-
-Which will connect to `%%yourserver%%/variablesky`.
-
 ### Errors
 The Variable Sky API isn't about the DOM, it's about data, and as such
 follows the Node.js convention of `(error, arguments)` to callbacks.
@@ -44,7 +39,7 @@ Set up a connection from your client to a variable sky server.
 
 |Parameter|Notes|
 |---------|-----|
-|href|This is the URL to the root of a VariableSky server, defaults to /variablesky|
+|name|This is the named variable sky from your server|
 |returns|A `Client`|
 
 ## Client
@@ -52,7 +47,8 @@ This object is a connection/session to variable sky. You use it to
 `link` data as well as inspect the `val` of replicated data from the
 server.
 
-This client tries to stay connected, automatically reconnecting and restoring all linked state.
+This client tries to stay connected, automatically reconnecting and
+restoring all linked state.
 
 ### val
 The current value of the server, across all active links. Think of this
@@ -60,7 +56,7 @@ as a slice of all the data on the server, limited to just the data you
 have linked, and replicated.
 
 ### link()
-Connect to data via an `href`, linking to a local variable in
+Connect to data via an dotted path, linking to a local variable in
 your client program via a callback.
 
 In a typical program, you will have a lot of calls to `link` in order to
@@ -68,7 +64,7 @@ get different pieces of data.
 
 |Parameter|Notes|
 |---------|-----|
-|href|This is an URL to your Variable Sky server, pointing to the desired data.|
+|path|This is an URL to your Variable Sky server, pointing to the desired data.|
 |returns|A `Link`|
 
 ####Return Notes
@@ -76,10 +72,10 @@ The return value of this function is a `Link`, not actual data. Holding
 on to this link is important, as it contains the actual server linkage
 that keeps data replicating.
 
-Even if there is no data at the requested `href`, a `Link` is returned.
-Variable Sky never gives a `404`, it gives a `Link`, and you can always
-`save` to it.  The Variable Sky server will create objects as needed to
-make sure your data is reachable.
+Even if there is no data at the requested path, a `Link` is returned,
+with an `undefined` value. You can always `save` to it.  The Variable
+Sky server will create objects as needed to make sure your data is
+reachable.
 
 ### close()
 Close off the connection, this will end attempts to reconnect.
@@ -132,11 +128,10 @@ And, it is a great place for you to hook in other systems including:
 
 Things to know about hooks:
 
-* Hooks are always on an `href` or wildcard pattern
-* You can have multiple hooks of each type on an `href`
-* If you have multiple hooks of each type on the same `href`, they fire
+* Hooks are always on a data path
+* You can have multiple hooks of each type for the same path
+* If you have multiple hooks, they fire
   in the order they are attached
-* **Hooks are always from /, even if you mount at another url**
 
 A hook is a function, with the following parameters.
 
@@ -156,12 +151,11 @@ All of the hook event methods expose the same signature:
 |Parameter|Notes|
 |---------|-----|
 |event|The named server event to hook|
-|href|A path, or regular expression, that matches against a `Link.href`|
+|path|A path to a variable|
 |callback|A hook function|
 |returns|The same `Server`, to allow chaining|
 
 Valid values for `event` are below:
-
 
 #### link
 Hook data reads, this allows you to modify data before it is sent out to
@@ -169,7 +163,7 @@ clients. The thing here is to change what is in `context.val`, this is
 read interception.
 
 ```javascript
-server.hook('link', '/myrecord', function(context, next){
+server.hook('link', 'myrecord', function(context, next){
   //force the data to be what you like
   context.val = "Totally taking over";
   next();
@@ -181,7 +175,7 @@ Hook data saves, this allows you to modify data before it is saved. Any content
 remaining at `context.val` will be actually saved.
 
 ```javascript
-server.hook('save', '/myrecord', function(context, next){
+server.hook('save', 'myrecord', function(context, next){
   //force the data to be what you like
   context.val = {
     name: "Fred",
@@ -196,7 +190,7 @@ Hook data removes, this allows you to react before data is removed. The
 most interesting thing to do here is `abort` and prevent a delete.
 
 ```javascript
-server.hook('remove', '/myrecord', function(context, next){
+server.hook('remove', 'myrecord', function(context, next){
   //abort and prevent the delete, no need to call next
   context.abort();
 });
@@ -206,27 +200,13 @@ server.hook('remove', '/myrecord', function(context, next){
 Hook in place array modifications.
 
 ```javascript
-server.hook('splice', '/myarray', function(context, next){
+server.hook('splice', 'myarray', function(context, next){
   //this makes a 'push' into a double push
   if (typeof context.val.index == 'undefined') {
     context.val.elements.push('Second Value');
   }
   next();
 });
-```
-
-### rest
-This is `connect` middleware, `use` this to have the rest API connected.
-The middleware is like any other, you can specify a `prefix` url to
-mount it at a point.
-
-```javascript
-var app = require('connect')(),
-  sky = require('variablesky'),
-  skyserver = new sky.Server(),
-  server = require('http').createServer(app).listen(9999);
-
-app.use(skyserver.rest);
 ```
 
 ### listen()
@@ -263,11 +243,11 @@ app.get('/', function (req, res) {
 });
 
 //hook behavior
-sky.hook("link", "/sample", function(context, next){
+sky.hook("link", "sample", function(context, next){
   //a very simple example of always having a defaut value
   context.val = context.val || {};
   next();
-}).hook("save", "/sample", function(context, next){
+}).hook("save", "sample", function(context, next){
   //you can get at the previous and current values
   console.log(context.link.prev);
   console.log(context.link.val);
@@ -283,7 +263,7 @@ And a very basic client:
 <script src="/variablesky.client"></script>
 <script>
   var conn = VariableSky.connect();
-  var sample = conn.link("/sample");
+  var sample = conn.link("sample");
   sample.on("link", function(snapshot){
     console.log(snapshot);
   )};
@@ -294,11 +274,6 @@ And a very basic client:
 
 ## HookContext
 Server hooks get an instance of this passed to their hook function.
-
-### href
-The `href` of the data being hooked, this will be from `/`, not
-including host, protocol, or port and is split into an array of
-segments.
 
 ### val
 This is the value the command is working on, and you can modify it to
@@ -337,9 +312,7 @@ Return a `Link` to other data on the server, the same as a client.
 
 Just as a client is in a separate memory space, and updating a linked
 snapshot doesn't modify the server unless you `save`, this link hands
-you a _clone_. OK, so **please do not `context.link('/')`** if you want
-things to be speedy. Unless you have very little data, in which case
-this is OK, hence why it is not forbidden.
+you a _clone_.
 
 ### abort()
 Abort the processing of hooks, raising an error, and blocking the
@@ -362,9 +335,6 @@ it in order to have snapshots update automatically.
 
 All `Link` methods return `this` so you can chain.
 
-### href
-The `Link` is to this `href` path. Used for self reference.
-
 ### val
 The current value of the link, as replicated from the server.
 
@@ -384,19 +354,6 @@ links' you can do bulk updates of whole objects.
 ### remove()
 Remove lets you _undefine_ a variable on the server. This is different
 than `null`.
-
-### search()
-Starting from this link, do a full text search query. This will return
-matches, which are themselves links to matched data.
-
-By default, all data in Variable Sky is full text indexed. You search
-from a given `Link` as a root, and all matching data is returned as
-links down to the property level. Using these links you can _back up_
-the `href` to logically containing objects as needed.
-
-|Parameter|Notes|
-|---------|-----|
-|query|A full text search expression|
 
 ####Callback Notes
 |Parameter|Notes|
@@ -496,7 +453,7 @@ update one object.
 
 ```javascript
 var sampleArray;
-var sampleLink = VariableSky.link("http://yourserver.io/sample");
+var sampleLink = connection.link("sample");
 sampleLink.on("link", function(snapshot){
   //capture a reference to the server array
   sampleArray = snapshot;
@@ -531,37 +488,26 @@ time concurrent editing.
 
 `element` can be an `INPUT`, `TEXTAREA`, `CodeMirror`, or `ACE`.
 
-### allowWrite()
-Grant write access to one or more users/groups.
+### allow()
+Grant a permission to one or more users/groups, see [Security](./security.html).
 
 |Parameter|Notes|
 |---------|-----|
+|permission|One of read/write/delete/extend|
 |ids...|One or more ids of users or groups|
 
-### allowRead()
-Grant read access to one or more users/groups.
+### deny()
+Revoke a permission from one or more users/groups, see [Security](./security.html).
 
 |Parameter|Notes|
 |---------|-----|
-|ids...|One or more ids of users or groups|
-
-### denyWrite()
-Subtract previous write access from one or more users/groups.
-
-|Parameter|Notes|
-|---------|-----|
-|ids...|One or more ids of users or groups|
-
-### denyRead()
-Subtract previous read access from one or more users/groups.
-
-|Parameter|Notes|
-|---------|-----|
+|permission|One of read/write/delete/extend|
 |ids...|One or more ids of users or groups|
 
 ### takeOwnership()
 This only works for the system identity in a server based call, but lets
-you reclaim data.
+you reclaim data. So, you have to get at it from a `Server.link()`, not
+from a `Client.link()`.
 
 ### changeOwnership()
 Appoint a user/group as the owner.
