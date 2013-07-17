@@ -8,7 +8,6 @@ Well, maybe not, maybe it is just _dedicated_.
     _ = require('lodash')
 
     module.exports = (todo, blackboard, done) ->
-        console.log 'write', todo
         if todo?.path.length
             at = blackboard
             for segment in _.initial(todo.path)
@@ -17,5 +16,4 @@ Well, maybe not, maybe it is just _dedicated_.
                 else
                     at = at[segment] = {}
             at[_.last(todo.path)] = todo.val
-        console.log 'written', blackboard
         done null, todo

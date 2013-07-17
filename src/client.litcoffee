@@ -29,7 +29,6 @@ but for a single user.
 
             @processor = new Processor()
             @processor.commands.link = require('./commands/client/link.litcoffee')
-            console.log @processor.commands.link
             @processor.commands.save = save
             @processor.commands.remove = remove
             @processor.commands.splice = splice
@@ -94,14 +93,11 @@ being a send to server, events coming back are joined later.
                 , => @router.off 'fromserver', path, routeToLink
             )
             routeToLink = (message) =>
-                console.log 'back in the client'
                 if message.error
-                    link.emit 'error', message.error
-                    done(error)
+                    link.fireCallback error
                 else
                     #the link now has the current value from the blackboard
-                    link.val = @processor.blackboard.valueAt(path)
-                    done undefined, link.val
+                    link.fireCallback undefined, @processor.blackboard.valueAt(path)
             @router.on 'fromserver', path, routeToLink
             link
 

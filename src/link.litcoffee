@@ -14,11 +14,11 @@ an Array mutator.
     class Link
         constructor: (@processor, path, @dataCallback, @onClose) ->
             @path = parsePath(path)
+            @count = 0
             processor.do {command: 'link', path: @path}, (error, val) =>
                 if error
                     @dataCallback error
                 else
-                    console.log 'linko is his nameo'
                     @dataCallback undefined, _.cloneDeep(val)
             @save = (value) ->
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
@@ -35,8 +35,13 @@ an Array mutator.
                         @dataCallback undefined, undefined
                 this
 
+        fireCallback: (error, newVal) ->
+            @count += 1
+            if not error
+                @val = newVal
+            @dataCallback error, @val
+
         close: ->
             @onClose()
-            @removeAllListeners()
 
     module.exports = Link

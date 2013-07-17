@@ -5,7 +5,7 @@ sad part is that it doesn't have events and thus no replication.
     path = require('path')
     wrench = require('wrench')
     connect = require('connect')
-    should = require('chai').should()
+    require('chai').should()
 
 This is a side effect test variable to make sure we are journaling post hook.
 
@@ -48,27 +48,22 @@ The REST API.
             )
         it "will let you hook a write", (done) ->
             server.hook('save', 'withtimestamp', (context, next) ->
-                console.log 'hook 1'
                 context.val = context.val or {}
                 #on purpose, make sure we don't double hook, but that
                 #the resulting hook value is saved below with durably.
                 stashAt = context.val.at = Date.now()
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
-                console.log 'hook 2'
                 context.val.name = 'Fred'
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
-                console.log 'hook 3'
                 #make type a write once property
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
-                console.log 'hook 4'
                 #and link to other data, looping back to the server
-                context.link('hello', (snapshot) ->
-                    console.log 'hook 4 linko'
+                context.link('hello', (error, snapshot) ->
                     context.val.message = snapshot
                     next()
                 )
@@ -77,13 +72,12 @@ The REST API.
                 next()
             )
             client.link('withtimestamp', (error, snapshot) ->
-                console.log 'snappy', snapshot
-                ###
-                                at: stashAt
-                                name: 'Fred'
-                                type: 'monster'
-                                message: 'hello'
-                ###
+                if snapshot and this.count is 3
+                    snapshot.at.should.equal(stashAt)
+                    snapshot.name.should.equal('Fred')
+                    snapshot.type.should.equal('monster')
+                    snapshot.message.should.equal('hello')
+                    done()
             ).save({type: 'monster'}).save({type: 'nonmonster'})
         it "will let you link to other data in a hook, and save it", (done) ->
             server.hook('save', '/modifier', (context, next) ->

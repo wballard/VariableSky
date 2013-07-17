@@ -171,7 +171,6 @@ Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
                 server.doer todo, (error, val, todo) =>
-                    console.log 'back in the server'
                     if error
                         todo.error = error
                     else
@@ -189,7 +188,6 @@ On close, unhook from listening to the journal.
                 server.removeListener 'journal', @relay
 
             @conn.on 'error', (error) =>
-                console.log 'server error', error
 
 When a message comes by, route it.
 

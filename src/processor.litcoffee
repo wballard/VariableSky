@@ -119,7 +119,6 @@ thing going on, re-writing `val`.
 
                 req = new HookContext(this, todo, done)
                 todo.side = @side
-                console.log 'hooker', req
                 @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                     if error
                         done error, undefined, todo
@@ -129,7 +128,6 @@ thing going on, re-writing `val`.
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
-                        console.log 'execo', @side, todo.command
                         @commands[todo.command] todo, @blackboard, (error, todo) =>
                             if error
                                 done error, undefined, todo
@@ -138,13 +136,11 @@ internal commands, not user hooks, so they get to really store data.
 And the final after phase, last chance to modify the `val` before it is
 sent along to any clients.
 
-                                console.log 'execed', @side, todo.command
                                 @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                                     if error
                                         done error, undefined, todo
                                     else
                                         done undefined, req.val, todo
-                                        console.log 'done', @side, todo.command
 
 An event, let's us hook up a journal.
 
