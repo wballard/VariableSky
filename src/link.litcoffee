@@ -13,14 +13,12 @@ an Array mutator.
 
     class Link
         constructor: (@processor, path, dataCallback, @onClose) ->
-            console.log 'link', path
             @path = parsePath(path)
             @count = 0
             @dataCallback = (error, value) =>
                 @count += 1
                 dataCallback.call(this, error, value) if dataCallback
             @save = (value, done) ->
-                console.log 'link save', path
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                     if error
                         done(error) if done
@@ -40,7 +38,6 @@ an Array mutator.
                         @dataCallback undefined, undefined
                 this
             processor.do {command: 'link', path: @path}, (error, val) =>
-                console.log 'linked', path
                 if error
                     @dataCallback error
                 else
