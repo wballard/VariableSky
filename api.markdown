@@ -563,7 +563,7 @@ Subtract previous read access from one or more users/groups.
 This only works for the system identity in a server based call, but lets
 you reclaim data.
 
-### changeOnwership()
+### changeOwnership()
 Appoint a user/group as the owner.
 
 |Parameter|Notes|

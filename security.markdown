@@ -49,15 +49,16 @@ in, in chich case there is no owner. Owners can do anything they like to
 the data, and unowned data is open access.
 
 ## Permissions
-There are just two:
+There are just three:
 
-* read
-* write
+* read - get the data at a link on down
+* write - replace all the data at a link, recursively as you can replace
+* extend - add new data properties to a link, but not replace others
 
 Only owners can change the permissions, but you can change the owner
 from yourself to a group.
 
-Read and write permissions are granted via [Link](./api.html#Link). For
+Permissions are granted via [Link](./api.html#Link). For
 the most part, you will grant permissions on data you create and own to
 other users or groups.
 
