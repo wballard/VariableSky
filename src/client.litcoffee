@@ -6,6 +6,8 @@ This is the client library, focused on a socket interface.
     Router = require('./router.litcoffee').PrefixRouter
     packPath = require('./util.litcoffee').packPath
     parsePath = require('./util.litcoffee').parsePath
+    if not WebSocket?
+        WebSocket = require('ws')
 
 Yes. On purpose. Appeases browserify.
 
@@ -15,7 +17,10 @@ Yes. On purpose. Appeases browserify.
 
     class Client extends EventEmitter
         constructor: (url) ->
-            defaultUrl = "ws://#{window.document.location.host}/variablesky"
+            if window?
+                defaultUrl = "ws://#{window.document.location.host}/variablesky"
+            else
+                defaultUrl = "/variablesky"
             url = url or defaultUrl
 
 A client has a command processor, in a way it is just like a server
@@ -25,6 +30,7 @@ but for a single user.
             @processor.commands.save = save
             @processor.commands.remove = remove
             @processor.commands.splice = splice
+            @processor.side = 'client'
 
             @val = @processor.blackboard
 
@@ -60,7 +66,7 @@ And a socket, so we can actually talk to the server.
                         if error and error.name isnt 'NO_SUCH_COMMAND'
                             @emit 'error', error
                         else
-                            @router.dispatch 'fromserver', packPath(todo.href), todo, ->
+                            @router.dispatch 'fromserver', packPath(todo.path), todo, ->
 
             connect()
 
@@ -68,11 +74,11 @@ Refresh all links.
 
         relink: =>
             for each in @router.all('fromserver')
-                @sock.send JSON.stringify({command: 'link', href: parsePath(each.route)})
+                @sock.send JSON.stringify({command: 'link', path: parsePath(each.route)})
 
 Create a new data link to the server.
 
-        link: (href) =>
+        link: (path) =>
 
 This shims a client side processor into the link which is all about 'do'
 being a send to server, events coming back are joined later.
@@ -80,8 +86,8 @@ being a send to server, events coming back are joined later.
             link = new Link(
                 do: (todo) =>
                     @sock.send JSON.stringify(todo)
-                , href
-                , => @router.off 'fromserver', href, routeToLink
+                , path
+                , => @router.off 'fromserver', path, routeToLink
             )
             routeToLink = (message, done) =>
                 if message.error
@@ -93,12 +99,12 @@ being a send to server, events coming back are joined later.
                     #but only on an exact match
                     link.emit message.command, message.val
                     #the link now has the current value from the blackboard
-                    link.val = @processor.blackboard.valueAt(href)
+                    link.val = @processor.blackboard.valueAt(path)
                     if @processor.commands[message.command]
                         #and the linked data has changed, refresh the link
-                        link.emit 'link', @processor.blackboard.valueAt(href)
+                        link.emit 'link', @processor.blackboard.valueAt(path)
                     done()
-            @router.on 'fromserver', href, routeToLink
+            @router.on 'fromserver', path, routeToLink
             link
 
 Polite close. My money is you never remember to call this, so the server
@@ -116,7 +122,7 @@ you want.
     connect = (url) ->
         new Client(url)
 
-    module.exports = connect
+    module.exports = Client
 
 Export to the browser when used in `browserify`.
 

@@ -9,12 +9,11 @@ an array of path segments.
         if _.isArray(path)
             path
         else
-            _(path.split('/'))
-                .map(decodeURIComponent)
+            _(path.split('.'))
                 .filter((x) -> x.length)
                 .value()
 
 And sometimes you have a parsed path and just want a string for it.
 
     module.exports.packPath = (pathArray) ->
-        "/#{pathArray.join('/')}"
+        "#{pathArray.join('.')}"

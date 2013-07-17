@@ -4,23 +4,23 @@ so is smart enough to tell the difference.
     _ = require('lodash')
 
     module.exports = (todo, blackboard, done) ->
-        if todo?.href.length
+        if todo?.path.length
             at = blackboard
-            for segment in _.initial(todo.href)
+            for segment in _.initial(todo.path)
                 if at[segment]
                     at = at[segment]
                 else
                     #fortunately for us, it is already deleted!
                     return done null, todo
             if _.isArray(at)
-                index = Number(_.last(todo.href))
+                index = Number(_.last(todo.path))
                 if _.isNumber(index)
                     #array index, the normal
                     at.splice(index, 1)
                 else
                     #yep, you can put properties on array, odd but true...
-                    delete at[_.last(todo.href)]
+                    delete at[_.last(todo.path)]
             else
-                todo.val = at[_.last(todo.href)]
-                delete at[_.last(todo.href)]
+                todo.val = at[_.last(todo.path)]
+                delete at[_.last(todo.path)]
         done null, todo

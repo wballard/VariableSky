@@ -1,11 +1,11 @@
 The most basic interactions are with REST, this makes a workable server, the only
 sad part is that it doesn't have events and thus no replication.
 
-    request = require 'supertest'
     sky = require('../index')
     path = require('path')
     wrench = require('wrench')
     connect = require('connect')
+    should = require('chai').should()
 
 This is a side effect test variable to make sure we are journaling post hook.
 
@@ -16,154 +16,75 @@ The REST API.
     options =
         storageDirectory: path.join __dirname, '.test'
 
-    describe "REST API", ->
-        app = null
+    describe "Hooks", ->
+        client =
         server = null
-        before ->
+        before (done) ->
             wrench.rmdirSyncRecursive options.storageDirectory, true
             app = connect()
+            httpserver = require('http').createServer(app)
             server = new sky.Server(options)
-            app.use '/mounted', server.rest
+            server.listen app, httpserver
+            httpserver.listen 9999, ->
+                client = new sky.Client('ws://localhost:9999/variablesky')
+                client.on 'open', ->
+                    done()
         after (done) ->
-            server.shutdown done
-        it "404s when you ask for the unknown", (done) ->
-            request(app)
-                .get('/mounted/message')
-                .expect(404)
-                .expect({name: 'NOT_FOUND', message: 'message'}, done)
-        it "will let you PUT structured data", (done) ->
-            request(app)
-                .put('/mounted/message')
-                .send({hi: "mom"})
-                .expect(200, done)
-        it "will let you PUT scalar data", (done) ->
-            request(app)
-                .put('/mounted/scalar')
-                .send('bork')
-                .expect(200)
-                .end ->
-                    request(app)
-                        .get('/mounted/scalar')
-                        .expect(200)
-                        .expect('bork', done)
-        it "will then GET that data back", (done) ->
-            request(app)
-                .get('/mounted/message')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect({hi: "mom"}, done)
-        it "will let you DELETE", (done) ->
-            request(app)
-                .del('/mounted/message/hi')
-                .expect(200, done)
-        it "will let you PUT individual properties", (done) ->
-            request(app)
-                .put('/mounted/message/hi')
-                .send("dad")
-                .expect 200, ->
-                    request(app)
-                        .get('/mounted/message')
-                        .expect('Content-Type', /json/)
-                        .expect(200)
-                        .expect({hi: "dad"}, done)
-        it "will let you POST, adding to an array", (done) ->
-            request(app)
-                .post('/mounted/message/from')
-                .send('me')
-                .expect 200, ->
-                    request(app)
-                        .get('/mounted/message/from')
-                        .expect('Content-Type', /json/)
-                        .expect(200)
-                        .expect(['me'], done)
-        it "will let you POST to an array again", (done) ->
-            request(app)
-                .post('/mounted/message/from')
-                .send('you')
-                .expect 200, ->
-                    request(app)
-                        .get('/mounted/message/from')
-                        .expect('Content-Type', /json/)
-                        .expect(200)
-                        .expect(['me', 'you'], done)
-        it "will let you DELETE an array index", (done) ->
-            request(app)
-                .del('/mounted/message/from/0')
-                .expect 200, ->
-                    request(app)
-                        .get('/mounted/message/from')
-                        .expect('Content-Type', /json/)
-                        .expect(200)
-                        .expect(['you'], done)
-        it "will not let you POST to a non array", (done) ->
-            request(app)
-                .post('/mounted/message/hi')
-                .send('me')
-                .expect(405)
-                .expect('Allow', 'GET, PUT, DELETE')
-                .end(done)
+            server.shutdown ->
+                httpserver.close done
         it "will let you hook a read", (done) ->
-            #notice that this is relative
-            server.hook('link', '/message', (context, next) ->
+            server.hook('link', 'message', (context, next) ->
                 context.val =
                     totally: "different"
                 next()
-            ).hook('link', '/message', (context, next) ->
+            ).hook('link', 'message', (context, next) ->
                 context.val.double = "hooked"
                 next()
             )
-            request(app)
-                .get('/mounted/message')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect({totally: "different", double: "hooked"}, done)
+            client.link('message').on('link', (snapshot) ->
+                snapshot.totally.should.equal('different')
+                snapshot.double.should.equal('hooked')
+                done()
+            )
         it "will let you hook a write", (done) ->
-            server.hook('save', '/withtimestamp', (context, next) ->
+            server.hook('save', 'withtimestamp', (context, next) ->
                 context.val = context.val or {}
                 #on purpose, make sure we don't double hook, but that
                 #the resulting hook value is saved below with durably.
                 stashAt = context.val.at = Date.now()
                 next()
-            ).hook('save', '/withtimestamp', (context, next) ->
+            ).hook('save', 'withtimestamp', (context, next) ->
                 context.val.name = 'Fred'
                 next()
-            ).hook('save', '/withtimestamp', (context, next) ->
+            ).hook('save', 'withtimestamp', (context, next) ->
+                console.log 'in the hook', context
                 #make type a write once property
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
-            ).hook('save', '/withtimestamp', (context, next) ->
+            ).hook('save', 'withtimestamp', (context, next) ->
                 #and link to other data, notice this is root relative,
                 #not mount point relative
                 context
-                    .link('/hello')
+                    .link('hello')
                     .on 'link', (snapshot) ->
                         context.val.message = snapshot
                         next()
-            ).hook('link', '/hello', (context, next) ->
+            ).hook('link', 'hello', (context, next) ->
                 context.val = 'hello'
                 next()
             )
-            request(app)
-                .put('/mounted/withtimestamp')
-                .send({type: 'monster'})
-                .expect(200)
-                .end ->
-                    request(app)
-                        .put('/mounted/withtimestamp')
-                        .send({type: 'nonmonster'})
-                        .expect(200)
-                        .end ->
-                            request(app)
-                                .get('/mounted/withtimestamp')
-                                .expect('Content-Type', /json/)
-                                .expect(200)
-                                .expect(
+            client.link('withtimestamp')
+                .save({type: 'monster'})
+                .save({type: 'nonmonster'})
+                .on('link', (snapshot) ->
+                    ###
                                     at: stashAt
                                     name: 'Fred'
                                     type: 'monster'
                                     message: 'hello'
-                                ).end(done)
+                    ###
+                )
         it "will let you link to other data in a hook, and save it", (done) ->
             server.hook('save', '/modifier', (context, next) ->
                 #linking to other data, saving it, and only coming out of

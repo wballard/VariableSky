@@ -1,7 +1,6 @@
 Test connection and action over a streaming socket.
 
     sky = require('../index')
-    request = require 'supertest'
     path = require('path')
     should = require('chai').should()
     Browser = require('zombie')

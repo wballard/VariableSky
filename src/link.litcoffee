@@ -1,4 +1,4 @@
-Link to data on a `Blackboard` by `href`.
+Link to data on a `Blackboard` by `path`.
 
 Links are asynchronous, dispatching a `link` command to fulfill themselves
 with data via event.
@@ -13,17 +13,17 @@ an Array mutator.
     EventEmitter = require('events').EventEmitter
 
     class Link extends EventEmitter
-        constructor: (@processor, href, @onClose) ->
-            @href = parsePath(href)
+        constructor: (@processor, path, @onClose) ->
+            @path = parsePath(path)
             setTimeout =>
-                processor.do {command: 'link', href: @href}, (error, val) =>
+                processor.do {command: 'link', path: @path}, (error, val) =>
                     if error
                         @emit 'error', error
                     else
                         @emit 'link', _.cloneDeep(val)
             @save = (value) ->
                 setTimeout =>
-                    processor.do {command: 'save', href: @href, val: value}, (error, val) =>
+                    processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                         if error
                             @emit 'error', error
                         else
@@ -31,7 +31,7 @@ an Array mutator.
                 this
             @remove = ->
                 setTimeout =>
-                    processor.do {command: 'remove', href: @href}, (error, val) =>
+                    processor.do {command: 'remove', path: @path}, (error, val) =>
                         if error
                             @emit 'error', error
                         else

@@ -10,11 +10,10 @@ provides the location for the variables in the sky to live.
 Get at variables with an array of path segments. This is a bit different
 than just going . . .
 
-        valueAt: (href) ->
-            if _.isString(href)
-                href = parsePath(href)
+        valueAt: (path) ->
+            path = parsePath(path)
             at = this
-            for segment in href
+            for segment in path
                 if at[segment]
                     at = at[segment]
                 else

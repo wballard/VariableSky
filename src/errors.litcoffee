@@ -1,9 +1,6 @@
 Error making macros.
 
     module.exports =
-        NOT_FOUND: (href) ->
-            name: "NOT_FOUND"
-            message: href.join('/')
         NO_SUCH_COMMAND: (command) ->
             name: "NO_SUCH_COMMAND"
             message: command
@@ -11,13 +8,9 @@ Error making macros.
             name: "PARSE_ERROR"
             message: "This was no parseable. Sorry"
             err: err
-        NOT_AN_ARRAY: (href) ->
-            name: "NOT_AN_ARRAY"
-            message: href.join('/')
         HOOK_ABORTED: (context) ->
             name: "HOOK_ABORTED"
-            message: (context?.href or [])?.join('/')
-            context: context
+            message: context
         NOT_AN_APP: () ->
             name: "NOT_AN_APP"
             message: "Looks like you maybe passed something that isn't express or connect, it doesn't have .use() method"

@@ -57,6 +57,7 @@ Set up a processor with the server based commands.
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
+            @processor.side = 'server'
 
 And now the journal, intially set up to queue commands until we are recovered.
 
@@ -76,7 +77,6 @@ On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
             @journal = new Journal @options, recover, =>
-                console.log 'recovered'
                 @processor.drain()
                 @doer = @processor.do
             @processor.on 'done', (todo, val) =>
@@ -96,85 +96,14 @@ Clean server shutdown.
 
 Hook support forwards to the processor, supports chaining.
 
-        hook: (event, href, callback) ->
+        hook: (event, path, callback) ->
             switch event
                 when 'link'
-                    @processor.hookAfter event, href, callback
+                    @processor.hookAfter event, path, callback
                 else
-                    @processor.hookBefore event, href, callback
+                    @processor.hookBefore event, path, callback
             this
 
-Express middleware export for use with REST. Note the =>, this sort of
-this monkeying is why I really don't like objects all that much... But
-anyhow, each request sets up a `doer`, which is responsible for actually
-running the each request's command.
-
-        rest: (req, res, next) =>
-            json req, res, (error) =>
-                if error
-                    next(error)
-                else
-                    todo = switch req.method
-                        when 'PUT'
-                            command: 'save'
-                            href: parsePath(req.url)
-                            val: req.body
-                        when 'GET'
-                            command: 'link'
-                            href: parsePath(req.url)
-                        when 'DELETE'
-                            command: 'remove'
-                            href: parsePath(req.url)
-                        when 'POST'
-                            command: 'splice'
-                            href: parsePath(req.url)
-                            val:
-                                elements: do ->
-                                    if _.isArray(req.body)
-                                        req.body
-                                    else
-                                        [req.body]
-
-Hand off to the processor. This is the main thing this middleware does.
-
-                    @doer todo, (error, val, todo) ->
-
-Special case, this has an error code for array operations.
-
-                        if error and error.name is 'NOT_AN_ARRAY'
-                            res.setHeader('Allow', 'GET, PUT, DELETE')
-                            res.statusCode = 405
-                            res.end(JSON.stringify(error))
-
-General purpose errors.
-
-                        else if error
-                            res.statusCode = 500
-                            if _.isObject(error)
-                                res.setHeader('Content-Type', 'application/json')
-                                res.end(JSON.stringify(error))
-                            else
-                                res.setHeader('Content-Type', 'text/main')
-                                res.end(error)
-
-Reaching the end of the processing with undefined is a 404.
-
-                        else if _.isUndefined(val)
-                            console.log 'not found'
-                            res.statusCode = 404
-                            res.setHeader('Content-Type', 'application/json')
-                            res.end(JSON.stringify(errors.NOT_FOUND(todo.href)), 'utf8')
-
-In this case, we have some kind of val, so send it back.
-This is end of the line middleward, no `next`.
-
-                        else
-                            if _.isObject(val)
-                                res.setHeader('Content-Type', 'application/json')
-                                res.end(JSON.stringify(val))
-                            else
-                                res.setHeader('Content-Type', 'text/main')
-                                res.end("#{val}")
 
 This is a web socket listen, attached to a connect application
 at a given mount point url with the default `/variablesky`.
@@ -210,7 +139,7 @@ and self check sample page. Detect connect/express with the presence of `use`.
 And, install the socket processing, this hands off to a `Connection` which is
 a per client/connection abstraction.
 
-            sock = new WebSocketServer(server: server, path: url)
+            sock = new WebSocketServer({server: server, path: url})
             sock.on 'connection', (conn) =>
                 new Connection(conn, this)
 
@@ -234,8 +163,8 @@ Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
 
                 if todo.command is 'link'
-                    href = packPath(todo.href)
-                    @router.on 'journal', href, @relay
+                    path = packPath(todo.path)
+                    @router.on 'journal', path, @relay
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
@@ -263,8 +192,8 @@ On close, unhook from listening to the journal.
 When a message comes by, route it.
 
         route: (todo) =>
-            href = packPath(todo.href)
-            @router.dispatch 'journal', href, todo, ->
+            path = packPath(todo.path)
+            @router.dispatch 'journal', path, todo, ->
 
 When the server has journaled data, there is a state change. This is an interesting
 listening case, time to relay data along to the client if there is any prefix match,
@@ -275,4 +204,4 @@ any match.
             @conn.send JSON.stringify(todo)
             done()
 
-    module.exports.Server = Server
+    module.exports = Server

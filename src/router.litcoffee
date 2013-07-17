@@ -83,7 +83,7 @@ Special case for prefix matches. Used for hierarchial data routing.
 
     class PrefixRouter extends ExactRouter
         match: (dispatchRoute, linkRoute) ->
-            (dispatchRoute + '/').indexOf(linkRoute + '/') is 0
+            (dispatchRoute + '.').indexOf(linkRoute + '.') is 0
 
     module.exports.ExactRouter = ExactRouter
     module.exports.PrefixRouter = PrefixRouter

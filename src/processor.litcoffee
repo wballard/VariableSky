@@ -4,7 +4,7 @@ processor provides:
 
 * A blackboard, which is the shared context for commands to 'store' state
 * Command lookup, so we can have command implementations just be functions
-* Hooks to intercept before and after commands, assuming that a todo has a `.href`
+* Hooks to intercept before and after commands, assuming that a todo has a `.path`
 
 Commands are really just middleware, but instead of a response, they get a
 blackboard. The signature of an implementation is:
@@ -31,7 +31,8 @@ Used in hooks to provide access to data.
     class HookContext
         constructor: (processor, todo, done) ->
             _.extend this, todo,
-                prev: processor.blackboard.valueAt(todo.href)
+                side: processor.side
+                prev: processor.blackboard.valueAt(todo.path)
                 abort: ->
                     if arguments.length
                         done this, arguments
@@ -42,8 +43,8 @@ Build a new link, notice how we get at the process via the parameter
 to construct, but don't even store it in `this`. Trying really hard to make
 clients to through `Link`.
 
-                link: (href) ->
-                    new Link(processor, href)
+                link: (path) ->
+                    new Link(processor, path)
 
     class Processor extends EventEmitter
         constructor: () ->
@@ -71,68 +72,16 @@ implementation.
             @beforeHooks = new Router()
             @afterHooks = new Router()
 
-The event handling for actual command execution. This is three events
-
-* `executeBefore`
-* `executeCore`
-* `executeAfter`
-
-This event chain provides a place to hook asynchronously.
-
-The start of the sequence. The request extends the todo, providing execution
-context. Most important here is `val`, as before hooks get a chance to override
-this content, which will then be passed along to the core. That's the main
-thing going on, re-writing `val`.
-
-            @on 'executeBefore', (todo, done) =>
-                req = new HookContext this, todo, done
-                @beforeHooks.dispatch todo.command, packPath(req.href), req, (error) =>
-                    if error
-                        done(error)
-                    else
-                        todo.val = req.val
-                        @emit 'executeCore', todo, done
-
-The core command execution, here is the writing to the blackboard. These are
-internal commands, not user hooks, so they get to really store data.
-
-            @on 'executeCore', (todo, done) =>
-                @commands[todo.command] todo, @blackboard, (error, todo) =>
-                    if error
-                        done(error)
-                    else
-                        @emit 'executeAfter', todo, done
-
-And the final after phase, last chance to modify the `val` before it is
-sent along to any clients.
-
-            @on 'executeAfter', (todo, done) =>
-                req = new HookContext this, todo, done
-                @afterHooks.dispatch todo.command, packPath(req.href), req, (error) =>
-                    if error
-                        done(error)
-                    else
-                        done(null, req.val)
-
-The execute event needs to figure if there is even a command registered,
-otherwise this is skipped as unhandled.
-
-            @on 'execute', (todo, done) =>
-                command = @commands[todo.command]
-                if command
-                    @emit 'executeBefore', todo, done
-                else
-                    done(errors.NO_SUCH_COMMAND())
 
 Before hooks fire before the command has started.
 
-        hookBefore: (command, href, hook) =>
-            @beforeHooks.on command, href, hook
+        hookBefore: (command, path, hook) =>
+            @beforeHooks.on command, path, hook
 
 After hooks fire when the executed command has completed.
 
-        hookAfter: (command, href, hook) =>
-            @afterHooks.on command, href, hook
+        hookAfter: (command, path, hook) =>
+            @afterHooks.on command, path, hook
 
 Direct execution, without any hooks -- useful for recovery.
 
@@ -156,12 +105,45 @@ Hooks only fire the first time, and are not played back / replicated.
         do: (todo, done) =>
             assert _.isObject(todo), _.isFunction(done), "todo and done must be an object and a function, respectively"
             todo.__id__ = "#{Date.now()}:#{@counter++}"
-            @emit 'execute', todo, (error, val) =>
-                if error
-                    done error, undefined, todo
-                else
-                    @emit 'done', todo, val
-                    done null, val, todo
+
+The execute event needs to figure if there is even a command registered,
+otherwise this is skipped as unhandled.
+
+            command = @commands[todo.command]
+            if command
+
+The start of the sequence. The request extends the todo, providing execution
+context. Most important here is `val`, as before hooks get a chance to override
+this content, which will then be passed along to the core. That's the main
+thing going on, re-writing `val`.
+
+                req = new HookContext(this, todo, done)
+                todo.side = @side
+                console.log 'hooker', req
+                @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
+                    if error
+                        done error, undefined, todo
+                    else
+                        todo.val = req.val
+
+The core command execution, here is the writing to the blackboard. These are
+internal commands, not user hooks, so they get to really store data.
+
+                        @commands[todo.command] todo, @blackboard, (error, todo) =>
+                            if error
+                                done error, undefined, todo
+                            else
+
+And the final after phase, last chance to modify the `val` before it is
+sent along to any clients.
+
+                                @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
+                                    if error
+                                        done error, undefined, todo
+                                    else
+                                        done undefined, req.val, todo
+            else
+                done errors.NO_SUCH_COMMAND(), undefined, todo
 
 Queue up todo items for later processing.
 

@@ -8,12 +8,14 @@ Well, maybe not, maybe it is just _dedicated_.
     _ = require('lodash')
 
     module.exports = (todo, blackboard, done) ->
-        if todo?.href.length
+        console.log 'write', todo
+        if todo?.path.length
             at = blackboard
-            for segment in _.initial(todo.href)
+            for segment in _.initial(todo.path)
                 if at[segment]
                     at = at[segment]
                 else
                     at = at[segment] = {}
-            at[_.last(todo.href)] = todo.val
+            at[_.last(todo.path)] = todo.val
+        console.log 'written', blackboard
         done null, todo
