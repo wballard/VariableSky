@@ -1,5 +1,6 @@
 This is the client library, focused on a socket interface.
 
+    uuid = require('node-uuid')
     EventEmitter = require('events').EventEmitter
     Processor = require('./processor.litcoffee')
     Link = require('./link.litcoffee')
@@ -18,6 +19,8 @@ Yes. On purpose. Appeases browserify.
 
     class Client extends EventEmitter
         constructor: (url) ->
+            @id = uuid.v1()
+            @counter = 0
             if window?
                 defaultUrl = "ws://#{window.document.location.host}/variablesky"
             else
@@ -68,7 +71,9 @@ And a socket, so we can actually talk to the server.
                         if error and error.name isnt 'NO_SUCH_COMMAND'
                             @emit 'error', error
                         else
-                            @router.dispatch 'fromserver', packPath(todo.path), todo, ->
+                            @emit todo.__id__, todo
+                            if todo.__client__ isnt @id
+                                @router.dispatch 'fromserver', packPath(todo.path), todo, ->
 
             connect()
 
@@ -86,7 +91,11 @@ This shims a client side processor into the link which is all about 'do'
 being a send to server, events coming back are joined later.
 
             link = new Link(
-                do: (todo) =>
+                do: (todo, done) =>
+                    todo.__id__ = "client#{Date.now()}:#{@counter++}"
+                    todo.__client__ = @id
+                    @once todo.__id__, (todo) ->
+                        done undefined, todo.val
                     @sock.send JSON.stringify(todo)
                 , path
                 , done

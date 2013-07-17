@@ -104,7 +104,7 @@ Hooks only fire the first time, and are not played back / replicated.
 
         do: (todo, done) =>
             assert _.isObject(todo), _.isFunction(done), "todo and done must be an object and a function, respectively"
-            todo.__id__ = "#{Date.now()}:#{@counter++}"
+            todo.__id__ = todo.__id__ or "#{Date.now()}:#{@counter++}"
 
 The execute event needs to figure if there is even a command registered,
 otherwise this is skipped as unhandled.

@@ -48,30 +48,36 @@ The REST API.
             )
         it "will let you hook a write", (done) ->
             server.hook('save', 'withtimestamp', (context, next) ->
+                console.log 1
                 context.val = context.val or {}
                 #on purpose, make sure we don't double hook, but that
                 #the resulting hook value is saved below with durably.
                 stashAt = context.val.at = Date.now()
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
+                console.log 2
                 context.val.name = 'Fred'
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
+                console.log 3
                 #make type a write once property
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
             ).hook('save', 'withtimestamp', (context, next) ->
+                console.log 4
                 #and link to other data, looping back to the server
                 context.link('hello', (error, snapshot) ->
                     context.val.message = snapshot
                     next()
                 )
             ).hook('link', 'hello', (context, next) ->
+                console.log 1,1
                 context.val = 'hello'
                 next()
             )
             client.link('withtimestamp', (error, snapshot) ->
+                console.log 'back', snapshot, this.count
                 if snapshot and this.count is 3
                     snapshot.at.should.equal(stashAt)
                     snapshot.name.should.equal('Fred')
@@ -80,26 +86,22 @@ The REST API.
                     done()
             ).save({type: 'monster'}).save({type: 'nonmonster'})
         it "will let you link to other data in a hook, and save it", (done) ->
-            server.hook('save', '/modifier', (context, next) ->
+            server.hook('save', 'modifier', (context, next) ->
                 #linking to other data, saving it, and only coming out of
                 #the hook when complete
-                context
-                    .link('/modified')
-                    .on('save', (snapshot) ->
-                        next()
-                    )
-                    .save(context.val)
+                console.log 'inhook'
+                context.link('modified').save(context.val, ->
+                    console.log 'bbbb'
+                    next()
+                )
             )
-            request(app)
-                .put('/mounted/modifier')
-                .send('X')
-                .expect(200)
-                .end ->
-                    request(app)
-                        .get('/mounted/modified')
-                        .expect(200)
-                        .expect('X')
-                        .end(done)
+            client.link('modified', (error, snapshot) ->
+                console.log 'zoop', snapshot, this.count
+                if this.count is 2
+                    snapshot.should.equal('X')
+                    done()
+            )
+            client.link('modifier').save('X')
         it "will let you link to other data in a hook, and delete it", (done) ->
             server.hook('save', '/remover', (context, next) ->
                 #link to some other data and delete it

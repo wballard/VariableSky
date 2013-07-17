@@ -12,31 +12,41 @@ an Array mutator.
     _ = require('lodash')
 
     class Link
-        constructor: (@processor, path, @dataCallback, @onClose) ->
+        constructor: (@processor, path, dataCallback, @onClose) ->
+            console.log 'link', path
             @path = parsePath(path)
             @count = 0
+            @dataCallback = (error, value) =>
+                @count += 1
+                dataCallback.call(this, error, value) if dataCallback
+            @save = (value, done) ->
+                console.log 'link save', path
+                processor.do {command: 'save', path: @path, val: value}, (error, val) =>
+                    if error
+                        done(error) if done
+                        @dataCallback error
+                    else
+                        cloner = _.cloneDeep(val)
+                        done(undefined, cloner) if done
+                        @dataCallback undefined, cloner
+                this
+            @remove = (done) ->
+                processor.do {command: 'remove', path: @path}, (error, val) =>
+                    if error
+                        done(error) if done
+                        @dataCallback error
+                    else
+                        done() if done
+                        @dataCallback undefined, undefined
+                this
             processor.do {command: 'link', path: @path}, (error, val) =>
+                console.log 'linked', path
                 if error
                     @dataCallback error
                 else
                     @dataCallback undefined, _.cloneDeep(val)
-            @save = (value) ->
-                processor.do {command: 'save', path: @path, val: value}, (error, val) =>
-                    if error
-                        @dataCallback error
-                    else
-                        @dataCallback undefined, _.cloneDeep(val)
-                this
-            @remove = ->
-                processor.do {command: 'remove', path: @path}, (error, val) =>
-                    if error
-                        @dataCallback error
-                    else
-                        @dataCallback undefined, undefined
-                this
 
         fireCallback: (error, newVal) ->
-            @count += 1
             if not error
                 @val = newVal
             @dataCallback error, @val
