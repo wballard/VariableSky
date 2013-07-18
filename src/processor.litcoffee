@@ -134,8 +134,10 @@ internal commands, not user hooks, so they get to really store data.
                             else
 
 And the final after phase, last chance to modify the `val` before it is
-sent along to any clients.
+sent along to any clients, linking the vaue of the todo into the hook context
+req before we fire.
 
+                                req.val = todo.val
                                 @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                                     if error
                                         done error, undefined, todo
