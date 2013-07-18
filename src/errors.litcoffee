@@ -8,9 +8,9 @@ Error making macros.
             name: "PARSE_ERROR"
             message: "This was no parseable. Sorry"
             err: err
-        HOOK_ABORTED: (context, message) ->
+        HOOK_ABORTED: (context) ->
             name: "HOOK_ABORTED"
-            message: message or "The hook was stopped with .abort()"
+            message: context
         NOT_AN_APP: () ->
             name: "NOT_AN_APP"
             message: "Looks like you maybe passed something that isn't express or connect, it doesn't have .use() method"

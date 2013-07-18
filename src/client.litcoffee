@@ -19,7 +19,6 @@ Yes. On purpose. Appeases browserify.
 
     class Client extends EventEmitter
         constructor: (url) ->
-            @trace = ->
             @id = uuid.v1()
             @counter = 0
             if window?
@@ -36,6 +35,7 @@ but for a single user.
             @processor.commands.save = save
             @processor.commands.remove = remove
             @processor.commands.splice = splice
+            @processor.side = 'client'
 
             @val = @processor.blackboard
 
@@ -67,7 +67,6 @@ And a socket, so we can actually talk to the server.
                     @emit 'error', error
                 @sock.onmessage = (e) =>
                     todo = JSON.parse(e.data)
-                    @trace 'from-server', todo
                     @processor.do todo, (error) =>
                         if error and error.name isnt 'NO_SUCH_COMMAND'
                             @emit 'error', error
@@ -77,12 +76,6 @@ And a socket, so we can actually talk to the server.
                                 @router.dispatch 'fromserver', packPath(todo.path), todo, ->
 
             connect()
-
-Trace flag toggle, this will spew a lot of messages.
-
-        traceOn: ->
-            @trace = console.error
-            this
 
 Refresh all links.
 
@@ -101,7 +94,6 @@ being a send to server, events coming back are joined later.
                 do: (todo, done) =>
                     todo.__id__ = "client#{Date.now()}:#{@counter++}"
                     todo.__client__ = @id
-                    @trace 'to-server', todo
                     @once todo.__id__, (todo) ->
                         done undefined, todo.val
                     @sock.send JSON.stringify(todo)
