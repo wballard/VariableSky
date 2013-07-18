@@ -57,7 +57,6 @@ Set up a processor with the server based commands.
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
-            @processor.side = 'server'
 
 And now the journal, intially set up to queue commands until we are recovered.
 
@@ -150,6 +149,7 @@ from one another on the server.
     class Connection
         constructor: (@conn, server) ->
             @router = new Router()
+            @client = null
 
 When the server says it has journaled something, we need to route it to clients.
 
@@ -159,6 +159,7 @@ Connection data handling, parse out the messages and dispatch them.
 
             @conn.on 'message', (message) =>
                 todo = JSON.parse(message)
+                @client = todo.__client__
 
 Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
@@ -175,11 +176,6 @@ the complete command back out to the client over the socket.
                         todo.error = error
                     else
                         todo.val = val
-
-A successful link command, echoed back. Only direct respond on the link command
-otherwise we are just listening for `journal` events.
-
-                if todo.command is 'link'
                     @conn.send JSON.stringify(todo)
 
 On close, unhook from listening to the journal.
@@ -200,8 +196,12 @@ listening case, time to relay data along to the client if there is any prefix ma
 from there the client can sort it out... so this early exits on the first and
 any match.
 
+But, don't relay your own client's messages to yourself, that leads to
+double messages.
+
         relay: (todo, done) =>
-            @conn.send JSON.stringify(todo)
+            if todo.__client__ isnt @client
+                @conn.send JSON.stringify(todo)
             done()
 
     module.exports = Server

@@ -31,7 +31,6 @@ Used in hooks to provide access to data.
     class HookContext
         constructor: (processor, todo, done) ->
             _.extend this, todo,
-                side: processor.side
                 prev: processor.blackboard.valueAt(todo.path)
                 abort: ->
                     if arguments.length
@@ -118,7 +117,6 @@ this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
                 req = new HookContext(this, todo, done)
-                todo.side = @side
                 @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                     if error
                         done error, undefined, todo

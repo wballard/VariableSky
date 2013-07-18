@@ -74,6 +74,9 @@ And a socket, so we can actually talk to the server.
                             @emit 'error', error
                         else
                             @emit todo.__id__, todo
+
+Replies from yourself do not need to be dispatched.
+
                             if todo.__client__ isnt @id
                                 @router.dispatch 'fromserver', packPath(todo.path), todo, ->
 
@@ -103,6 +106,10 @@ being a send to server, events coming back are joined later.
                     todo.__id__ = "client#{Date.now()}:#{@counter++}"
                     todo.__client__ = @id
                     @trace 'to-server', todo
+
+A message back from the server with the same id is the signal to fire the
+done callback.
+
                     @once todo.__id__, (todo) ->
                         done undefined, todo.val
                     @sock.send JSON.stringify(todo)
