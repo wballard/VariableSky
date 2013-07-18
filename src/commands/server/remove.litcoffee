@@ -22,5 +22,7 @@ so is smart enough to tell the difference.
                     delete at[_.last(todo.path)]
             else
                 todo.val = at[_.last(todo.path)]
+                if todo.__trace__
+                    console.log 'removing', todo.path
                 delete at[_.last(todo.path)]
         done null, todo

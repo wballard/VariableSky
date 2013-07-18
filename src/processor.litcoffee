@@ -32,11 +32,8 @@ Used in hooks to provide access to data.
         constructor: (processor, todo, done) ->
             _.extend this, todo,
                 prev: processor.blackboard.valueAt(todo.path)
-                abort: ->
-                    if arguments.length
-                        done this, arguments
-                    else
-                        done errors.HOOK_ABORTED()
+                abort: (message) ->
+                    throw errors.HOOK_ABORTED(message)
 
 Build a new link, notice how we get at the process via the parameter
 to construct, but don't even store it in `this`. Trying really hard to make

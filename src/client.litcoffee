@@ -68,7 +68,8 @@ And a socket, so we can actually talk to the server.
                     @emit 'error', error
                 @sock.onmessage = (e) =>
                     todo = JSON.parse(e.data)
-                    @trace 'from-server', todo
+                    todo.__from_server__ = true
+                    @trace todo
                     @processor.do todo, (error) =>
                         if error and error.name isnt 'NO_SUCH_COMMAND'
                             @emit 'error', error
@@ -85,7 +86,9 @@ Replies from yourself do not need to be dispatched.
 Fire hose of tracing.
 
         traceOn: ->
-            @trace = console.error
+            @trace = (todo) ->
+                todo.__trace__ = true
+                console.error todo
             this
 
 Refresh all links.
@@ -105,7 +108,7 @@ being a send to server, events coming back are joined later.
                 do: (todo, done) =>
                     todo.__id__ = "client#{Date.now()}:#{@counter++}"
                     todo.__client__ = @id
-                    @trace 'to-server', todo
+                    @trace todo
 
 A message back from the server with the same id is the signal to fire the
 done callback.
