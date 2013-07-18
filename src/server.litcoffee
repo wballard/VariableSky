@@ -176,6 +176,8 @@ the complete command back out to the client over the socket.
                         todo.error = error
                     else
                         todo.val = val
+                    if todo.__trace__
+                        console.log 'sending', todo
                     @conn.send JSON.stringify(todo)
 
 On close, unhook from listening to the journal.

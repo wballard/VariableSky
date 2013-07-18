@@ -32,6 +32,7 @@ Used in hooks to provide access to data.
         constructor: (processor, todo, done) ->
             _.extend this, todo,
                 prev: processor.blackboard.valueAt(todo.path)
+                val: todo.val
                 abort: (message) ->
                     throw errors.HOOK_ABORTED(message)
 

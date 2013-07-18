@@ -39,6 +39,7 @@ The REST API.
                 next()
             ).hook('link', 'message', (context, next) ->
                 context.val.double = "hooked"
+                console.log 'fur', context.val
                 next()
             )
             client.link('message', (error, snapshot) ->
