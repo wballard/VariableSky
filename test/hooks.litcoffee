@@ -100,7 +100,6 @@ The REST API.
             )
             #now set up some data that will be deleted by the link
             client.link('removed', (error, snapshot) ->
-                console.log 'XXXX', this.count, error, snapshot
                 if this.count is 2
                     snapshot.should.equal('X')
                 if this.count is 3
@@ -110,23 +109,22 @@ The REST API.
             #and cross delete
             client.link('remover').save('Y')
         it "will let you hook a remove", (done) ->
-            server.hook('remove', '/immortal', (context, next) ->
+            server.hook('remove', 'immortal', (context, next) ->
                 context.abort()
                 #aborted, no need for next
             )
-            request(app)
-                .put('/mounted/immortal')
-                .send('Zeus')
-                .expect 200, ->
-                    request(app)
-                        .del('/mounted/immortal')
-                            .expect(500)
-                            .end ->
-                                request(app)
-                                    .get('/mounted/immortal')
-                                    .expect('Content-Type', /text/)
-                                    .expect(200)
-                                    .expect('Zeus', done)
+            client
+                .traceOn()
+                .link('immortal')
+                .save('Zeus', -> console.log 'a', arguments)
+                .remove( (error) ->
+                    console.log 'link', error
+                    client.link('immortal', (error, snapshot) ->
+                        console.log 'linkback', error, snapshot
+                        snapshot.should.equal('Zeus')
+                        done()
+                    )
+                )
         it "will let you hook posting to an array", (done) ->
             server.hook('splice', '/things', (context, next) ->
                 #put in another item for every item
