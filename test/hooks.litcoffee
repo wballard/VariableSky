@@ -116,7 +116,7 @@ The REST API.
             client
                 .traceOn()
                 .link('immortal')
-                .save('Zeus', -> console.log 'a', arguments)
+                .save('Zeus')
                 .remove( (error) ->
                     console.log 'link', error
                     client.link('immortal', (error, snapshot) ->
