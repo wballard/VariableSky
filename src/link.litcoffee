@@ -12,12 +12,15 @@ an Array mutator.
     _ = require('lodash')
 
     class Link
-        constructor: (@processor, path, dataCallback, @onClose) ->
+        constructor: (processor, path, dataCallback, @onClose) ->
             @path = parsePath(path)
             @count = 0
             @dataCallback = (error, value) =>
                 @count += 1
                 dataCallback.call(this, error, value) if dataCallback
+
+`save` and `remove` are defined as closures over the processor
+
             @save = (value, done) ->
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                     if error
@@ -37,6 +40,10 @@ an Array mutator.
                         done() if done
                         @dataCallback undefined, undefined
                 this
+
+This actually starts off the link, by processing a command to link.
+
+
             processor.do {command: 'link', path: @path}, (error, val) =>
                 if error
                     @dataCallback error
