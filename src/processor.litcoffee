@@ -29,15 +29,14 @@ back the `todo` with `done(null, todo)`.
 Used in hooks to provide access to data.
 
     class HookContext
-        constructor: (processor, todo, done) ->
+        constructor: (processor, todo) ->
             _.extend this, todo,
-                side: processor.side
                 prev: processor.blackboard.valueAt(todo.path)
-                abort: ->
-                    if arguments.length
-                        done this, arguments
+                abort: (message) ->
+                    if message
+                        throw errors.HOOK_ABORTED(this, message)
                     else
-                        done errors.HOOK_ABORTED()
+                        throw errors.HOOK_ABORTED(this)
 
 Build a new link, notice how we get at the process via the parameter
 to construct, but don't even store it in `this`. Trying really hard to make
@@ -117,11 +116,12 @@ context. Most important here is `val`, as before hooks get a chance to override
 this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
-                req = new HookContext(this, todo, done)
-                todo.side = @side
-                @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
+                req = new HookContext(this, todo)
+                console.log 'starting', todo
+                @beforeHooks.dispatch todo.command, packPath(req.path), req, (error, todo) =>
+                    console.log 'aaaa', error, todo
                     if error
-                        done error, undefined, todo
+                        done error, todo
                     else
                         todo.val = req.val
 
@@ -130,7 +130,7 @@ internal commands, not user hooks, so they get to really store data.
 
                         @commands[todo.command] todo, @blackboard, (error, todo) =>
                             if error
-                                done error, undefined, todo
+                                done error, todo
                             else
 
 And the final after phase, last chance to modify the `val` before it is
@@ -138,13 +138,15 @@ sent along to any clients.
 
                                 @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                                     if error
-                                        done error, undefined, todo
+                                        done error, todo
                                     else
-                                        done undefined, req.val, todo
+                                        todo.val = req.val
+                                        console.log 'good, done', todo
+                                        done undefined, todo
 
 An event, let's us hook up a journal.
 
-                                        @emit 'done', req.val, todo
+                                        @emit 'done', todo
             else
                 done errors.NO_SUCH_COMMAND(), undefined, todo
 

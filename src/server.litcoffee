@@ -57,7 +57,6 @@ Set up a processor with the server based commands.
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
-            @processor.side = 'server'
 
 And now the journal, intially set up to queue commands until we are recovered.
 
@@ -80,7 +79,7 @@ command handling `do` directly, no more `enqueue`.
                 console.log 'recovered'
                 @processor.drain()
                 @doer = @processor.do
-            @processor.on 'done', (val, todo) =>
+            @processor.on 'done', (todo) =>
                 if @processor.commands[todo.command]?.DO_NOT_JOURNAL
                     #nothing to do
                 else
@@ -170,16 +169,10 @@ a prefix match against all the linked data in this connection.
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
-                server.doer todo, (error, val, todo) =>
+                server.doer todo, (error, todo) =>
+                    console.log 'server done', error, todo
                     if error
                         todo.error = error
-                    else
-                        todo.val = val
-
-A successful link command, echoed back. Only direct respond on the link command
-otherwise we are just listening for `journal` events.
-
-                if todo.command is 'link'
                     @conn.send JSON.stringify(todo)
 
 On close, unhook from listening to the journal.
