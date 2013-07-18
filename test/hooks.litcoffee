@@ -108,7 +108,7 @@ The REST API.
             ).save('X')
             #and cross delete
             client.link('remover').save('Y')
-        it "will let you hook a remove", (done) ->
+        it "will let you hook a remove to prevent it", (done) ->
             server.hook('remove', 'immortal', (context, next) ->
                 context.abort()
                 #aborted, no need for next
@@ -119,6 +119,7 @@ The REST API.
                 .save('Zeus')
                 .remove( (error) ->
                     console.log 'link', error
+                    error.name.should.equal("HOOK_ABORTED")
                     client.link('immortal', (error, snapshot) ->
                         console.log 'linkback', error, snapshot
                         snapshot.should.equal('Zeus')

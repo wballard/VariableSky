@@ -20,7 +20,7 @@ Yes. On purpose. Appeases browserify.
     class Client extends EventEmitter
         constructor: (url) ->
             @trace = ->
-            @id = uuid.v1()
+            @client = uuid.v1()
             @counter = 0
             if window?
                 defaultUrl = "ws://#{window.document.location.host}/variablesky"
@@ -70,15 +70,22 @@ And a socket, so we can actually talk to the server.
                     todo = JSON.parse(e.data)
                     todo.__from_server__ = true
                     @trace todo
-                    @processor.do todo, (error) =>
-                        if error and error.name isnt 'NO_SUCH_COMMAND'
-                            @emit 'error', error
-                        else
-                            @emit todo.__id__, todo
+
+Messages back from the server, the most important thing is to not
+replay errored messages against the local processor.
+
+                    if todo.error
+                        @emit todo.__id__, todo
+                    else
+                        @processor.do todo, (error) =>
+                            if error and error.name isnt 'NO_SUCH_COMMAND'
+                                @emit 'error', error
+                            else
+                                @emit todo.__id__, todo
 
 Replies from yourself do not need to be dispatched.
 
-                            if todo.__client__ isnt @id
+                            if todo.__client__ isnt @client
                                 @router.dispatch 'fromserver', packPath(todo.path), todo, ->
 
             connect()
@@ -107,14 +114,14 @@ being a send to server, events coming back are joined later.
             link = new Link(
                 do: (todo, done) =>
                     todo.__id__ = "client#{Date.now()}:#{@counter++}"
-                    todo.__client__ = @id
+                    todo.__client__ = @client
                     @trace todo
 
 A message back from the server with the same id is the signal to fire the
 done callback.
 
                     @once todo.__id__, (todo) ->
-                        done undefined, todo.val
+                        done todo.error, todo.val
                     @sock.send JSON.stringify(todo)
                 , path
                 , done
