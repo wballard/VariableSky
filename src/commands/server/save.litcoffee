@@ -16,4 +16,4 @@ Well, maybe not, maybe it is just _dedicated_.
                 else
                     at = at[segment] = {}
             at[_.last(todo.path)] = todo.val
-        done null, todo
+        done null

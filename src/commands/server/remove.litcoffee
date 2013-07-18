@@ -11,7 +11,7 @@ so is smart enough to tell the difference.
                     at = at[segment]
                 else
                     #fortunately for us, it is already deleted!
-                    return done null, todo
+                    return done null
             if _.isArray(at)
                 index = Number(_.last(todo.path))
                 if _.isNumber(index)
@@ -25,4 +25,4 @@ so is smart enough to tell the difference.
                 if todo.__trace__
                     console.log 'remove', todo.path
                 delete at[_.last(todo.path)]
-        done null, todo
+        done null

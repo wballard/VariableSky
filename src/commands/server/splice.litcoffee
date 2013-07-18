@@ -29,4 +29,4 @@ then just look up the function
             todo.val.elements = todo.val.elements or []
             args = _.flatten([todo.val.index, todo.val.howMany, todo.val.elements])
             tail.splice.apply tail, args
-        done null, todo
+        done null

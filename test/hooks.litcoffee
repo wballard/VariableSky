@@ -118,7 +118,6 @@ The REST API.
                 .link('immortal')
                 .save('Zeus')
                 .remove( (error) ->
-                    console.log 'link', error
                     error.name.should.equal("HOOK_ABORTED")
                     client.link('immortal', (error, snapshot) ->
                         console.log 'linkback', error, snapshot

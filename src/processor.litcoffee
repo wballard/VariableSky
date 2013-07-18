@@ -120,12 +120,14 @@ thing going on, re-writing `val`.
                             console.error 'before hook failed', error
                         done error, undefined, todo
                     else
+                        console.log 'glorp', req
                         todo.val = req.val
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
-                        @commands[todo.command] todo, @blackboard, (error, todo) =>
+                        @commands[todo.command] todo, @blackboard, (error) =>
+                            console.log 'double glorp', req, todo
                             if error
                                 done error, undefined, todo
                             else
