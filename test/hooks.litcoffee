@@ -115,7 +115,6 @@ The REST API.
                 #aborted, no need for next
             )
             client
-                .traceOn()
                 .link('immortal')
                 .save('Zeus')
                 .remove( (error) ->
