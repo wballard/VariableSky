@@ -121,3 +121,6 @@ eventing, so we simulate these with two connections.
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
+        it "can see the angular values", (done) ->
+           $("#testSkyInput").val().should.eql("pants")
+           done()
