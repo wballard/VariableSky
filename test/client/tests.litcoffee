@@ -124,3 +124,17 @@ eventing, so we simulate these with two connections.
         it "can see the angular values", (done) ->
            $("#testSkyInput").val().should.eql("pants")
            done()
+        it "works with angular", (done) ->
+          # bind sky var to scope
+          conn.bindToScope(scope, 'path.to.var', 'modelName')
+          # save a value to the sky var
+          link = otherConn.link('path.to.var').save("pants")
+          # validate value shows up via angular
+          $("#testSkyInput").val().should.eql("pants")
+
+          # now we change the value in the element and see that sky is updated
+          $("#testSkyeInpu").val("newPants")
+          link.val.should.equl("newPants")
+
+
+
