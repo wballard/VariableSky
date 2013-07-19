@@ -1,6 +1,11 @@
-VariableSkyTestController = ($scope) ->
+
+thing = angular.module('test-app', [])
+.controller 'VariableSkyTestController', ($scope) ->
+  console.log "controller"
   $scope.variableFromSky = "pants"
-        
-angular.element(document).ready ->
-  angular.bootstrap(document, [])
-  mocha.run()
+
+console.log(thing)
+angular.bootstrap(document, ['test-app'])
+mocha.run()
+
+console.log "i has loaded at all"
