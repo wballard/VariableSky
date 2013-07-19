@@ -47,26 +47,28 @@ eventing, so we simulate these with two connections.
                     done()
 
         after (done) ->
-            conn.close()
-            otherConn.close()
-            done()
+            conn.close ->
+                otherConn.close ->
+                    done()
 
         it "can connect", (done) ->
             done()
 
         it "can get data at all", (done) ->
-            conn.link('test').on 'link', (snapshot) ->
+            conn.link('test', (snapshot) ->
                 done()
+            )
 
         it "can save data, and read it back", (done) ->
-            conn.link('testback').on('save', (snapshot) ->
-                snapshot.a.should.equal(1)
-                done()
+            conn.link('testback', (error, snapshot) ->
+                if this.count is 2
+                    snapshot.a.should.equal(1)
+                    done()
             )
             .save(a: 1)
 
         it "gets undefined when you ask for stuff that isn't", (done) ->
-            conn.link('mysterypants').on('link', (snapshot) ->
+            conn.link('mysterypants', (error, snapshot) ->
                 should.not.exist(snapshot)
                 done()
             )
@@ -74,46 +76,29 @@ eventing, so we simulate these with two connections.
         it "can remove previously saved data", (done) ->
             fired = {}
             link = conn.link('testremove')
-            .on('remove', (snapshot) ->
-                fired.link.should.exist
-                fired.save.should.exist
+            .save(a: 1, (error, snapshot) ->
+                snapshot.should.eql(a:1)
+            )
+            .remove((error) ->
+                should.not.exist(link.val)
+                should.not.exist(conn.val.testremove)
                 done()
             )
-            .on('link', (snapshot) ->
-                fired.link = true
-            )
-            .on('save', (snapshot) ->
-                fired.save = true
-            )
-            .save(a: 1)
-            .remove()
 
         it "will notify other connections on save", (done) ->
-            conn.link('testcross').on('save', (snapshot) ->
-                done()
+            conn.link('testcross', (error, snapshot) ->
+                if this.count is 2
+                    snapshot.should.eql('Hi')
+                    done()
             )
-            otherConn.link('testcross')
-            .save('Hi')
-
-        it "will replicate variables between connections", (done) ->
-            #the connection that is going to get another's save
-            conn.link('replicated').on('link', (snapshot) ->
-                snapshot.hi.should.equal('mom')
-                snapshot.should.equal(this.val)
-                snapshot.should.equal(conn.val.replicated)
-                done()
-            )
-            #the save
-            otherConn.link('replicated')
-            .save(hi: 'mom')
+            otherConn.link('testcross').save('Hi')
 
         it "will notify higher up / parent links when child data changes", (done) ->
             #a parent link, link fires on intial link, and then on the save
             #so we pop in a counter
-            times = 0
-            conn.link('parenty').on('link', (snapshot) ->
+            conn.link('parenty', (error, snapshot) ->
                 #the parent sees the child value change. neat
-                if times++ > 0
+                if this.count is 2
                     snapshot.hi.should.equal('mom')
                     done()
             )
@@ -121,17 +106,10 @@ eventing, so we simulate these with two connections.
             otherConn.link('parenty.hi').save('mom')
 
         it "will replicate deleted variables between connection", (done) ->
-            hasSaved = false
-            hasRemoved = false
-            conn.link('delicated')
-            .on('save', ->
-                hasSaved = true
-            )
-            .on('remove', ->
-                hasRemoved = true
-            )
-            .on('link', (snapshot) ->
-                if hasSaved and hasRemoved
+            conn.link('delicated', (error, snapshot) ->
+                if this.count is 2
+                    snapshot.should.eql(hi: 'mom')
+                if this.count is 3
                     should.not.exist(snapshot)
                     should.not.exist(this.val)
                     should.not.exist(conn.val.delicated)
@@ -139,7 +117,7 @@ eventing, so we simulate these with two connections.
                     #interlock this test so the final change does not fire
                     hasSaved = false
             )
-            #the remove
+            #the add remove sequence on another
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
