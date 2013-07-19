@@ -10,7 +10,7 @@ techniques as a database with write ahead logging.
     class Journal
         constructor: (@options, playback, callback) ->
             @database = leveldown(@options.journalDirectory)
-            @database.open =>
+            @database.open (error) =>
                 toPlayback = @database.iterator()
                 each = (error, key, value) ->
                     if not error and not key and not value
@@ -23,15 +23,15 @@ techniques as a database with write ahead logging.
 
 Clean shutdown.
 
-        shutdown: (callback) ->
-            @database.close callback
+        shutdown: (done) ->
+            @database.close done
 
 Record a command in the journal for later playback.
 
-        record: (todo, callback) ->
+        record: (todo, done) ->
             #date based key string, these will sort in order
             key = String('00000'+Date.now()).slice(-16)
-            @database.put key, JSON.stringify(todo), callback
+            @database.put key, JSON.stringify(todo), done
 
 Throw away all journaled memory.
 

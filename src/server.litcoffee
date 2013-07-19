@@ -75,10 +75,11 @@ given a function to recover each command.
 On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
+
             @journal = new Journal @options, recover, =>
-                console.log 'recovered'
                 @processor.drain()
                 @doer = @processor.do
+                @emit 'recovered'
             @processor.on 'done', (val, todo) =>
                 if @processor.commands[todo.command]?.DO_NOT_JOURNAL
                     #nothing to do
@@ -91,8 +92,9 @@ command handling `do` directly, no more `enqueue`.
 
 Clean server shutdown.
 
-        shutdown: (callback) ->
-            @journal.shutdown callback
+        shutdown: (done) ->
+            @sock.close() if @sock
+            @journal.shutdown done
 
 Hook support forwards to the processor, supports chaining.
 
@@ -108,10 +110,12 @@ Hook support forwards to the processor, supports chaining.
 This is a web socket listen, attached to a connect application
 at a given mount point url with the default `/variablesky`.
 
-        listen: (app, server, url) ->
+        listen: (app, server, url) =>
             @connections = {}
             if not app.use
                 throw errors.NOT_AN_APP()
+            if @sock
+                throw errors.ALREADY_LISTENING()
 
             url = url or '/variablesky'
 
@@ -139,8 +143,8 @@ and self check sample page. Detect connect/express with the presence of `use`.
 And, install the socket processing, this hands off to a `Connection` which is
 a per client/connection abstraction.
 
-            sock = new WebSocketServer({server: server, path: url})
-            sock.on 'connection', (conn) =>
+            @sock = new WebSocketServer({server: server, path: url})
+            @sock.on 'connection', (conn) =>
                 new Connection(conn, this)
 
 A single server side connection instance, isolates the state of each client

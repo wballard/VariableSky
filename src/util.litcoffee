@@ -1,7 +1,7 @@
 
     _ = require('lodash')
     path = require('path')
-    eyes = require('eyes')
+    inspect = require('eyes').inspector({ stream: null })
     colors = require('colors')
 
 Paths are always something to deal with. Here is the general representation,
@@ -27,4 +27,4 @@ And sometimes you have a parsed path and just want a string for it.
             console.error '<------'.rainbow
         else
             console.error '------>'.rainbow.bold
-        console.error eyes.inspect(todo)
+        console.error inspect(todo)

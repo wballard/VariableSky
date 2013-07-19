@@ -138,10 +138,11 @@ done callback.
 Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.
 
-        close: ->
+        close: (done) ->
             @forcedClose = true
-            @sock.close()
             @removeAllListeners()
+            @sock.close()
+            done()
 
 This is the main exported factory API to connect, you can feed this `()` and
 it will connect to the default relative location, which is almost always what

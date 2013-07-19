@@ -16,11 +16,14 @@ The REST API.
     options =
         storageDirectory: path.join __dirname, '.test'
 
+    console.log 'delbert'
+    wrench.rmdirSyncRecursive options.storageDirectory, true
+
     describe "Hooks", ->
-        client =
+        client = null
         server = null
+        httpserver = null
         before (done) ->
-            wrench.rmdirSyncRecursive options.storageDirectory, true
             app = connect()
             httpserver = require('http').createServer(app)
             server = new sky.Server(options)
@@ -30,8 +33,10 @@ The REST API.
                 client.on 'open', ->
                     done()
         after (done) ->
-            server.shutdown ->
-                httpserver.close done
+            client.close ->
+                server.shutdown ->
+                    httpserver.close ->
+                        done()
         it "will let you hook a read", (done) ->
             server.hook('link', 'message', (context, next) ->
                 context.val =
@@ -135,48 +140,43 @@ The REST API.
                 done()
             )
         it "will give you an error message with hook exceptions", (done) ->
-            server.hook('link', '/error', (context, next) ->
+            server.hook('link', 'error', (context, next) ->
                 throw "Oh my!"
             )
-            request(app)
-                .get('/mounted/error')
-                .expect(500)
-                .expect('Oh my!', done)
-        it "will give you an error message with hook error callbacks", (done) ->
-            server.hook('link', '/error', (context, next) ->
-                next("Oh my!")
+            client.link('error', (error, snapshot) ->
+                error.should.eql('Oh my!')
+                should.not.exist(snapshot)
+                done()
             )
-            request(app)
-                .get('/mounted/error')
-                .expect(500)
-                .expect('Oh my!', done)
+        it "will give you an error message with hook error callbacks", (done) ->
+            server.hook('link', 'error.2', (context, next) ->
+                next("Oh my!!")
+            )
+            client.link('error.2', (error, snapshot) ->
+                error.should.eql('Oh my!!')
+                should.not.exist(snapshot)
+                done()
+            )
 
 Fire up again, should have the log playback. This proves we can come back from
 a restart/crash.
 
-    describe "REST API durably", ->
-        app = null
+    describe "Hooks -- durable server", ->
         server = null
-        before ->
-            app = connect()
+        before (done) ->
             server = new sky.Server(options)
-            app.use '/mounted', server.rest
+            server.on 'recovered', ->
+                done()
         after (done) ->
             server.shutdown done
         it "recovers previous commands", (done) ->
-            request(app)
-                .get('/mounted/message')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect({hi: 'dad', from: ['you']}, done)
+            server.processor.blackboard.immortal.should.eql('Zeus')
+            done()
         it "recovers the result of hooks", (done) ->
-            request(app)
-                .get('/mounted/withtimestamp')
-                .expect('Content-Type', /json/)
-                .expect(200)
-                .expect(
-                    at: stashAt
-                    name: 'Fred'
-                    type: 'monster'
-                    message: 'hello'
-                ).end(done)
+            server.processor.blackboard.withtimestamp.should.eql(
+                at: stashAt
+                name: 'Fred'
+                type: 'monster'
+                message: 'hello'
+            )
+            done()

@@ -14,3 +14,6 @@ Error making macros.
         NOT_AN_APP: () ->
             name: "NOT_AN_APP"
             message: "Looks like you maybe passed something that isn't express or connect, it doesn't have .use() method"
+        ALREADY_LISTENING: () ->
+            name: "ALREADY_LISTENING"
+            message: "You already called .listen() on this server"
