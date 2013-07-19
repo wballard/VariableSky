@@ -3,4 +3,4 @@ that data into the blackboard. How is this different from a save?
 
 ...it's not. Ha!
 
-    module.exports = require('../server/save')
+    module.exports = require('../server/save.litcoffee')

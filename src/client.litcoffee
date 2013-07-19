@@ -8,8 +8,14 @@ This is the client library, focused on a socket interface.
     packPath = require('./util.litcoffee').packPath
     parsePath = require('./util.litcoffee').parsePath
     trace = require('./util.litcoffee').trace
-    if not WebSocket?
-        WebSocket = require('ws')
+    ServerWebSocket = require('ws')
+    if not window?.WebSocket
+        #not in the browser?
+        WebSocket = ServerWebSocket
+    else
+        #plain old socket, supplied by the browser
+        #and if you have a socket less browser, die. horribly.
+        WebSocket = window.WebSocket
 
 Yes. On purpose. Appeases browserify.
 
@@ -53,6 +59,7 @@ And a socket, so we can actually talk to the server.
             connect = =>
                 @sock = new WebSocket(url)
                 timeout = setTimeout =>
+                    console.log 'gank', @sock
                     @sock.close()
                 , 1000
                 @sock.onopen = =>
@@ -143,6 +150,10 @@ has a close connection timeout anyhow.
             @removeAllListeners()
             @sock.close()
             done()
+
+        dangerClose: (done) ->
+            @sock.close()
+            (done or ->)()
 
 This is the main exported factory API to connect, you can feed this `()` and
 it will connect to the default relative location, which is almost always what

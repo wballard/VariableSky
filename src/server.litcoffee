@@ -98,12 +98,12 @@ Clean server shutdown.
 
 Hook support forwards to the processor, supports chaining.
 
-        hook: (event, path, callback) ->
+        hook: (event, datapath, callback) ->
             switch event
                 when 'link'
-                    @processor.hookAfter event, path, callback
+                    @processor.hookAfter event, datapath, callback
                 else
-                    @processor.hookBefore event, path, callback
+                    @processor.hookBefore event, datapath, callback
             this
 
 
@@ -169,8 +169,8 @@ Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
 
                 if todo.command is 'link'
-                    path = packPath(todo.path)
-                    @router.on 'journal', path, @relay
+                    datapath = packPath(todo.path)
+                    @router.on 'journal', datapath, @relay
 
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
@@ -192,8 +192,8 @@ On close, unhook from listening to the journal.
 When a message comes by, route it.
 
         route: (todo) =>
-            path = packPath(todo.path)
-            @router.dispatch 'journal', path, todo, ->
+            datapath = packPath(todo.path)
+            @router.dispatch 'journal', datapath, todo, ->
 
 When the server has journaled data, there is a state change. This is an interesting
 listening case, time to relay data along to the client if there is any prefix match,

@@ -13,18 +13,22 @@
             connToBeOrphaned.once 'open', ->
                 done()
             #HAVOC, poke under the hood to pretend a disconnect
-            connToBeOrphaned.sock.close()
+            connToBeOrphaned.dangerClose()
         it "should re-link data", (done) ->
-            link = connToBeOrphaned.link('/reco').save('yeah')
-            #after the re-open, hook up again for another link
-            connToBeOrphaned.once 'open', ->
-                link.once 'link', (snapshot) ->
-                    snapshot.should.equal('yeah')
-                    done()
-            #force close, which will then re-open, then re-link...
-            link.once('save', ->
-                connToBeOrphaned.sock.close()
-            )
+            link = connToBeOrphaned
+                .link('reco', (error, snapshot) ->
+                    #this will be called three times
+                    # * first link
+                    # * save
+                    # * re-link on the re-open
+                    if this.count is 3
+                        snapshot.should.eql('yeah')
+                        done()
+                )
+                #force close, which will then re-open, then re-link...
+                .save('yeah', (error, snapshot) ->
+                    connToBeOrphaned.dangerClose()
+                )
 
 Test scenarios that use the client library from a browser.
 
