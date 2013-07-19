@@ -19,7 +19,7 @@ an Array mutator.
                 @count += 1
                 dataCallback.call(this, error, value) if dataCallback
 
-`save` and `remove` are defined as closures over the processor
+Operations to the linked data are defined as closures over the processor.
 
             @save = (value, done) ->
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
@@ -27,9 +27,8 @@ an Array mutator.
                         done(error) if done
                         @dataCallback error
                     else
-                        cloner = _.cloneDeep(val)
-                        done(undefined, cloner) if done
-                        @dataCallback undefined, cloner
+                        done(undefined, val) if done
+                        @dataCallback undefined, val
                 this
             @remove = (done) ->
                 processor.do {command: 'remove', path: @path}, (error, val) =>
@@ -40,6 +39,21 @@ an Array mutator.
                         done() if done
                         @dataCallback undefined, undefined
                 this
+            @push = (things...) ->
+
+Variable numbers of arguments, but may have a callback.
+
+                if _.isFunction(_.last(things))
+                    done = _.last(things)
+                    things = _.initial(things)
+                else
+                    done = ->
+                processor.do {command: 'splice', path: @path, elements: things}, (error, val) =>
+                    if error
+                        done(error)
+                        @dataCallback error
+                    else
+                        done(undefined, val)
 
 This actually starts off the link, by processing a command to link.
 

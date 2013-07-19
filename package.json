@@ -32,7 +32,8 @@
     "coffeeify": "~0.5.1",
     "connect": "~2.8.4",
     "ws": "~0.4.27",
-    "node-uuid": "~1.4.0"
+    "node-uuid": "~1.4.0",
+    "colors": "~0.6.0-1"
   },
   "devDependencies": {
     "mocha": "~1.12.0",

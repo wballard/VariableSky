@@ -3,8 +3,6 @@ otherwise.
 
     module.exports = (todo, blackboard, done) ->
         todo.val = blackboard.valueAt(todo.path)
-        if todo.__trace__
-            console.log 'linked value', todo
         done null
 
 This is a read command, no sense clogging up the journal with it.

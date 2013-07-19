@@ -23,10 +23,11 @@ What it won't do is try to push to a non-array, that's an error.
 This is a fusion of push and splice, by using undefined 'index' parameter
 then just look up the function
 
-            if not todo.val.index?
-                todo.val.index = tail.length
-            todo.val.howMany = todo.val.howMany or 0
-            todo.val.elements = todo.val.elements or []
-            args = _.flatten([todo.val.index, todo.val.howMany, todo.val.elements])
+            if not todo.index?
+                todo.index = tail.length
+            todo.howMany = todo.howMany or 0
+            todo.elements = todo.elements or []
+            args = _.flatten([todo.index, todo.howMany, todo.elements])
             tail.splice.apply tail, args
-        done null
+
+        done undefined

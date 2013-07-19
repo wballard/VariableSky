@@ -39,7 +39,6 @@ The REST API.
                 next()
             ).hook('link', 'message', (context, next) ->
                 context.val.double = "hooked"
-                console.log 'fur', context.val
                 next()
             )
             client.link('message', (error, snapshot) ->
@@ -126,21 +125,15 @@ The REST API.
                     )
                 )
         it "will let you hook posting to an array", (done) ->
-            server.hook('splice', '/things', (context, next) ->
+            server.hook('splice', 'things', (context, next) ->
                 #put in another item for every item
-                context.val.elements.push 'Another Item'
+                context.elements.push 'Another Item'
                 next()
             )
-            request(app)
-                .post('/mounted/things')
-                .send('Item One')
-                .expect(200)
-                .end ->
-                    request(app)
-                        .get('/mounted/things')
-                        .expect('Content-Type', /json/)
-                        .expect(200)
-                        .expect(['Item One', 'Another Item'], done)
+            client.link('things').push('Item One', (error, snapshot) ->
+                snapshot.should.eql(['Item One', 'Another Item'])
+                done()
+            )
         it "will give you an error message with hook exceptions", (done) ->
             server.hook('link', '/error', (context, next) ->
                 throw "Oh my!"

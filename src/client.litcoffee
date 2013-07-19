@@ -7,15 +7,16 @@ This is the client library, focused on a socket interface.
     Router = require('./router.litcoffee').PrefixRouter
     packPath = require('./util.litcoffee').packPath
     parsePath = require('./util.litcoffee').parsePath
+    trace = require('./util.litcoffee').trace
     if not WebSocket?
         WebSocket = require('ws')
 
 Yes. On purpose. Appeases browserify.
 
-    linkcommand =
-    save = require('./commands/server/save.litcoffee')
-    remove = require('./commands/server/remove.litcoffee')
-    splice = require('./commands/server/splice.litcoffee')
+    linkcommand = require('./commands/client/link.litcoffee')
+    savecommand = require('./commands/server/save.litcoffee')
+    removecommand = require('./commands/server/remove.litcoffee')
+    splicecommand = require('./commands/client/splice.litcoffee')
 
     class Client extends EventEmitter
         constructor: (url) ->
@@ -32,10 +33,10 @@ A client has a command processor, in a way it is just like a server
 but for a single user.
 
             @processor = new Processor()
-            @processor.commands.link = require('./commands/client/link.litcoffee')
-            @processor.commands.save = save
-            @processor.commands.remove = remove
-            @processor.commands.splice = splice
+            @processor.commands.link = linkcommand
+            @processor.commands.save = savecommand
+            @processor.commands.remove = removecommand
+            @processor.commands.splice = splicecommand
             @processor.side = 'client'
 
             @val = @processor.blackboard
@@ -93,9 +94,7 @@ Replies from yourself do not need to be dispatched.
 Fire hose of tracing.
 
         traceOn: ->
-            @trace = (todo) ->
-                todo.__trace__ = true
-                console.error todo
+            @trace = trace
             this
 
 Refresh all links.
