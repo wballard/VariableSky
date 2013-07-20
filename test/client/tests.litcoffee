@@ -121,7 +121,7 @@ eventing, so we simulate these with two connections.
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
-        it "binds data from other connections to angular", (done) ->
+        it "binds data in the sky to angular", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
             #this sets up an automatic link
@@ -137,4 +137,24 @@ eventing, so we simulate these with two connections.
                 else
                     setTimeout areWeThereYet
             areWeThereYet()
+        it "binds data changes in UI through angular to the sky", (done) ->
+            #pretend this is a controller, just get at the scope
+            $scope = angular.element($("#testArea")).scope()
+            #link to angular, there is a value callback that fires each time the
+            #UI has digested a change. this is a bit redundant with $watch, but
+            #lets you hook in
+            conn.link('angular.uptest').toAngular($scope, 'variableToSky', (error, value) ->
+                value.should.equal('spacebird')
+                "" #I don't get this, but if you 'return' the assert, things bomb
+            )
+            otherConn.link('angular.uptest', (error, value) ->
+                if this.count is 2
+                    value.should.eql('spacebird')
+                    done()
+            )
+            #trigger a UI change
+            angular.element($('#testSkyOutput'))
+                .val('spacebird')
+                .triggerHandler('change').triggerHandler('input')
+
 

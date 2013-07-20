@@ -9,12 +9,12 @@ Test connection and action over a streaming socket.
 
     options =
         storageDirectory: path.join __dirname, '.sockettest'
+    wrench.rmdirSyncRecursive options.storageDirectory, true
 
     describe "Socket API", ->
         app = null
         skyserver = null
         before (done) ->
-            wrench.rmdirSyncRecursive options.storageDirectory, true
             app = connect()
             server = require('http').createServer(app)
             skyserver = new sky.Server(options)
