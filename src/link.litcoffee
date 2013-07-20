@@ -71,7 +71,7 @@ Angular js support. This supports automatic two way data binding.
                     throw errors.NO_ANGULAR()
                 $scope.$watch name, (scopeValue) ->
                     console.log "scope value", name, scopeValue
-                    change()
+                    change() if change
                 @on 'change', (value) ->
                     $scope.$apply ->
                         $scope[name] = value

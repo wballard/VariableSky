@@ -121,7 +121,7 @@ eventing, so we simulate these with two connections.
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
-        it "works with angular", (done) ->
+        it "binds data from other connections to angular", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
             #this sets up an automatic link

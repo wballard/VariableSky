@@ -22,9 +22,11 @@
     <script src="coffee-script.js"></script>
     <script type="text/javascript" src="./variablesky.client"></script>
     <script type="text/literate-coffeescript" src="tests.litcoffee"></script>
-    <script type="text/coffeescript" src="angular.test.coffee"></script>
-
-    <div ng-controller="VariableSkyTestController" id="testArea">
+    <script type="text/coffeescript">
+        angular.bootstrap(document)
+        mocha.run()
+    </script>
+    <div id="testArea">
       <input type="text" id="testSkyInput" ng-model="variableFromSky">
     </div>
   </body>
