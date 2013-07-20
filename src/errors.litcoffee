@@ -17,3 +17,6 @@ Error making macros.
         ALREADY_LISTENING: () ->
             name: "ALREADY_LISTENING"
             message: "You already called .listen() on this server"
+        NO_ANGULAR: () ->
+            name: "NO_ANGULAR"
+            message: "Could not find window.angular or options.angular from Client"

@@ -121,20 +121,20 @@ eventing, so we simulate these with two connections.
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
-        it "can see the angular values", (done) ->
-           $("#testSkyInput").val().should.eql("pants")
-           done()
         it "works with angular", (done) ->
-          # bind sky var to scope
-          conn.bindToScope(scope, 'path.to.var', 'modelName')
-          # save a value to the sky var
-          link = otherConn.link('path.to.var').save("pants")
-          # validate value shows up via angular
-          $("#testSkyInput").val().should.eql("pants")
-
-          # now we change the value in the element and see that sky is updated
-          $("#testSkyeInpu").val("newPants")
-          link.val.should.equl("newPants")
-
-
+            #pretend this is a controller, just get at the scope
+            $scope = angular.element($("#testArea")).scope()
+            #this sets up an automatic link
+            conn.link('angular.test').toAngular($scope, 'variableFromSky')
+            #and feed in changes from another connection, behold replication
+            #simulation
+            otherConn.link('angular.test').save('bird')
+            #angular is all asynch, so keep on the lookout for the value
+            areWeThereYet = ->
+                input = $("#testSkyInput").val()
+                if input is 'bird'
+                    done()
+                else
+                    setTimeout areWeThereYet
+            areWeThereYet()
 

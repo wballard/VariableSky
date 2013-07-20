@@ -25,7 +25,7 @@ Yes. On purpose. Appeases browserify.
     splicecommand = require('./commands/client/splice.litcoffee')
 
     class Client extends EventEmitter
-        constructor: (url) ->
+        constructor: (url, @options) ->
             @trace = ->
             @client = uuid.v1()
             @counter = 0
@@ -132,6 +132,7 @@ done callback.
                 , path
                 , done
                 , => @router.off 'fromserver', path, routeToLink
+                , @options.angular
             )
             routeToLink = (message) =>
                 if message.error
@@ -141,6 +142,7 @@ done callback.
                     link.fireCallback undefined, @processor.blackboard.valueAt(path)
             @router.on 'fromserver', path, routeToLink
             link
+
 
 Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.

@@ -9,15 +9,22 @@ same on client as on server, in that you must `save`, `remove`, `set`, or call
 an Array mutator.
 
     parsePath = require('./util.litcoffee').parsePath
+    errors = require('./errors.litcoffee')
     _ = require('lodash')
+    EventEmitter = require('events').EventEmitter
 
-    class Link
-        constructor: (processor, path, dataCallback, @onClose) ->
+    class Link extends EventEmitter
+        constructor: (processor, path, callback, onClose, angular) ->
+            angular = angular or window?.angular
             @path = parsePath(path)
             @count = 0
-            @dataCallback = (error, value) =>
+            lastServerValue = undefined
+            dataCallback = (error, value) =>
                 @count += 1
-                dataCallback.call(this, error, value) if dataCallback
+                callback.call(this, error, value) if callback
+                if not error
+                    lastServerValue = value
+                    @emit 'change', value
 
 Operations to the linked data are defined as closures over the processor.
 
@@ -25,24 +32,24 @@ Operations to the linked data are defined as closures over the processor.
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                     if error
                         done(error) if done
-                        @dataCallback error
+                        dataCallback error
                     else
                         done(undefined, val) if done
-                        @dataCallback undefined, val
+                        dataCallback undefined, val
                 this
+
             @remove = (done) ->
                 processor.do {command: 'remove', path: @path}, (error, val) =>
                     if error
                         done(error) if done
-                        @dataCallback error
+                        dataCallback error
                     else
                         done() if done
-                        @dataCallback undefined, undefined
+                        dataCallback undefined, undefined
                 this
+
             @push = (things...) ->
-
-Variable numbers of arguments, but may have a callback.
-
+                #Variable numbers of arguments, but may have a callback.
                 if _.isFunction(_.last(things))
                     done = _.last(things)
                     things = _.initial(things)
@@ -51,25 +58,42 @@ Variable numbers of arguments, but may have a callback.
                 processor.do {command: 'splice', path: @path, elements: things}, (error, val) =>
                     if error
                         done(error)
-                        @dataCallback error
+                        dataCallback error
                     else
                         done(undefined, val)
+                        dataCallback undefined, val
+                this
+
+Angular js support. This supports automatic two way data binding.
+
+            @toAngular = ($scope, name, change) ->
+                if not angular
+                    throw errors.NO_ANGULAR()
+                $scope.$watch name, (scopeValue) ->
+                    console.log "scope value", name, scopeValue
+                    change()
+                @on 'change', (value) ->
+                    $scope.$apply ->
+                        $scope[name] = value
+                this
+
+
+Force fire the data callback, used when you get a message from another client.
+
+            @fireCallback = (error, newVal) ->
+                if not error
+                    @val = newVal
+                dataCallback error, @val
+
+            @close = ->
+                onClose() if onClose
 
 This actually starts off the link, by processing a command to link.
 
-
             processor.do {command: 'link', path: @path}, (error, val) =>
                 if error
-                    @dataCallback error
+                    dataCallback error
                 else
-                    @dataCallback undefined, _.cloneDeep(val)
-
-        fireCallback: (error, newVal) ->
-            if not error
-                @val = newVal
-            @dataCallback error, @val
-
-        close: ->
-            @onClose()
+                    dataCallback undefined, val
 
     module.exports = Link

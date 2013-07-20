@@ -16,7 +16,6 @@ The REST API.
     options =
         storageDirectory: path.join __dirname, '.test'
 
-    console.log 'delbert'
     wrench.rmdirSyncRecursive options.storageDirectory, true
 
     describe "Hooks", ->
@@ -124,7 +123,6 @@ The REST API.
                 .remove( (error) ->
                     error.name.should.equal("HOOK_ABORTED")
                     client.link('immortal', (error, snapshot) ->
-                        console.log 'linkback', error, snapshot
                         snapshot.should.equal('Zeus')
                         done()
                     )
