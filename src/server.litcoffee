@@ -16,6 +16,8 @@ sent along to a command processor with a shared memory blackboard.
     connect = require('connect')
     EventEmitter = require('events').EventEmitter
     WebSocketServer = require('ws').Server
+    es = require('event-stream')
+    inspect = require('./util.litcoffee').inspect
 
 A counter for identifiers.
 
@@ -57,12 +59,34 @@ Set up a processor with the server based commands.
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
 
-And now the journal, intially set up to queue commands until we are recovered.
+            remit = @emit
+            @emit = ->
+                console.error 'emit', arguments[0], inspect(arguments[1])
+                remit.apply this, _.toArray(arguments)
 
-            @doer = @processor.enqueue
+An event stream, paused until recovery is complete, that will
+* process todos
+* journal them
+
+            workstream = es.pipeline(
+                es.map( (todo, callback) =>
+                    @emit 'doing', todo
+                    @processor.do todo, (error, val) =>
+                        if error
+                            todo.error = error
+                            callback()
+                        else
+                            todo.val = val
+                            callback(null, todo)
+                        @emit todo.__id__
+                )
+            )
+            workstream.pause()
+            @doer = workstream.write
 
 And commands are written to a journal, providing durability. The journal is
-given a function to recover each command.
+given a function to recover each command that takes a 'direct' hook free path
+through the command processor.
 
             recover = (todo, next) =>
                 todo.__recovering__ = true
@@ -74,20 +98,26 @@ given a function to recover each command.
 On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
-
             @journal = new Journal @options, recover, =>
                 @processor.drain()
-                @doer = @processor.do
+                workstream.resume()
                 @emit 'recovered'
-            @processor.on 'done', (val, todo) =>
-                if @processor.commands[todo.command]?.DO_NOT_JOURNAL
-                    #nothing to do
-                else
-                    @journal.record todo, (error) =>
-                        if error
-                            @emit 'error', error, todo
-                        else
-                            @emit 'journal', todo
+
+Build an event stream from the processor through to the journal.
+
+            journalstream = es.pipeline(
+                es.map( (todo, callback) =>
+                    if not @processor.commands[todo.command]?.DO_NOT_JOURNAL
+                        @journal.record todo, (error) =>
+                            if error
+                                @emit 'error', error, todo
+                            else
+                                @emit 'journal', todo
+
+                    callback()
+                )
+            )
+            @processor.on 'done', journalstream.write
 
 Clean server shutdown.
 
@@ -174,12 +204,9 @@ a prefix match against all the linked data in this connection.
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
-                server.doer todo, (error, val) =>
-                    if error
-                        todo.error = error
-                    else
-                        todo.val = val
+                server.once todo.__id__, =>
                     @conn.send JSON.stringify(todo)
+                server.doer todo
 
 On close, unhook from listening to the journal.
 

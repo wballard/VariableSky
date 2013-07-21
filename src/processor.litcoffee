@@ -23,8 +23,8 @@ back the `todo` with `done(null, todo)`.
     Blackboard = require('./blackboard.litcoffee')
     Link = require('./link.litcoffee')
     Router = require('./router.litcoffee').ExactRouter
-    EventEmitter = require('events').EventEmitter
     packPath = require('./util.litcoffee').packPath
+    EventEmitter = require('events').EventEmitter
 
 Used in hooks to provide access to data.
 
@@ -117,8 +117,6 @@ thing going on, re-writing `val`.
                 req = new HookContext(this, todo, done)
                 @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                     if error
-                        if todo.__trace__
-                            console.error 'before hook failed', error
                         done error, undefined, todo
                     else
                         todo.val = req.val
@@ -141,10 +139,7 @@ req before we fire.
                                         done error, undefined, todo
                                     else
                                         done undefined, req.val, todo
-
-An event, let's us hook up a journal.
-
-                                        @emit 'done', req.val, todo
+                                        @emit 'done', todo
             else
                 done errors.NO_SUCH_COMMAND(), undefined, todo
 

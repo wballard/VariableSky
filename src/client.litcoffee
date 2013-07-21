@@ -33,7 +33,7 @@ as well as the browser via `browserify`.
 
     class Client extends EventEmitter
         constructor: (url, @options) ->
-            @trace = false
+            @trace = true
             @client = uuid.v1()
             @counter = 0
             if window?
@@ -155,6 +155,7 @@ Refresh all links.
         relink: =>
             for each in @router.all('fromserver')
                 @outbound.write
+                    __id__ : "client#{Date.now()}:#{@counter++}"
                     command: 'link'
                     path: parsePath(each.route)
                     __relink__: true
