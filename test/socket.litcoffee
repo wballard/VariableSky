@@ -23,6 +23,7 @@ Test connection and action over a streaming socket.
         after (done) ->
             skyserver.shutdown done
         it "serves a browser client self test page", (done) ->
+            this.timeout(5000)
             browser = new Browser()
             browser.debug = true
             browser.runScripts = true

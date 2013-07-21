@@ -18,11 +18,4 @@ And sometimes you have a parsed path and just want a string for it.
     module.exports.packPath = (pathArray) ->
         "#{pathArray.join('.')}"
 
-    module.exports.trace = (todo, rest...) ->
-        todo.__trace__ = true
-        console.log ''
-        if todo.__from_server__
-            console.log '<------'
-        else
-            console.log '------>'
-        console.log todo
+    module.exports.inspect = require('eyes').inspector({ stream: null })

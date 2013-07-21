@@ -18,6 +18,29 @@ The REST API.
 
     wrench.rmdirSyncRecursive options.storageDirectory, true
 
+    describe "Client", ->
+        server = null
+        httpserver = null
+        before (done) ->
+            app = connect()
+            httpserver = require('http').createServer(app)
+            server = new sky.Server(options)
+            server.listen app, httpserver
+            httpserver.listen 9999, ->
+                done()
+        after (done) ->
+            server.shutdown ->
+                httpserver.close ->
+                    done()
+        it "will queue up actions so you don't need to wait for an open", (done) ->
+            client = new sky.Client('ws://localhost:9999/variablesky')
+            client.link('qbert', (error, snapshot) ->
+                if this.count is 3
+                    snapshot.should.eql('boop')
+                    client.close done
+            )
+            .save('boop')
+
     describe "Hooks", ->
         client = null
         server = null
@@ -92,6 +115,7 @@ The REST API.
                 )
             )
             client.link('modified', (error, snapshot) ->
+                console.log error, snapshot, this.count
                 if this.count is 2
                     snapshot.should.equal('X')
                     done()

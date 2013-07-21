@@ -10,7 +10,6 @@ sent along to a command processor with a shared memory blackboard.
     Journal = require('./journal')
     Router = require('./router').PrefixRouter
     wrench = require('wrench')
-    eyes = require('eyes')
     browserify = require('browserify')
     parsePath = require('./util').parsePath
     packPath = require('./util').packPath
@@ -175,7 +174,7 @@ a prefix match against all the linked data in this connection.
 Handing off to the processor, the only interesting thing is echoing
 the complete command back out to the client over the socket.
 
-                server.doer todo, (error, val, todo) =>
+                server.doer todo, (error, val) =>
                     if error
                         todo.error = error
                     else
