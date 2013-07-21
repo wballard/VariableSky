@@ -19,10 +19,6 @@ sent along to a command processor with a shared memory blackboard.
     es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
 
-A counter for identifiers.
-
-    counter = 0
-
 This is the main server object. This is a class to give instancing, I'm not all
 the way sure why you would want to, but you can make multiple of these in a
 process and have separate sockets or rest url mount points to them. I'd make
