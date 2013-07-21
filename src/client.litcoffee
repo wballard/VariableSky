@@ -33,7 +33,7 @@ as well as the browser via `browserify`.
 
     class Client extends EventEmitter
         constructor: (url, @options) ->
-            @trace = true
+            @trace = false
             @client = uuid.v1()
             @counter = 0
             if window?

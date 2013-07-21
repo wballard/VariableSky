@@ -23,21 +23,6 @@ A counter for identifiers.
 
     counter = 0
 
-And our own very forgiving version of the connect json middleware
-
-    json = (req, res, next) ->
-        buf = ''
-        req.setEncoding 'utf8'
-        req.on 'data', (chunk) -> buf += chunk
-        req.on 'end', ->
-            try
-                req.body = JSON.parse(buf)
-                next()
-            catch err
-                #didn't send JSON, no problem, welcome to stringville
-                req.body = buf
-                next()
-
 This is the main server object. This is a class to give instancing, I'm not all
 the way sure why you would want to, but you can make multiple of these in a
 process and have separate sockets or rest url mount points to them. I'd make
@@ -59,10 +44,7 @@ Set up a processor with the server based commands.
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
 
-            remit = @emit
-            @emit = ->
-                console.error 'emit', arguments[0], inspect(arguments[1])
-                remit.apply this, _.toArray(arguments)
+
 
 An event stream, paused until recovery is complete, that will
 * process todos
@@ -175,6 +157,12 @@ a per client/connection abstraction.
             @sock = new WebSocketServer({server: server, path: url})
             @sock.on 'connection', (conn) =>
                 new Connection(conn, this)
+
+        traceOn: ->
+            remit = @emit
+            @emit = ->
+                console.error 'emit', arguments[0], inspect(arguments[1])
+                remit.apply this, _.toArray(arguments)
 
 A single server side connection instance, isolates the state of each client
 from one another on the server.
