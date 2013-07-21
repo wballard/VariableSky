@@ -143,16 +143,4 @@ req before we fire.
             else
                 done errors.NO_SUCH_COMMAND(), undefined, todo
 
-Queue up todo items for later processing.
-
-        enqueue: (todo, done) =>
-            @todos.push {todo: todo, done: done}
-
-Drain the queued items.
-
-        drain: =>
-            while @todos.length
-                queued = @todos.shift()
-                @do queued.todo, queued.done
-
     module.exports = Processor

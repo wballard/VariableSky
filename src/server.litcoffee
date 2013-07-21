@@ -40,11 +40,7 @@ Set up a processor with the server based commands.
             @processor.commands.remove = require('./commands/server/remove')
             @processor.commands.splice = require('./commands/server/splice')
 
-
-
-An event stream, paused until recovery is complete, that will
-* process todos
-* journal them
+An event stream, paused until recovery is complete, that will process todos.
 
             workstream = es.pipeline(
                 es.map( (todo, callback) =>
@@ -67,17 +63,15 @@ given a function to recover each command that takes a 'direct' hook free path
 through the command processor.
 
             recover = (todo, next) =>
-                todo.__recovering__ = true
                 @processor.directExecute todo, (error, todo) =>
                     if error
-                        util.error 'recovery error', util.inspect(error)
+                        @emit 'error', error, todo
                     next()
 
 On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
             @journal = new Journal @options, recover, =>
-                @processor.drain()
                 workstream.resume()
                 @emit 'recovered'
 
