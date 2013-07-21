@@ -24,7 +24,7 @@ The REST API.
         before (done) ->
             app = connect()
             httpserver = require('http').createServer(app)
-            server = new sky.Server(options)
+            server = new sky.Server(options).traceOn()
             server.listen app, httpserver
             httpserver.listen 9999, ->
                 done()

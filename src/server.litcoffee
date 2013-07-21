@@ -42,7 +42,7 @@ Set up a processor with the server based commands.
 
 An event stream, paused until recovery is complete, that will process todos.
 
-            workstream = es.pipeline(
+            @workstream = es.pipeline(
                 es.map( (todo, callback) =>
                     @emit 'doing', todo
                     @processor.do todo, (error, val) =>
@@ -55,8 +55,7 @@ An event stream, paused until recovery is complete, that will process todos.
                         @emit todo.__id__
                 )
             )
-            workstream.pause()
-            @doer = workstream.write
+            @workstream.pause()
 
 And commands are written to a journal, providing durability. The journal is
 given a function to recover each command that takes a 'direct' hook free path
@@ -72,7 +71,7 @@ On startup, the journal recovers, and when it is full recovered, connect the
 command handling `do` directly, no more `enqueue`.
 
             @journal = new Journal @options, recover, =>
-                workstream.resume()
+                @workstream.resume()
                 @emit 'recovered'
 
 Build an event stream from the processor through to the journal.
@@ -153,6 +152,7 @@ a per client/connection abstraction.
             @emit = ->
                 console.error 'emit', arguments[0], inspect(arguments[1])
                 remit.apply this, _.toArray(arguments)
+            this
 
 A single server side connection instance, isolates the state of each client
 from one another on the server.
@@ -166,25 +166,27 @@ When the server says it has journaled something, we need to route it to clients.
 
             server.on 'journal', @route
 
-Connection data handling, parse out the messages and dispatch them.
+The inbound event stream.
 
-            @conn.on 'message', (message) =>
-                todo = JSON.parse(message)
-                @client = todo.__client__
-
-Spy for links. This informs you which clients need which messages by doing
+* Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
+* Listen for events to reply on completion.
 
-                if todo.command is 'link'
-                    datapath = packPath(todo.path)
-                    @router.on 'journal', datapath, @relay
-
-Handing off to the processor, the only interesting thing is echoing
-the complete command back out to the client over the socket.
-
-                server.once todo.__id__, =>
-                    @conn.send JSON.stringify(todo)
-                server.doer todo
+            inbound = es.pipeline(
+                es.map( (message, callback) =>
+                    todo = JSON.parse(message)
+                    @client = todo.__client__
+                    if todo.command is 'link'
+                        datapath = packPath(todo.path)
+                        @router.on 'journal', datapath, @relay
+                    server.once todo.__id__, =>
+                        @conn.send JSON.stringify(todo)
+                    callback(null, todo)
+                )
+            )
+            inbound.pipe(server.workstream)
+            @conn.on 'message', (message) =>
+                inbound.write message
 
 On close, unhook from listening to the journal.
 
