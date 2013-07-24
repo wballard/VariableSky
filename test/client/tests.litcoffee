@@ -124,32 +124,29 @@ eventing, so we simulate these with two connections.
         it "binds data in the sky to angular", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
-            #this sets up an automatic link
-            conn.link('angular.test').toAngular($scope, 'variableFromSky')
+            #this sets up an automatic link that lives with the scope
+            conn.linkToAngular('angular.test', $scope, 'variableFromSky')
             #and feed in changes from another connection, behold replication
             #simulation
             otherConn.link('angular.test').save('bird')
             #angular is all asynch, so keep on the lookout for the value
-            areWeThereYet = ->
+            $scope.eachDigest = ->
                 input = $("#testSkyInput").val()
                 if input is 'bird'
+                    $scope.eachDigest = ->
                     done()
-                else
-                    setTimeout areWeThereYet
-            areWeThereYet()
+            $scope.$watch 'eachDigest()'
         it "binds data changes in UI through angular to the sky", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
             #link to angular, there is a value callback that fires each time the
             #UI has digested a change. this is a bit redundant with $watch, but
             #lets you hook in
-            conn.link('angular.uptest').toAngular($scope, 'variableToSky', (error, value) ->
-                value.should.equal('spacebird')
-                "" #I don't get this, but if you 'return' the assert, things bomb
-            )
+            conn.linkToAngular('angular.uptest', $scope, 'variableToSky')
             otherConn.link('angular.uptest', (error, value) ->
-                if this.count is 2
+                if value and not this.done
                     value.should.eql('spacebird')
+                    this.done = true
                     done()
             )
             #trigger a UI change

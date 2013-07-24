@@ -11,20 +11,14 @@ an Array mutator.
     parsePath = require('./util.litcoffee').parsePath
     errors = require('./errors.litcoffee')
     _ = require('lodash')
-    EventEmitter = require('events').EventEmitter
 
-    class Link extends EventEmitter
-        constructor: (processor, path, callback, onClose, angular) ->
-            angular = angular or window?.angular
+    class Link
+        constructor: (processor, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
-            lastServerValue = undefined
             dataCallback = (error, value) =>
                 @count += 1
                 callback.call(this, error, value) if callback
-                if not error
-                    lastServerValue = value
-                    @emit 'change', value
 
 Operations to the linked data are defined as closures over the processor.
 
@@ -63,21 +57,6 @@ Operations to the linked data are defined as closures over the processor.
                         done(undefined, val)
                         dataCallback undefined, val
                 this
-
-Angular js support. This supports automatic two way data binding.
-
-            @toAngular = ($scope, name, update) ->
-                if not angular
-                    throw errors.NO_ANGULAR()
-                $scope.$watch name, (scopeValue) =>
-                    console.log "scope value", name, scopeValue, '|', lastServerValue
-                    if not _.isEqual(scopeValue, lastServerValue)
-                        @save scopeValue, (update or ->).call(this, undefined, scopeValue)
-                @on 'change', (value) ->
-                    $scope.$apply ->
-                        $scope[name] = value
-                this
-
 
 Force fire the data callback, used when you get a message from another client.
 

@@ -32,7 +32,8 @@ The client, used to connect to VariableSky. This is designed to be used from nod
 as well as the browser via `browserify`.
 
     class Client extends EventEmitter
-        constructor: (url, @options) ->
+        constructor: (url, options) ->
+            @options = options or {}
             @trace = false
             @client = uuid.v1()
             @counter = 0
@@ -183,7 +184,6 @@ done callback when the todo makes it back from the server.
                 , path
                 , done
                 , => @router.off 'fromserver', path, routeToLink
-                , @options.angular
             )
 
 When a message comes back from the server, we will route it to all the affected links. The
@@ -201,6 +201,28 @@ to get hierarchial notification.
                         link.fireCallback undefined, @processor.blackboard.valueAt(path)
             @router.on 'fromserver', path, routeToLink
             link
+
+AngularJS support. Use this from in a controller to link values to your scope.
+This will automatically update the linked value in the scope, and clean itself
+up when your scope is destroyed.
+
+        linkToAngular: (path, $scope, name) =>
+            angular = @options.angular or window?.angular
+            if not angular
+                throw errors.NO_ANGULAR()
+            flipSaveOff = false
+            link = @link path, (error, value) ->
+                $scope.$apply ->
+                    flipSaveOff = true
+                    $scope[name] = value
+            $scope.$on '$destroy', ->
+                link.close()
+            $scope.$watch name, (newValue, oldValue) =>
+                console.log "scope value", name, newValue, oldValue
+                if not flipSaveOff
+                    link.save newValue
+                flipSaveOff = false
+            , true
 
 Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.
