@@ -11,18 +11,23 @@ an Array mutator.
     parsePath = require('./util.litcoffee').parsePath
     errors = require('./errors.litcoffee')
     _ = require('lodash')
+    adiff = require('adiff')
 
     class Link
         constructor: (processor, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
+            priorArray = []
             dataCallback = (error, value) =>
                 @count += 1
+                priorArray = _.clone(value) if _.isArray(value)
                 callback.call(this, error, value) if callback
 
 Operations to the linked data are defined as closures over the processor.
 
             @save = (value, done) ->
+                if _.isArray(value) and _.isArray(priorArray)
+                    console.log 'diff', adiff.diff(priorArray, value)
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                     if error
                         done(error) if done
