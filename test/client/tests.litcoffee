@@ -2,6 +2,7 @@
     window.holdopen = connToBeOrphaned = null
     should = chai.should()
 
+
     describe "Client Library", ->
         connToBeOrphaned = null
         before (done) ->
@@ -153,5 +154,19 @@ eventing, so we simulate these with two connections.
             angular.element($('#testSkyOutput'))
                 .val('spacebird')
                 .triggerHandler('change').triggerHandler('input')
+        it "binds to arrays through angular and sends splices", (done) ->
+            $scope = angular.element($("#testArea")).scope()
+            conn.linkToAngular('angular.arraytest', $scope, 'skyarray')
+            otherConn.link('angular.arraytest').save([])
+            $scope.$watch 'skyarray', (newvalue, oldvalue) ->
+                if newvalue?.length is 0
+                    #push happening inside the watch, i.e. inside the $digest
+                    #simulating what's up when you would really be binding
+                    newvalue.push 'woot'
+                if newvalue?.length is 1 and not this.done
+                    newvalue.should.eql(['woot'])
+                    this.done = true
+                    done()
+
 
 
