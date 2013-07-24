@@ -24,7 +24,7 @@ The REST API.
         before (done) ->
             app = connect()
             httpserver = require('http').createServer(app)
-            server = new sky.Server(options).traceOn()
+            server = new sky.Server(options)
             server.listen app, httpserver
             httpserver.listen 9999, ->
                 done()
@@ -115,7 +115,6 @@ The REST API.
                 )
             )
             client.link('modified', (error, snapshot) ->
-                console.log error, snapshot, this.count
                 if this.count is 2
                     snapshot.should.equal('X')
                     done()
@@ -152,12 +151,12 @@ The REST API.
                     )
                 )
         it "will let you hook posting to an array", (done) ->
-            server.hook('splice', 'things', (context, next) ->
+            server.hook('save', 'things', (context, next) ->
                 #put in another item for every item
-                context.elements.push 'Another Item'
+                context.val.push 'Another Item'
                 next()
             )
-            client.link('things').push('Item One', (error, snapshot) ->
+            client.link('things').save(['Item One'], (error, snapshot) ->
                 snapshot.should.eql(['Item One', 'Another Item'])
                 done()
             )

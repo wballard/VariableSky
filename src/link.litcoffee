@@ -14,7 +14,7 @@ an Array mutator.
     adiff = require('adiff')
 
     class Link
-        constructor: (processor, path, callback, onClose) ->
+        constructor: (processor, blackboard, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
             priorArray = []
@@ -23,11 +23,28 @@ an Array mutator.
                 priorArray = _.clone(value) if _.isArray(value)
                 callback.call(this, error, value) if callback
 
-Operations to the linked data are defined as closures over the processor.
+Operations to the linked data are defined as closures over the processor, so
+they are tucked in here...
+
+Save does what you would think, but is smart enough to send only the diff for
+an array.
 
             @save = (value, done) ->
-                if _.isArray(value) and _.isArray(priorArray)
-                    console.log 'diff', adiff.diff(priorArray, value)
+
+The array case. As far as I can think of it there are two cases:
+
+* you save the same array instance as is in the client, having modified it
+* you make a new array, clone, etc, modify, and replace
+
+In the instance where you modify the array, the local in client image of the array
+is already up to date, which means no need for a local modify, and only a need
+to send the diff along to the server.
+
+In the other case, it is just a new object and save it.
+
+                if blackboard.valueAt(path) is value and
+                    _.isArray(value) and _.isArray(priorArray)
+                        console.log 'diff', adiff.diff(priorArray, value)
                 processor.do {command: 'save', path: @path, val: value}, (error, val) =>
                     if error
                         done(error) if done

@@ -41,7 +41,7 @@ to construct, but don't even store it in `this`. Trying really hard to make
 clients to through `Link`.
 
                 link: (path, done) ->
-                    new Link(processor, path, done)
+                    new Link(processor, processor.blackboard, path, done)
 
     class Processor extends EventEmitter
         constructor: () ->

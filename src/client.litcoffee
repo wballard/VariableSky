@@ -181,6 +181,7 @@ done callback when the todo makes it back from the server.
                     @once todo.__id__, (todo) ->
                         done todo.error, todo.val
                     @outbound.write todo
+                , @processor.blackboard
                 , path
                 , done
                 , => @router.off 'fromserver', path, routeToLink
