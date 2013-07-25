@@ -27,7 +27,7 @@ some claim abut this being more testable, but I'd be lying :)
     class Server extends EventEmitter
         constructor: (@options) ->
             @options = @options or {}
-            @options.storageDirectory = @options.storageDirectory or path.join(__dirname, '.server')
+            @options.storageDirectory = @options.storageDirectory or path.join(process.cwd(), '.server')
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
@@ -144,7 +144,9 @@ a per client/connection abstraction.
 
             @sock = new WebSocketServer({server: server, path: url})
             @sock.on 'connection', (conn) =>
-                new Connection(conn, this)
+                ret = new Connection(conn, this)
+                @emit 'connected', ret
+                ret
 
         traceOn: ->
             remit = @emit

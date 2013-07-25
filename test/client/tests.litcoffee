@@ -122,6 +122,7 @@ eventing, so we simulate these with two connections.
             otherConn.link('delicated')
                 .save(hi: 'mom')
                 .remove()
+
         it "binds data in the sky to angular", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
@@ -137,6 +138,7 @@ eventing, so we simulate these with two connections.
                     $scope.eachDigest = ->
                     done()
             $scope.$watch 'eachDigest()'
+
         it "binds data changes in UI through angular to the sky", (done) ->
             #pretend this is a controller, just get at the scope
             $scope = angular.element($("#testArea")).scope()
@@ -154,6 +156,7 @@ eventing, so we simulate these with two connections.
             angular.element($('#testSkyOutput'))
                 .val('spacebird')
                 .triggerHandler('change').triggerHandler('input')
+
         it "binds to arrays through angular and sends splices", (done) ->
             $scope = angular.element($("#testArea")).scope()
             conn.linkToAngular('angular.arraytest', $scope, 'skyarray')
@@ -167,6 +170,16 @@ eventing, so we simulate these with two connections.
                     newvalue.should.eql(['woot'])
                     this.done = true
                     done()
+
+        it "lets you set a default value for angular", (done) ->
+            $scope = angular.element($("#testArea")).scope()
+            conn.linkToAngular('angular.goop', $scope, 'goop', {oh: 'yeah'})
+            $scope.$watch 'goop', (value) ->
+                if value and not this.done
+                    this.done = true
+                    value.should.eql({oh: 'yeah'})
+                    done()
+
 
 
 
