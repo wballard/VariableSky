@@ -44,12 +44,23 @@ In the other case, it is just a new object and save it.
 
                 if blackboard.valueAt(path) is value and
                     _.isArray(value) and _.isArray(priorArray)
-                        console.log 'diff', adiff.diff(priorArray, value)
-                processor.do {command: 'save', path: @path, val: value}, (error, val) =>
+                        todo =
+                            command: 'save'
+                            path: @path
+                            diff: adiff.diff(priorArray, value)
+                            skipWhenReplies: true
+                else
+                    todo = {command: 'save', path: @path, val: value}
+                processor.do todo, (error, val) =>
                     if error
                         done(error) if done
                         dataCallback error
                     else
+                        if todo.val
+                            priorArray = _.clone(val) if _.isArray(val)
+                        else
+                            priorArray = _.clone(value)
+                            val = value
                         done(undefined, val) if done
                         dataCallback undefined, val
                 this
@@ -60,24 +71,9 @@ In the other case, it is just a new object and save it.
                         done(error) if done
                         dataCallback error
                     else
+                        priorArray = []
                         done() if done
                         dataCallback undefined, undefined
-                this
-
-            @push = (things...) ->
-                #Variable numbers of arguments, but may have a callback.
-                if _.isFunction(_.last(things))
-                    done = _.last(things)
-                    things = _.initial(things)
-                else
-                    done = ->
-                processor.do {command: 'splice', path: @path, elements: things}, (error, val) =>
-                    if error
-                        done(error)
-                        dataCallback error
-                    else
-                        done(undefined, val)
-                        dataCallback undefined, val
                 this
 
 Force fire the data callback, used when you get a message from another client.

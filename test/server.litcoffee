@@ -160,6 +160,18 @@ The REST API.
                 snapshot.should.eql(['Item One', 'Another Item'])
                 done()
             )
+        it "will save a diff to directly modified array", (done) ->
+            link = client.link('morethings').save(['One'], (error, snapshot) ->
+                snapshot.should.eql(['One'])
+                snapshot.push('Two')
+                link.save(snapshot, (error, s2) ->
+                    s2.should.eql(['One', 'Two'])
+                    client.link('morethings', (error, final) ->
+                        final.should.eql(['One', 'Two'])
+                        done()
+                    )
+                )
+            )
         it "will give you an error message with hook exceptions", (done) ->
             server.hook('link', 'error', (context, next) ->
                 throw "Oh my!"

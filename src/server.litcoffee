@@ -38,7 +38,6 @@ Set up a processor with the server based commands.
             @processor.commands.link = require('./commands/server/link')
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
-            @processor.commands.splice = require('./commands/server/splice')
 
 An event stream, paused until recovery is complete, that will process todos.
 

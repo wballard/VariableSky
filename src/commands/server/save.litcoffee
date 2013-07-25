@@ -6,6 +6,7 @@ data in its way if needed. It is **ruthless** and **relentless**.
 Well, maybe not, maybe it is just _dedicated_.
 
     _ = require('lodash')
+    adiff = require('adiff')
 
     module.exports = (todo, blackboard, done) ->
         if todo?.path.length
@@ -15,5 +16,8 @@ Well, maybe not, maybe it is just _dedicated_.
                     at = at[segment]
                 else
                     at = at[segment] = {}
-            at[_.last(todo.path)] = todo.val
+            if todo.val
+                at[_.last(todo.path)] = todo.val
+            if todo.diff
+                adiff.patch(at[_.last(todo.path)], todo.diff, true)
         done null
