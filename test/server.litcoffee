@@ -35,7 +35,7 @@ The REST API.
         it "will queue up actions so you don't need to wait for an open", (done) ->
             client = new sky.Client('ws://localhost:9999/variablesky')
             client.link('qbert', (error, snapshot) ->
-                if this.count is 3
+                if this.count is 2
                     snapshot.should.eql('boop')
                     client.close done
             )
@@ -52,8 +52,7 @@ The REST API.
             server.listen app, httpserver
             httpserver.listen 9999, ->
                 client = new sky.Client('ws://localhost:9999/variablesky')
-                client.on 'open', ->
-                    done()
+                done()
         after (done) ->
             client.close ->
                 server.shutdown ->
