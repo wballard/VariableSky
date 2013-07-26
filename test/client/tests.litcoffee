@@ -149,7 +149,6 @@ eventing, so we simulate these with two connections.
             #lets you hook in
             conn.linkToAngular('angular.uptest', $scope, 'variableToSky')
             otherConn.link('angular.uptest', (error, value) ->
-                console.log error, value
                 if value and not this.done
                     value.should.eql('spacebird')
                     this.done = true
@@ -159,10 +158,9 @@ eventing, so we simulate these with two connections.
                 #trigger a UI change now that angular know about variableToSky
                 #but outside the angular loop, as real DOM events will be
                 setTimeout ->
-                    console.log 'elemental'
                     angular.element($('#testSkyOutput'))
                         .val('spacebird')
-                        .triggerHandler('input')
+                        .triggerHandler('input').triggerHandler('change')
 
         it "binds to arrays through angular and sends splices", (done) ->
             $scope = angular.element($("#testArea")).scope()

@@ -24,7 +24,8 @@
     <script type="text/literate-coffeescript" src="tests.litcoffee"></script>
     <script type="text/coffeescript">
         angular.bootstrap(document)
-        mocha.run()
+        $ ->
+            mocha.run()
     </script>
     <div id="testArea">
       <input type="text" id="testSkyInput" ng-model="variableFromSky">

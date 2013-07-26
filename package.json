@@ -43,6 +43,6 @@
     "growl": "~1.7.0",
     "nodemon": "~0.7.8",
     "chai": "~1.7.2",
-    "zombie": "~2.0.0-alpha19"
+    "zombie": "git://github.com/wballard/zombie.git"
   }
 }
