@@ -78,20 +78,22 @@ In the other case, it is just a new object and save it.
 
 Force fire the data callback, used when you get a message from another client.
 
-            @fireCallback = (error, newVal) ->
+            @fireCallback = (error, newVal, todo) ->
                 if not error
                     @val = newVal
-                dataCallback error, @val
+                dataCallback error, newVal, todo
+
+Closing, with a callback. Clients closing close all their allocated links this way.
 
             @close = ->
                 onClose() if onClose
 
 This actually starts off the link, by processing a command to link.
 
-            processor.do {command: 'link', path: @path}, (error, val) =>
+            processor.do {command: 'link', path: @path}, (error, val, todo) =>
                 if error
-                    dataCallback error
+                    dataCallback error, undefined, todo
                 else
-                    dataCallback undefined, val
+                    dataCallback undefined, val, todo
 
     module.exports = Link

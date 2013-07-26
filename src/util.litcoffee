@@ -18,4 +18,8 @@ And sometimes you have a parsed path and just want a string for it.
     module.exports.packPath = (pathArray) ->
         "#{pathArray.join('.')}"
 
-    module.exports.inspect = require('eyes').inspector({ stream: null })
+    module.exports.inspect =  (thing) ->
+        if window?
+            thing
+        else
+            require('eyes').inspector({ stream: null })(thing)

@@ -9,7 +9,6 @@ This is the client library, focused on a socket interface.
     parsePath = require('./util.litcoffee').parsePath
     inspect = require('./util.litcoffee').inspect
     es = require('event-stream')
-    _ = require('lodash')
 
 Two different ways to get a WebSocket depending if we are running in a browser
 or in node.
@@ -199,14 +198,14 @@ exception is that you already got a callback on message 'replies' from the serve
 subtle, if you get a reply on `a.b`, but have a link on `a`, you want to see that routed
 to get hierarchial notification.
 
-            routeToLink = (message) =>
-                if message.error
-                    link.fireCallback error
+            routeToLink = (todo) =>
+                if todo.error
+                    link.fireCallback error, undefined, todo
                 else
-                    if message.__client__ is @client and path is packPath(message.path) and not message.__relink__
+                    if todo.__client__ is @client and path is packPath(todo.path) and not todo.__relink__
                         #
                     else
-                        link.fireCallback undefined, @processor.blackboard.valueAt(path)
+                        link.fireCallback undefined, @processor.blackboard.valueAt(path), todo
             @router.on 'fromserver', path, routeToLink
             link
 
@@ -215,51 +214,59 @@ This will automatically update the linked value in the scope, and clean itself
 up when your scope is destroyed.
 
         linkToAngular: (path, $scope, name, defaultValue) =>
+
+Indeed, you need angular JS, but there is an ability to specify it via options
+if you hooked angular into a 'namespace' rather than just on `window`.
+
             angular = @options.angular or window?.angular
             if not angular
                 throw errors.NO_ANGULAR()
-            flipSaveOff = false
-            link = @link path, (error, value) ->
+
+This is the link from angular to Variable Sky. The idea is to get value changes
+from the sky and reflect them in the angular scope, and take changes in the angular
+scope and push them to the sky. The *hard part* is dealing with the initial update
+which isn't an update at all, and trying to not spam the server with
+non-change-changes.
+
+            initialUpdate = true
+            link = @link path, (error, value, todo) ->
 
 Default value, or chain it in the case we got nothing. This doesn't trigger
 a save back to the sky, it is just a local client default. And if you don't
 specify a default, it just stays undefined. JavaScript magic.
 
-                if _.isUndefined(value)
+                if angular.isUndefined(value)
                     value = defaultValue
 
 Push into angular scope land. This will trigger binding.
 
                 $scope.$apply ->
-                    flipSaveOff = true
                     $scope[name] = value
-
-Clean up your room! Put your toys away!
-
-            $scope.$on '$destroy', ->
-                link.close()
 
 Hook back to angular, looking for UI/angular originated changes and push them
 back into the sky to automatically save. This little trick keeps you from needing
 to call save on your own.
 
-            $scope.$watch name, (newValue, oldValue) =>
+            unwatch = $scope.$watch name, (newValue, oldValue) =>
 
 Firehose for debugging. Whoosh!
 
                 if @trace
                     console.error 'SCOPE', name
-                    console.error 'Was:', inspect(newValue)
-                    console.error 'Is:', inspect(oldValue)
+                    console.error 'Was:', inspect(oldValue)
+                    console.error 'Is:', inspect(newValue)
 
-The flip off, it's not about screwing you, it's about supressing a false
-save when your own initial link triggers an angular watch change as the variable
-comes back the first time.
-
-                if not flipSaveOff
+                if initialUpdate
+                    initialUpdate = false
+                else
                     link.save newValue
-                flipSaveOff = false
             , true
+
+Clean up your room! Put your toys away!
+
+            $scope.$on '$destroy', ->
+                unwatch()
+                link.close()
 
 Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.

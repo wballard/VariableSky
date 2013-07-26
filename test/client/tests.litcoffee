@@ -152,10 +152,13 @@ eventing, so we simulate these with two connections.
                     this.done = true
                     done()
             )
-            #trigger a UI change
-            angular.element($('#testSkyOutput'))
-                .val('spacebird')
-                .triggerHandler('change').triggerHandler('input')
+            $scope.$watch 'variableToSky', (val) ->
+                #trigger a UI change now that angular know about variableToSky
+                #but outside the angular loop, as real DOM events will be
+                setTimeout ->
+                    angular.element($('#testSkyOutput'))
+                        .val('spacebird')
+                        .triggerHandler('change')
 
         it "binds to arrays through angular and sends splices", (done) ->
             $scope = angular.element($("#testArea")).scope()

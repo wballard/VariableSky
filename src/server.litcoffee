@@ -176,11 +176,20 @@ a prefix match against all the linked data in this connection.
             inbound = es.pipeline(
                 es.map( (message, callback) =>
                     todo = JSON.parse(message)
+                    if @trace
+                        console.error '\n<----'
+                        console.error inspect(todo)
+                    callback(null, todo)
+                ),
+                es.map( (todo, callback) =>
                     @client = todo.__client__
                     if todo.command is 'link'
                         datapath = packPath(todo.path)
                         @router.on 'journal', datapath, @relay
                     server.once todo.__id__, =>
+                        if @trace
+                            console.error '\n---->'
+                            console.error inspect(todo)
                         @conn.send JSON.stringify(todo)
                     callback(null, todo)
                 )
@@ -212,7 +221,13 @@ double messages.
 
         relay: (todo, done) =>
             if todo.__client__ isnt @client
+                if @trace
+                    console.error '\n---->'
+                    console.error inspect(todo)
                 @conn.send JSON.stringify(todo)
             done()
+
+        traceOn: =>
+            @trace = true
 
     module.exports = Server
