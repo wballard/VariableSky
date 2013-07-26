@@ -17,19 +17,17 @@ an Array mutator.
         constructor: (processor, blackboard, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
-            priorArray = []
             dataCallback = (error, value) =>
                 @count += 1
-                priorArray = _.clone(value) if _.isArray(value)
                 callback.call(this, error, value) if callback
 
 Operations to the linked data are defined as closures over the processor, so
 they are tucked in here...
 
-Save does what you would think, but is smart enough to send only the diff for
-an array.
+Save does what you would think, replaces and entire value.
 
             @save = (value, done) ->
+                console.log 'save', value
 
 The array case. As far as I can think of it there are two cases:
 
@@ -42,28 +40,40 @@ to send the diff along to the server.
 
 In the other case, it is just a new object and save it.
 
-                if blackboard.valueAt(path) is value and
-                    _.isArray(value) and _.isArray(priorArray)
-                        todo =
-                            command: 'save'
-                            path: @path
-                            diff: adiff.diff(priorArray, value)
-                            skipWhenReplies: true
-                else
-                    todo = {command: 'save', path: @path, val: value}
+                todo = {command: 'save', path: @path, val: value}
                 processor.do todo, (error, val) =>
                     if error
                         done(error) if done
                         dataCallback error
                     else
-                        if todo.val
-                            priorArray = _.clone(val) if _.isArray(val)
-                        else
-                            priorArray = _.clone(value)
-                            val = value
                         done(undefined, val) if done
                         dataCallback undefined, val
                 this
+
+Save diff tries to just send updates, this is currently only useful on arrays.
+You feed it an old and new value, so in practice this is called from the angular
+bindings as there is already an 'old' copy in memory, no sense in making yet
+another copy...
+
+            @saveDiff = (newValue, oldValue, done) ->
+                console.log 'avediff', oldValue, newValue
+                if _.isArray(oldValue) and _.isArray(newValue)
+                    todo =
+                        command: 'save'
+                        path: @path
+                        diff: adiff.diff(oldValue, newValue)
+                        skipWhenReplies: true
+                    processor.do todo, (error, val) =>
+                        if error
+                            done(error) if done
+                            dataCallback error
+                        else
+                            done(undefined, val) if done
+                            dataCallback undefined, val
+                else
+                    @save newValue, done
+
+Totally blows away a value, making it `undefined`.
 
             @remove = (done) ->
                 processor.do {command: 'remove', path: @path}, (error, val) =>
@@ -71,7 +81,7 @@ In the other case, it is just a new object and save it.
                         done(error) if done
                         dataCallback error
                     else
-                        priorArray = []
+                        newValu = []
                         done() if done
                         dataCallback undefined, undefined
                 this

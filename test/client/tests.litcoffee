@@ -149,12 +149,14 @@ eventing, so we simulate these with two connections.
             #lets you hook in
             conn.linkToAngular('angular.uptest', $scope, 'variableToSky')
             otherConn.link('angular.uptest', (error, value) ->
+                console.log 'and back', value
                 if value and not this.done
                     value.should.eql('spacebird')
                     this.done = true
                     done()
             )
             $scope.$watch 'variableToSky', (val) ->
+                console.log 'fuck you die', val
                 #trigger a UI change now that angular know about variableToSky
                 #but outside the angular loop, as real DOM events will be
                 setTimeout ->

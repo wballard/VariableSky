@@ -249,7 +249,6 @@ scope and push them to the sky. The *hard part* is dealing with the initial upda
 which isn't an update at all, and trying to not spam the server with
 non-change-changes.
 
-            initialUpdate = true
             link = @link path, (error, value, todo) ->
 
 Default value, or chain it in the case we got nothing. This doesn't trigger
@@ -277,8 +276,10 @@ Firehose for debugging. Whoosh!
                     console.log 'Was:', inspect(oldValue)
                     console.log 'Is:', inspect(newValue)
 
-                if initialUpdate
-                    initialUpdate = false
+                if angular.isUndefined(newValue) and angular.isUndefined(oldValue)
+                    #nothing happened, yet angular fired an event. awesome
+                else if angular.equals(newValue, oldValue)
+                    #this should not happen, and yet, puppies die...
                 else
                     link.save newValue
             , true
@@ -288,6 +289,8 @@ Clean up your room! Put your toys away!
             $scope.$on '$destroy', ->
                 unwatch()
                 link.close()
+
+            link
 
 Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.
