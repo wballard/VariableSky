@@ -91,7 +91,7 @@ eventing, so we simulate these with two connections.
 
         it "will notify other connections on save", (done) ->
             conn.link('testcross', (error, snapshot) ->
-                if this.count is 2
+                if this.count is 3
                     snapshot.should.eql('Hi')
                     done()
             )
@@ -102,7 +102,7 @@ eventing, so we simulate these with two connections.
             #so we pop in a counter
             conn.link('parenty', (error, snapshot) ->
                 #the parent sees the child value change. neat
-                if this.count is 2
+                if this.count is 3
                     snapshot.hi.should.equal('mom')
                     done()
             )
@@ -111,9 +111,9 @@ eventing, so we simulate these with two connections.
 
         it "will replicate deleted variables between connection", (done) ->
             conn.link('delicated', (error, snapshot) ->
-                if this.count is 2
-                    snapshot.should.eql(hi: 'mom')
                 if this.count is 3
+                    snapshot.should.eql(hi: 'mom')
+                if this.count is 4
                     should.not.exist(snapshot)
                     should.not.exist(this.val)
                     should.not.exist(conn.val.delicated)

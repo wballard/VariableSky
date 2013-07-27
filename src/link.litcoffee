@@ -17,9 +17,9 @@ an Array mutator.
         constructor: (processor, blackboard, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
-            dataCallback = (error, value) =>
+            dataCallback = (error, value, todo) =>
                 @count += 1
-                callback.call(this, error, value) if callback
+                callback.call(this, error, value, todo) if callback
 
 Operations to the linked data are defined as closures over the processor, so
 they are tucked in here...
@@ -40,13 +40,13 @@ to send the diff along to the server.
 In the other case, it is just a new object and save it.
 
                 todo = {command: 'save', path: @path, val: value}
-                processor.do todo, (error, val) =>
+                processor.do todo, (error, val, todo) =>
                     if error
-                        done(error) if done
-                        dataCallback error
+                        done(error, undefined, todo) if done
+                        dataCallback error, undefined, todo
                     else
-                        done(undefined, val) if done
-                        dataCallback undefined, val
+                        done(undefined, val, todo) if done
+                        dataCallback undefined, val, todo
                 this
 
 Save diff tries to just send updates, this is currently only useful on arrays.
@@ -55,34 +55,32 @@ bindings as there is already an 'old' copy in memory, no sense in making yet
 another copy...
 
             @saveDiff = (newValue, oldValue, done) ->
-                console.log 'avediff', oldValue, newValue
                 if _.isArray(oldValue) and _.isArray(newValue)
                     todo =
                         command: 'save'
                         path: @path
                         diff: adiff.diff(oldValue, newValue)
-                        skipWhenReplies: true
-                    processor.do todo, (error, val) =>
+                    processor.do todo, (error, val, todo) =>
                         if error
                             done(error) if done
-                            dataCallback error
+                            dataCallback error, undefined, todo
                         else
                             done(undefined, val) if done
-                            dataCallback undefined, val
+                            dataCallback undefined, val, todo
                 else
                     @save newValue, done
 
 Totally blows away a value, making it `undefined`.
 
             @remove = (done) ->
-                processor.do {command: 'remove', path: @path}, (error, val) =>
+                processor.do {command: 'remove', path: @path}, (error, val, todo) =>
                     if error
                         done(error) if done
-                        dataCallback error
+                        dataCallback error, undefined, todo
                     else
                         newValu = []
                         done() if done
-                        dataCallback undefined, undefined
+                        dataCallback undefined, undefined, todo
                 this
 
 Force fire the data callback, used when you get a message from another client.

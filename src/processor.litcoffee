@@ -118,6 +118,7 @@ thing going on, re-writing `val`.
                 @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                     if error
                         done error, undefined, todo
+                        @emit 'error', error, todo
                     else
                         todo.val = req.val
 
@@ -127,6 +128,7 @@ internal commands, not user hooks, so they get to really store data.
                         @commands[todo.command] todo, @blackboard, (error) =>
                             if error
                                 done error, undefined, todo
+                                @emit 'error', error, todo
                             else
 
 And the final after phase, last chance to modify the `val` before it is
@@ -137,6 +139,7 @@ req before we fire.
                                 @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
                                     if error
                                         done error, undefined, todo
+                                        @emit 'error', error, todo
                                     else
                                         done undefined, req.val, todo
                                         @emit 'done', todo

@@ -114,7 +114,7 @@ The REST API.
                 )
             )
             client.link('modified', (error, snapshot) ->
-                if this.count is 2
+                if this.count is 3
                     snapshot.should.equal('X')
                     done()
             )
@@ -128,7 +128,7 @@ The REST API.
             client.link('removed', (error, snapshot) ->
                 if this.count is 2
                     snapshot.should.equal('X')
-                if this.count is 3
+                if this.count is 4
                     should.not.exist(snapshot)
                     done()
             ).save('X')

@@ -39,20 +39,23 @@ Set up a processor with the server based commands.
             @processor.commands.link = require('./commands/server/link')
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
+            @processor.on 'done', (todo) =>
+                @emit 'done', todo
+            @processor.on 'error', (error, todo) =>
+                todo.error = error
+                @emit 'done', todo
 
 An event stream, paused until recovery is complete, that will process todos.
 
             @workstream = es.pipeline(
                 es.map( (todo, callback) =>
-                    @emit 'doing', todo
-                    @processor.do todo, (error, val) =>
+                    @processor.do todo, (error, val, todo) =>
                         if error
                             todo.error = error
                             callback()
                         else
                             todo.val = val
                             callback(null, todo)
-                        @emit todo.__id__
                 )
             )
             @workstream.pause()
@@ -82,8 +85,6 @@ Build an event stream from the processor through to the journal.
                         @journal.record todo, (error) =>
                             if error
                                 @emit 'error', error, todo
-                            else
-                                @emit 'journal', todo
 
                     callback()
                 )
@@ -165,10 +166,10 @@ from one another on the server.
 
 When the server says it has journaled something, we need to route it to clients.
 
-            routeJournal = (todo) =>
+            routeDone = (todo) =>
                 datapath = packPath(todo.path)
-                router.dispatch 'journal', datapath, todo, ->
-            server.on 'journal', routeJournal
+                router.dispatch 'done', datapath, todo, ->
+            server.on 'done', routeDone
 
 Streaming web sockets are go.
 
@@ -199,17 +200,11 @@ clients are writing to this stream, and clients close
                 es.map( (todo, callback) ->
                     if todo.command is 'link'
                         datapath = packPath(todo.path)
-                        if not router.has('journal', datapath)
-                            router.on 'journal', datapath, (todo, done) ->
+                        if not router.has('done', datapath)
+                            router.on 'done', datapath, (todo, done) ->
                                 todo.__routed__ = true
                                 outbound.write(todo)
                                 done()
-                    callback(null, todo)
-                ),
-                es.map( (todo, callback) ->
-                    server.once todo.__id__, ->
-                        todo.__reply__ = true
-                        outbound.write(todo)
                     callback(null, todo)
                 ),
                 es.map( (todo, callback) ->
@@ -219,10 +214,8 @@ clients are writing to this stream, and clients close
             )
             socketstream.pipe(inbound)
 
-On close, unhook from listening to the journal.
-
             conn.on 'close', =>
-                server.removeListener 'journal', routeJournal
+                server.removeListener 'done', routeDone
 
             conn.on 'error', (error) =>
 
