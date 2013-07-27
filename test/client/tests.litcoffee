@@ -22,6 +22,7 @@
         it "should re-link data", (done) ->
             link = connToBeOrphaned
                 .link('reco', (error, snapshot) ->
+                    console.log error, snapshot, this.count
                     #this will be called three times
                     # * first link
                     # * save

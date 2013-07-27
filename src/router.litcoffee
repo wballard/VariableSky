@@ -6,6 +6,7 @@ and dispatch on named strings to callbacks.
     class ExactRouter
         constructor: () ->
             @methods = {}
+            @routes = {}
 
 For a named method, install a route. If matched, fire callback. If multiple routes
 are installed, they will be called in order asynchronously as each callback completes.
@@ -13,21 +14,28 @@ are installed, they will be called in order asynchronously as each callback comp
 Callbacks are of the form `(context, done)`, if all is well, call `done()`, otherwise
 call `done(error)`, which ends the callback link chain.
 
-        on: (method, route, callback) ->
+        on: (method, route, callback) =>
             chain = @methods[method] or []
             newLink =
                 route: route
                 callback: callback
             chain.push newLink
             @methods[method] = chain
+            @routes["#{method}.#{route}"] = (@routes["#{method}.#{route}"] or 0) + 1
 
 Goodbye, cruel route.
 
-        off: (method, route, callback) ->
+        off: (method, route, callback) =>
             chain = @methods[method] or []
             @methods[method] = _.reject(chain, (x) ->
                 x.route == route and x.callback == callback
             )
+            @routes["#{method}.#{route}"] = @routes["#{method}.#{route}"] - 1
+
+Existence check, handy when you want to prevent duplicate routes.
+
+        has: (method, route) =>
+            @routes["#{method}.#{route}"]
 
 All the routes in the router.
 

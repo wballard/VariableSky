@@ -18,6 +18,7 @@ sent along to a command processor with a shared memory blackboard.
     WebSocketServer = require('ws').Server
     es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
+    websocket = require('websocket-stream')
 
 This is the main server object. This is a class to give instancing, I'm not all
 the way sure why you would want to, but you can make multiple of these in a
@@ -159,75 +160,70 @@ A single server side connection instance, isolates the state of each client
 from one another on the server.
 
     class Connection
-        constructor: (@conn, server) ->
-            @router = new Router()
-            @client = null
+        constructor: (conn, server) ->
+            router = new Router()
 
 When the server says it has journaled something, we need to route it to clients.
 
-            server.on 'journal', @route
+            routeJournal = (todo) =>
+                datapath = packPath(todo.path)
+                router.dispatch 'journal', datapath, todo, ->
+            server.on 'journal', routeJournal
 
-The inbound event stream.
+Streaming web sockets are go.
+
+            socketstream = websocket(conn)
+
+The outbound event stream, send messages along to a connected client.
+
+            outbound = es.pipeline(
+                es.map( (todo, callback) ->
+                    callback null, JSON.stringify(todo)
+                ),
+                socketstream
+            )
+
+The inbound event stream, messages coming from a connected client.
 
 * Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
 * Listen for events to reply on completion.
+* Write to the server workstream, not that *this is not a pipe*, as multiple
+clients are writing to this stream, and clients close
 
             inbound = es.pipeline(
-                es.map( (message, callback) =>
+                es.map( (message, callback) ->
                     todo = JSON.parse(message)
-                    if @trace
-                        console.error '\n<----'
-                        console.error inspect(todo)
                     callback(null, todo)
                 ),
-                es.map( (todo, callback) =>
-                    @client = todo.__client__
+                es.map( (todo, callback) ->
                     if todo.command is 'link'
                         datapath = packPath(todo.path)
-                        @router.on 'journal', datapath, @relay
-                    server.once todo.__id__, =>
-                        if @trace
-                            console.error '\n---->'
-                            console.error inspect(todo)
-                        @conn.send JSON.stringify(todo)
+                        if not router.has('journal', datapath)
+                            router.on 'journal', datapath, (todo, done) ->
+                                todo.__routed__ = true
+                                outbound.write(todo)
+                                done()
                     callback(null, todo)
+                ),
+                es.map( (todo, callback) ->
+                    server.once todo.__id__, ->
+                        todo.__reply__ = true
+                        outbound.write(todo)
+                    callback(null, todo)
+                ),
+                es.map( (todo, callback) ->
+                    server.workstream.write(todo)
+                    callback(null, null)
                 )
             )
-            inbound.pipe(server.workstream)
-            @conn.on 'message', (message) =>
-                inbound.write message
+            socketstream.pipe(inbound)
 
 On close, unhook from listening to the journal.
 
-            @conn.on 'close', =>
-                server.removeListener 'journal', @relay
+            conn.on 'close', =>
+                server.removeListener 'journal', routeJournal
 
-            @conn.on 'error', (error) =>
-
-When a message comes by, route it.
-
-        route: (todo) =>
-            datapath = packPath(todo.path)
-            @router.dispatch 'journal', datapath, todo, ->
-
-When the server has journaled data, there is a state change. This is an interesting
-listening case, time to relay data along to the client if there is any prefix match,
-from there the client can sort it out... so this early exits on the first and
-any match.
-
-But, don't relay your own client's messages to yourself, that leads to
-double messages.
-
-        relay: (todo, done) =>
-            if todo.__client__ isnt @client
-                if @trace
-                    console.error '\n---->'
-                    console.error inspect(todo)
-                @conn.send JSON.stringify(todo)
-            done()
-
-        traceOn: =>
-            @trace = true
+            conn.on 'error', (error) =>
 
     module.exports = Server

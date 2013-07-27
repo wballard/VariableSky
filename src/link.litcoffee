@@ -27,7 +27,6 @@ they are tucked in here...
 Save does what you would think, replaces and entire value.
 
             @save = (value, done) ->
-                console.log 'save', value
 
 The array case. As far as I can think of it there are two cases:
 
