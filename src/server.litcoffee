@@ -30,6 +30,7 @@ some claim abut this being more testable, but I'd be lying :)
             @options = @options or {}
             @options.storageDirectory = @options.storageDirectory or path.join(process.cwd(), '.server')
             @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
+            @options.journal = if @options.journal? then @options.journal else true
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
 
@@ -81,11 +82,11 @@ Build an event stream from the processor through to the journal.
 
             journalstream = es.pipeline(
                 es.map( (todo, callback) =>
-                    if not @processor.commands[todo.command]?.DO_NOT_JOURNAL
-                        @journal.record todo, (error) =>
-                            if error
-                                @emit 'error', error, todo
-
+                    if @options.journal
+                        if not @processor.commands[todo.command]?.DO_NOT_JOURNAL
+                            @journal.record todo, (error) =>
+                                if error
+                                    @emit 'error', error, todo
                     callback()
                 )
             )
