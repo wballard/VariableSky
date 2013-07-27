@@ -244,21 +244,29 @@ scope and push them to the sky. The *hard part* is dealing with the initial upda
 which isn't an update at all, and trying to not spam the server with
 non-change-changes.
 
+            exitcount = 0
             link = @link path, (error, value, todo) =>
 
 Default value, or chain it in the case we got nothing. This doesn't trigger
 a save back to the sky, it is just a local client default. And if you don't
 specify a default, it just stays undefined. JavaScript magic.
 
+This works with a cloned object, making a separate reference in angular land
+so that operations and modifications are synchronized via commands rather than
+direct access.
+
                 value = @processor.blackboard.valueAt(path)
 
                 if angular.isUndefined(value)
                     value = defaultValue
+                else
+                    value = angular.copy(value)
 
 Push into angular scope land. This will trigger binding.
 
-                $scope.$apply ->
-                    $scope[name] = value
+                if exitcount++ < 3
+                    $scope.$apply ->
+                        $scope[name] = value
 
 Hook back to angular, looking for UI/angular originated changes and push them
 back into the sky to automatically save. This little trick keeps you from needing
@@ -274,10 +282,15 @@ Firehose for debugging. Whoosh!
                     console.log 'Is:', inspect(newValue)
                     console.log 'Same:', newValue is oldValue
 
+Saving. Not as simple as just saving
+
+* All undefined, there is no action
+* No difference with the blackboard, there is no action
+
                 if angular.isUndefined(newValue) and angular.isUndefined(oldValue)
-                    #nothing happened, yet angular fired an event. awesome
-                else if angular.equals(newValue, oldValue)
-                    #this should not happen, and yet, puppies die...
+                    null
+                else if angular.equals(newValue, @processor.blackboard.valueAt(path))
+                    null
                 else
                     link.saveDiff newValue, oldValue
             , true
