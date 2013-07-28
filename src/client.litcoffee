@@ -297,7 +297,9 @@ Saving. Not as simple as just saving
 
 Clean up your room! Put your toys away!
 
-            $scope.$on '$destroy', ->
+            $scope.$on '$destroy', =>
+                if @trace
+                    console.log 'CLOSE', link.path
                 unwatch()
                 link.close()
 
