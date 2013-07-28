@@ -17,12 +17,19 @@ an Array mutator.
         constructor: (processor, blackboard, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
+            diff = adiff.diff
             dataCallback = (error, value, todo) =>
                 @count += 1
                 callback.call(this, error, value, todo) if callback
 
 Operations to the linked data are defined as closures over the processor, so
 they are tucked in here...
+
+Sometimes you need to redefine equals. Specifically for angular, to ignore $$.
+
+            @equalIs = (fn) ->
+                diff = adiff(equal: fn).diff
+                this
 
 Save does what you would think, replaces and entire value.
 
@@ -59,7 +66,7 @@ another copy...
                     todo =
                         command: 'save'
                         path: @path
-                        diff: adiff.diff(oldValue, newValue)
+                        diff: diff(oldValue, newValue)
                     processor.do todo, (error, val, todo) =>
                         if error
                             done(error) if done

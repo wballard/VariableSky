@@ -245,7 +245,7 @@ which isn't an update at all, and trying to not spam the server with
 non-change-changes.
 
             exitcount = 0
-            link = @link path, (error, value, todo) =>
+            link = @link(path, (error, value, todo) =>
 
 Default value, or chain it in the case we got nothing. This doesn't trigger
 a save back to the sky, it is just a local client default. And if you don't
@@ -267,6 +267,7 @@ Push into angular scope land. This will trigger binding.
                 if exitcount++ < 3
                     $scope.$apply ->
                         $scope[name] = value
+            ).equalIs(angular.equals)
 
 Hook back to angular, looking for UI/angular originated changes and push them
 back into the sky to automatically save. This little trick keeps you from needing
