@@ -54,13 +54,16 @@ $(document).on('click', function(event){
 });
 //autotoc
 var $nested = null;
+var parentId = null;
 var tocItems = 0;
 $(':header').each(function(){
   if(this.tagName == 'H4') return;
   var $toc = $('#toc');
   if(this.tagName == 'H2') {
     var $link = $('<li class=""><a class="" href="#"></a></li>');
+    $(this).attr('id', $(this).text())
     $nested = $('<ul class="nav-list"/>');
+    parentId = this.id;
     $link.append($nested);
     $link.find('a')
     .attr('href',"#"+this.id)
@@ -69,6 +72,7 @@ $(':header').each(function(){
     tocItems++;
   } else if($nested) {
     var $link = $('<li><a href="#"></a></li>');
+    $(this).attr('id', parentId + '.' + $(this).text())
     $link.find('a')
     .attr('href',"#"+this.id)
     .text(this.innerText);
