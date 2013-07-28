@@ -172,7 +172,6 @@ Fire hose of tracing.
 Refresh all links.
 
         relink: =>
-            @emit 'relinking'
             for each in @router.all('fromserver')
                 @outbound.write
                     __id__ : "client#{Date.now()}:#{@counter++}"
