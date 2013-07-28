@@ -59,7 +59,7 @@ You *can* update this, but if you don't `save` it, it won't stick and
 can be easily updated by other clients and servers.
 
 ### link()
-Connect to data via an dotted path, linking to a local variable in
+Connect to data via a dotted path, linking to a local variable in
 your client program via a callback.
 
 In a typical program, you will have a lot of calls to `link` in order to
@@ -68,6 +68,7 @@ get different pieces of data.
 |Parameter|Notes|
 |---------|-----|
 |path|A dotted data path, pointing at desired data|
+|callback| (error, snapshot) called each time data changes|
 |returns|A `Link`|
 
 ####Return Notes
@@ -78,14 +79,30 @@ that keeps data replicating.
 Even if there is no data at the requested path, a `Link` is returned,
 with an `undefined` snapshot. You can always `save` to it.
 
-The Variable
-Sky server will create objects as needed to make sure your data is
-reachable. This means you can *skip* past objects and make deep paths
-like `a.b.c`, object `a` and `a.b` will be automatically created if they
-do not exist.
+The Variable Sky server will create objects as needed to make sure your
+data is reachable. This means you can *skip* past objects and make deep
+paths like `a.b.c`, object `a` and `a.b` will be automatically created
+if they do not exist.
+
+### linkToAngular()
+Connect to data via a dotted path and inject it into an AngularJS scope.
+This provides very automatic data handling, watching for changes from
+the server and updating angular, and saving on local changes.
+
+These links hook into the angular lifecycle, and `close` automatically
+when a on `Scope` `$destroy`. No need for you to keep track of them, just do
+angular stuff as normal.
+
+|Parameter|Notes|
+|---------|-----|
+|path|A dotted data path, pointing at desired data|
+|$scope|An angular `Scope` to receive the data|
+|name|A name to store the data on the scope, use this name to bind|
+|default|If provided, and the server returns undefined, this will stand in for the current server data. A default|
 
 ### close()
-Close off the connection, this will end attempts to reconnect.
+Close off the connection, this will end attempts to reconnect, and close
+every `Link` started from this `Client`.
 
 ### on()
 Attach an event handler to this connection.
@@ -98,11 +115,9 @@ Attach an event handler to this connection.
 Events are listed below. In all cases `this` in the events refers to the
 `Client` itself.
 
-#### open
-Fired when the connection is open and good to go.
-
-#### close
-Fired when the connection is closed and no longer active.
+#### relinked
+Fired when the connection has auto reconnected and all data has been
+refreshed.
 
 #### error
 Fired on any socket reported error.
@@ -119,13 +134,14 @@ This is the main object you create on the server, `new` it.
 |storageDirectory|Root directory for snapshots and journals, this is used to maintain state|
 
 ### hook()
-On the server, you can _hook_ the events. This is similar to setting up
-routes on an HTTP server, and gives you the chance to intercept:
+On the server, you can _hook_ which is a system of data middleware. This
+is similar to setting up routes on an HTTP server, and gives you the
+chance to intercept:
 
 * Reads, before they go back to a client
 * Writes, before they are saved into Variable Sky
 
-And, it is a great place for you to hook in other systems including:
+And, it is a great place for you to integrate in other systems including:
 
 * REST APIs
 * Web services
@@ -200,19 +216,6 @@ most interesting thing to do here is `abort` and prevent a delete.
 server.hook('remove', 'myrecord', function(context, next){
   //abort and prevent the delete, no need to call next
   context.abort();
-});
-```
-
-#### splice
-Hook in place array modifications.
-
-```javascript
-server.hook('splice', 'myarray', function(context, next){
-  //this makes a 'push' into a double push
-  if (typeof context.val.index == 'undefined') {
-    context.val.elements.push('Second Value');
-  }
-  next();
 });
 ```
 
@@ -343,7 +346,8 @@ it in order to have snapshots update automatically.
 All `Link` methods return `this` so you can chain.
 
 ### val
-The current value of the link, as replicated from the server.
+The current value of the link, as replicated from the server. This will
+not exist until data makes it back.
 
 ### save()
 Save a new value to a link, this **replaces** the existing value, notifies
@@ -357,141 +361,39 @@ links' you can do bulk updates of whole objects.
 |Parameter|Notes|
 |---------|-----|
 |value|Any JavaScript value, just a variable, no need to JSON it|
+|callback| (error, snapshot) fired when the save has completed to the server|
+
+### saveDiff()
+This is a smart save, intended to be used on arrays. It just sends a
+diff, avoiding the need to ship an entire array back to the server.
+
+Internally, the Angular bindings make use of this automatically.
+
+|Parameter|Notes|
+|---------|-----|
+|oldValue|Any JavaScript value, just a variable, no need to JSON it|
+|newValue|Any JavaScript value, just a variable, no need to JSON it|
+|callback| (error, snapshot) fired when the save has completed to the server|
 
 ### remove()
 Remove lets you _undefine_ a variable on the server. This is different
 than `null`.
 
-####Callback Notes
 |Parameter|Notes|
 |---------|-----|
-|error||
-|matchingLinks|An array of `Link` objects matching the query|
-
-### on()
-Attach an event handler to this link.
-
-|Parameter|Notes|
-|---------|-----|
-|name|The name of the event you want to handle|
-|callback|The event handler callback|
-
-Events are listed below. In all cases `this` in the events refers to the
-`Link` itself.
-
-#### link
-Event is fired when any data is changed, including updates you make in
-your client, and most importantly updates made by other clients and
-servers. This notification is the core of real time updates.
-
-For updates you make, `data` will fire in the same client before `saved`
-or `removed`.
-
-|Parameter|Notes|
-|---------|-----|
-|snapshot|A plain old JavaScript value, returned from Variable Sky, that is the value at the link|
-
-Snapshot is a JavaScript value, and this includes `undefined`, which you
-can think of as like a `404`, and `null`, which is when you actually
-`save` a `null` value.
-
-Take `snapshot` and use it in your client program. This callback is the
-place where you move data coming in from the server into the UI
-framework you are using.
-
-When this event fires `snapshot` is identical to `val`.
-
-#### save
-Event is fired after `save` reaches the server, and local data is
-updated, after `data`. This is interesting becuase other connected
-clients and servers may be updating data.
-
-|Parameter|Notes|
-|---------|-----|
-|snapshot|A plain old JavaScript value, returned from Variable Sky.|
-
-#### remove
-Event is fired after `remove` reaches the server.
-
-|Parameter|Notes|
-|---------|-----|
-|snapshot|A plain old JavaScript value that was removed, returned from Variable Sky.|
-
-#### splice
-Event is fired when an array has been in place mutated on the server. This will
-fire instead of `data` to avoid sending an entire array. Remember, if
-you call `save`, `data` will fire. If you call a mutator, you will get
-`splice`.
-
-|Parameter|Notes|
-|--------|-----|
-|index|Start modifying the array at this index, if≈ `undefined` modify at the end of the array|
-|howMany|Remove this many elements|
-|elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
-
-This event gives you data about a partial update, with arguments you can
-pass to `Array.splice`, the entire updated array is at `Link.val`.
-
-### mutators
-Links to arrays exposes the following methods, which have the same meanings as
-the default JavaScript methods. The difference is that these methods
-notify the Variable Sky server, modify the linked array there, fire
-event `data`, then fire an event `splice`, allowing you to apply just
-the delta to a local snapshot. This avoids sending an entire array back
-and forth to the server.
-
-* splice
-* sort
-* reverse
-* push
-* pop
-* shift
-* unshift
-
-### set()
-In addition to the default mutators, you can call `set` to replace a
-single element of an array, avoiding rewriting an entire array to just
-update one object.
-
-|Parameter|Notes|
-|---------|-----|
-|index|Change the element at this index|
-|value|Put this value into the array|
-
-```javascript
-var sampleArray;
-var sampleLink = connection.link("sample");
-sampleLink.on("link", function(snapshot){
-  //capture a reference to the server array
-  sampleArray = snapshot;
-  console.log(sampleArray);
-});
-sampleLink.on("splice", function(index, howMany, elements){
-  //here is the fun part, this applies the changes into the array
-  console.log(index, howMany, elements);
-  console.log(this.val);
-});
-//an initial save, this is an array, a real no fooling array
-sampleLink.save([]);
-//push a value
-sampleLink.push(1);
-```
-
-OK, this will print:
-
-```
-[]
-[1]
-```
+|callback| (error) fired when the remove has completed to the server|
 
 ### concurrentEdit()
-Enable concurrent editing of a linked string on a user interface
-element. Simply call this method, and your users will engage in real
-time concurrent editing.
+Enable concurrent editing by a text editing HTML element Simply call
+this method, and your users will engage in real time concurrent editing
+against the linked data.
+
+You need to use this on a string property.
 
 |Parameter|Notes|
 |---------|-----|
 |element|An editable DOM element|
+|returns|A function, when called ends the editing|
 
 `element` can be an `INPUT`, `TEXTAREA`, `CodeMirror`, or `ACE`.
 
@@ -517,7 +419,8 @@ you reclaim data. So, you have to get at it from a `Server.link()`, not
 from a `Client.link()`.
 
 ### changeOwnership()
-Appoint a user/group as the owner.
+Appoint a user/group as the owner. Sometimes you just need to let go,
+this is how you do it.
 
 |Parameter|Notes|
 |---------|-----|

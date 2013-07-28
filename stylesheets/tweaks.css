@@ -21,6 +21,9 @@ body { padding-top: 70px; }
   margin-left: 60px;
 }
 
+footer {
+  float: right;
+}
 
 @media (max-width: 600px) {
     .sidebar-nav-fixed {
