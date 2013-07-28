@@ -39,7 +39,7 @@ Set up a connection from your client to a variable sky server.
 
 |Parameter|Notes|
 |---------|-----|
-|name|This is the named variable sky from your server|
+|name|This is the websocket url to the variable sky service, you can leave it blank for defaults|
 |returns|A `Client`|
 
 ## Client
@@ -55,6 +55,9 @@ The current value of the server, across all active links. Think of this
 as a slice of all the data on the server, limited to just the data you
 have linked, and replicated.
 
+You *can* update this, but if you don't `save` it, it won't stick and
+can be easily updated by other clients and servers.
+
 ### link()
 Connect to data via an dotted path, linking to a local variable in
 your client program via a callback.
@@ -64,7 +67,7 @@ get different pieces of data.
 
 |Parameter|Notes|
 |---------|-----|
-|path|This is an URL to your Variable Sky server, pointing to the desired data.|
+|path|A dotted data path, pointing at desired data|
 |returns|A `Link`|
 
 ####Return Notes
@@ -73,9 +76,13 @@ on to this link is important, as it contains the actual server linkage
 that keeps data replicating.
 
 Even if there is no data at the requested path, a `Link` is returned,
-with an `undefined` value. You can always `save` to it.  The Variable
+with an `undefined` snapshot. You can always `save` to it.
+
+The Variable
 Sky server will create objects as needed to make sure your data is
-reachable.
+reachable. This means you can *skip* past objects and make deep paths
+like `a.b.c`, object `a` and `a.b` will be automatically created if they
+do not exist.
 
 ### close()
 Close off the connection, this will end attempts to reconnect.

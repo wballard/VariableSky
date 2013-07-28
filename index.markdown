@@ -9,7 +9,7 @@ The simple server for real time single page applications
 </div>
 
 # Problem
-You want to make a modern, single page, real time application, and to do
+You want to make a modern, single page, real time application -- and to do
 this you need to keep variables and data in synch between multiple
 clients and servers.
 
@@ -24,34 +24,32 @@ To give you a sense, here is a sample of connecting to data:
 
 ```javascript
 var conn = VariableSky.connect()
-var usersLink = conn.link("info");
-//event driven data, everything is asynch
-usersLink.on("link", function(snapshot){
+var usersLink = conn.link("info", function(error, snapshot){
+  //event driven data, everything is asynch
   //snapshot is a 'live' variable linked to the server
   //and will start off undefined, we haven't saved anything yet
   //this callback is fired when the server returns data for your link
   //a well as any time the linked data changes from any client
+  console.log(snapshot);
 });
 //... your app happens here, pay attention to the variable names
 var stuff = {hi: 'mom'};
 //yep, the value from stuff
 console.log(stuff);
-usersLink.on("save", function(snapshot){
+//send the variable to the sky
+usersLink.save(stuff, function(error, snapshot){
   //this callback is fired after the save has reached the server
   //you will still get a "data" event, this event fires when you save
   //data fires when anyone changes data, and always after "data"
   console.log(snapshot);
-  console.log(usersLink.val);
   console.log(conn.val.info)
 });
-//send the variable to the sky
-usersLink.save(stuff);
 ```
 
 This is going to print out `{hi: 'mom'}`. **Four times**. Huh?
 
 * One from `stuff`
-* One from `snapshot`
+* One from `snapshot` in `save`
 * One from `usersLink`, which was replicated in via `save` from the
   server
 * One from `conn`, which keeps a root reference to all data replicated.

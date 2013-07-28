@@ -34,10 +34,17 @@ var people = {
 
 OK -- just some plain old data. Now, Variable Sky creates a server that
 holds these variables in a server so they can be shared and synched
-between clients. You get at data thus:
+between clients. So from above, if you want to get *Fred*
+
+```
+people.a.firstName
+```
+
+Pretty much what you would expect.
 
 Just a tiny bit different than plain JavaScript, `.` is the delimiter,
-and any name is allowed. So, you can have a path like this:
+and any name is allowed. So, you can have a path like this to point into
+an array:
 
 ```
 people.012.name
