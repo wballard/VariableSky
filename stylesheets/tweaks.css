@@ -6,25 +6,25 @@ body { padding-top: 70px; }
 
 .sidebar-nav-fixed {
     position:fixed;
-    top:60px;
+    top: 50px;
+    left: 0px;
+    bottom: 0px;
+    background-color: #eee;
+    overflow-y: scroll;
 }
 
-@media (max-width: 990px) {
+.nav-list {
+  list-style: none;
+}
+
+.navpad {
+  margin-left: 60px;
+}
+
+
+@media (max-width: 600px) {
     .sidebar-nav-fixed {
         display: none;
     }
 }
 
- /* for demo purposes (fixed top navbar placement in the fiddle. Ok to remove */
-
-@media (max-width: 767px) {
-    body {
-        padding-top: 0;
-    }
-}
-
-@media (max-width: 979px) {
-    body {
-        padding-top: 0;
-    }
-}

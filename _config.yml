@@ -1,5 +1,6 @@
 name: Variable Sky
 lsi: false
+port: 9002
 pygments: true
 github: https://github.com/wballard/VariableSky
 plugins: _plugins

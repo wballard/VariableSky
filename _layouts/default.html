@@ -18,14 +18,14 @@
 
 {% include nav.html %}
 
+<div class="leftnav" id="leftnav">
+  <div class="sidebar-nav sidebar-nav-fixed">
+    <ul class="nav nav-list" id="toc">
+    </ul>
+  </div>
+</div>
 <div class="container main">
   <div class="row">
-    <div class="col-lg-2" id="leftnav">
-      <div class="well sidebar-nav sidebar-nav-fixed">
-        <ul class="nav nav-list" id="toc">
-        </ul>
-      </div>
-    </div>
     <div class="col-lg-10" id="content">
       {{content}}
     </div>
@@ -59,30 +59,26 @@ $(':header').each(function(){
   if(this.tagName == 'H4') return;
   var $toc = $('#toc');
   if(this.tagName == 'H2') {
-    var $link = $('<li class=""><a class="dropdown-toggle" href="#" data-toggle="dropdown"></a></li>');
-    $nested = $('<ul class="dropdown-menu" role="menu"/>');
+    var $link = $('<li class=""><a class="" href="#"></a></li>');
+    $nested = $('<ul class="nav-list"/>');
     $link.append($nested);
     $link.find('a')
     .attr('href',"#"+this.id)
-    .text(this.innerText)
-    .attr('data-target', '#');
+    .text(this.innerText);
     $toc.append($link);
     tocItems++;
-  }
-  //self link
-  if($nested) {
+  } else if($nested) {
     var $link = $('<li><a href="#"></a></li>');
     $link.find('a')
     .attr('href',"#"+this.id)
     .text(this.innerText);
     $nested.append($link);
-    if(this.tagName == 'H2'){
-      $nested.append($('<li class="divider"></li>'));
-    }
   };
 });
 if(tocItems == 0) {
   $('#leftnav').hide();
+} else {
+  $('#content').addClass('navpad');
 }
 $('table').addClass('table table-bordered table-striped');
 </script>
