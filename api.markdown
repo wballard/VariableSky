@@ -28,6 +28,9 @@ transmitted over JSON. That's almost the same thing as _any value_, but
 I'm sure if you try you can cook up values that have cycles that just
 don't serialize.
 
+The good news there is -- you won't be able to save them, so you won't
+be able to hurt yourself.
+
 
 ## VariableSky
 This is the main object exposed by the client library. There is no need
@@ -93,6 +96,10 @@ These links hook into the angular lifecycle, and `close` automatically
 when a on `Scope` `$destroy`. No need for you to keep track of them, just do
 angular stuff as normal.
 
+You need AngularJs installed to use this method, but Variable Sky
+doesn't require or rely on AngularJs, this method turns itself on
+automatically.
+
 |Parameter|Notes|
 |---------|-----|
 |path|A dotted data path, pointing at desired data|
@@ -105,7 +112,7 @@ Close off the connection, this will end attempts to reconnect, and close
 every `Link` started from this `Client`.
 
 ### on()
-Attach an event handler to this connection.
+Attach an event handler. `Client` is an `EventEmitter`.
 
 |Parameter|Notes|
 |---------|-----|
