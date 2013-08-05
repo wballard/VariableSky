@@ -40,6 +40,9 @@ Set up a processor with the server based commands.
             @processor.commands.link = require('./commands/server/link')
             @processor.commands.save = require('./commands/server/save')
             @processor.commands.remove = require('./commands/server/remove')
+            @processor.commands.message = (todo, blackboard, done) =>
+              @emit todo.__to__, todo
+              done()
             @processor.on 'done', (todo) =>
                 @emit 'done', todo
             @processor.on 'error', (error, todo) =>
@@ -50,6 +53,8 @@ An event stream, paused until recovery is complete, that will process todos.
 
             @workstream = es.pipeline(
                 es.map( (todo, callback) =>
+                    if @trace
+                        console.log "Server Processing", inspect(todo)
                     @processor.do todo, (error, val, todo) =>
                         if error
                             todo.error = error
@@ -152,6 +157,7 @@ a per client/connection abstraction.
                 ret
 
         traceOn: ->
+            @trace = true
             remit = @emit
             @emit = ->
                 console.error 'emit', arguments[0], inspect(arguments[1])
@@ -189,13 +195,25 @@ The inbound event stream, messages coming from a connected client.
 
 * Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
+* Spy for client identifiers so we can route back client messages
 * Listen for events to reply on completion.
 * Write to the server workstream, not that *this is not a pipe*, as multiple
 clients are writing to this stream, and clients close
 
+            client = null
             inbound = es.pipeline(
                 es.map( (message, callback) ->
                     todo = JSON.parse(message)
+                    callback(null, todo)
+                ),
+                es.map( (todo, callback) ->
+                    if client is todo.__client__
+                        #no change
+                    else
+                        if client
+                           server.removeListener(client, outbound.write)
+                        client = todo.__client__
+                        server.on(client, outbound.write)
                     callback(null, todo)
                 ),
                 es.map( (todo, callback) ->

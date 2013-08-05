@@ -12,15 +12,18 @@ an Array mutator.
     errors = require('./errors.litcoffee')
     _ = require('lodash')
     adiff = require('adiff')
+    EventEmitter = require('events').EventEmitter
 
-    class Link
+    class Link extends EventEmitter
         constructor: (processor, blackboard, path, callback, onClose) ->
             @path = parsePath(path)
             @count = 0
             diff = adiff.diff
             dataCallback = (error, value, todo) =>
+                @val = value
                 @count += 1
                 callback.call(this, error, value, todo) if callback
+                @emit 'data', value
 
 Operations to the linked data are defined as closures over the processor, so
 they are tucked in here...
@@ -85,7 +88,7 @@ Totally blows away a value, making it `undefined`.
                         done(error) if done
                         dataCallback error, undefined, todo
                     else
-                        newValu = []
+                        delete @val
                         done() if done
                         dataCallback undefined, undefined, todo
                 this
