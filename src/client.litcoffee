@@ -71,7 +71,10 @@ as well as the browser via `browserify`.
             @client = uuid.v1()
             @counter = 0
             if window?
-                defaultUrl = "ws://#{window.document.location.host}/variablesky"
+                if window?.location?.protocol is 'https:'
+                   defaultUrl = "wss://#{window.document.location.host}/variablesky"
+                else
+                   defaultUrl = "ws://#{window.document.location.host}/variablesky"
             else
                 defaultUrl = "/variablesky"
             url = url or defaultUrl
