@@ -86,7 +86,7 @@ of variables from the sky.
             @processor.commands.save = savecommand
             @processor.commands.remove = removecommand
             @processor.commands.message =  (todo, blackboard, done) =>
-                @emit todo.topic, todo.message
+                @emit todo.topic, todo.message, todo.__client__
                 done()
             @processor.side = 'client'
 

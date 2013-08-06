@@ -186,8 +186,9 @@ eventing, so we simulate these with two connections.
                     done()
 
         it "lets you directly send messages to other clients", (done) ->
-          conn.on 'A-topic', (value) ->
+          conn.on 'A-topic', (value, from) ->
             value.should.eql('yep')
+            from.should.eql(otherConn.client)
             done()
           otherConn.send(conn.client, 'A-topic', 'yep')
 
