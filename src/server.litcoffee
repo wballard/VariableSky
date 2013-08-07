@@ -184,12 +184,10 @@ Streaming web sockets are go.
 
 The outbound event stream, send messages along to a connected client.
 
-            outbound = es.pipeline(
-                es.map( (todo, callback) ->
-                    callback null, JSON.stringify(todo)
-                ),
-                socketstream
+            outbound = es.map( (todo, callback) ->
+              callback(null, JSON.stringify(todo))
             )
+            outbound.pipe(socketstream)
 
 The inbound event stream, messages coming from a connected client.
 
@@ -234,8 +232,11 @@ clients are writing to this stream, and clients close
             socketstream.pipe(inbound)
 
             conn.on 'close', =>
-                server.removeListener 'done', routeDone
+              console.info 'closing', client
+              server.removeListener 'done', routeDone
+              server.removeListener client, outbound.write
 
             conn.on 'error', (error) =>
+              console.error 'connection error', client, error
 
     module.exports = Server
