@@ -5,29 +5,45 @@ body { padding-top: 70px; }
 }
 
 .sidebar-nav-fixed {
-    position:fixed;
-    top: 50px;
-    left: 0px;
-    bottom: 0px;
-    background-color: #eee;
-    overflow-y: scroll;
+  position:fixed;
+  top: 50px;
+  left: 0px;
+  bottom: 0px;
+  width: 160px;
+  background-color: #eee;
+  overflow-y: scroll;
+}
+
+.main {
+  position: absolute;
+  top: 60px;
+  left: 0px;
+  right: 0px;
+}
+
+.content {
+  margin-left: auto;
+  margin-right: auto;
+  width: 90%;
+  max-width: 968px;
+}
+
+.navpad {
+  left: 170px;
 }
 
 .nav-list {
   list-style: none;
 }
 
-.navpad {
-  margin-left: 60px;
-}
 
 footer {
   float: right;
 }
 
 @media (max-width: 600px) {
-    .sidebar-nav-fixed {
-        display: none;
-    }
+  .sidebar-nav-fixed {
+    display: none;
+  }
 }
 

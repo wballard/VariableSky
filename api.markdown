@@ -11,6 +11,7 @@ the socket mount point. Assuming defaults:
 ```html
 <script type="text/javascript" src="%%yourserver%%/variablesky.client"></script>
 ```
+
 ### Errors
 The Variable Sky API isn't about the DOM, it's about data, and as such
 follows the Node.js convention of `(error, arguments)` to callbacks.
@@ -42,24 +43,35 @@ Set up a connection from your client to a variable sky server.
 
 |Parameter|Notes|
 |---------|-----|
-|name|This is the websocket url to the variable sky service, you can leave it blank for defaults|
+|url|This is the websocket url to the variable sky service, you can leave it blank for defaults|
 |returns|A `Client`|
 
 ## Client
-This object is a connection/session to variable sky. You use it to
-`link` data as well as inspect the `val` of replicated data from the
-server.
+This object is a connection/session to variable sky.
 
 This client tries to stay connected, automatically reconnecting and
-restoring all linked state.
+restoring all linked state if there are network interruptions.
 
 ### val
 The current value of the server, across all active links. Think of this
 as a slice of all the data on the server, limited to just the data you
 have linked, and replicated.
 
-You *can* update this, but if you don't `save` it, it won't stick and
+You *can* update this, but if you don't `Link.save()` it, it won't stick and
 can be easily updated by other clients and servers.
+
+### client
+A string that identifies this client instance. This is default allocated
+as a GUID, and is new for each client instance.
+
+You can set this to any string you like, but keep in mind:
+
+* you really need unique client identifiers
+* you should set this before using any other client methods
+
+In general, don't set this, just read it. This is settable to support
+persistent clients, for example storing a client identifier in local
+storage.
 
 ### link()
 Connect to data via a dotted path, linking to a local variable in
@@ -80,7 +92,7 @@ on to this link is important, as it contains the actual server linkage
 that keeps data replicating.
 
 Even if there is no data at the requested path, a `Link` is returned,
-with an `undefined` snapshot. You can always `save` to it.
+with an `undefined` snapshot. You can always `Link.save()` to it.
 
 The Variable Sky server will create objects as needed to make sure your
 data is reachable. This means you can *skip* past objects and make deep
@@ -92,8 +104,8 @@ Connect to data via a dotted path and inject it into an AngularJS scope.
 This provides very automatic data handling, watching for changes from
 the server and updating angular, and saving on local changes.
 
-These links hook into the angular lifecycle, and `close` automatically
-when a on `Scope` `$destroy`. No need for you to keep track of them, just do
+These links hook into the angular lifecycle, and close automatically
+on `Scope.$destroy`. No need for you to keep track of them, just do
 angular stuff as normal.
 
 You need AngularJs installed to use this method, but Variable Sky
@@ -107,9 +119,18 @@ automatically.
 |name|A name to store the data on the scope, use this name to bind|
 |default|If provided, and the server returns undefined, this will stand in for the current server data. A default|
 
-### close()
-Close off the connection, this will end attempts to reconnect, and close
-every `Link` started from this `Client`.
+### join()
+Join a `Room`, which automatically tracks client presence. Rooms are a
+simple mechanism to provide community features.
+
+Rooms you have joined are automatically reconnected if there is a
+network interruption in your client until you `Client.close()` or `Room.leave()`
+the room.
+
+|Parameter|Notes|
+|---------|-----|
+|name|The name of the room to join|
+|callback|(error, room) called once you have joined|
 
 ### on()
 Attach an event handler. `Client` is an `EventEmitter`.
@@ -128,6 +149,28 @@ refreshed.
 
 #### error
 Fired on any socket reported error.
+
+#### _topic_
+Custom events fired by `send`.
+
+### send()
+Point-to-point messaging, allowing connected clients to exchange
+messages through the server. You can do a lot of things with this, but
+it was added as a mechanism to negoatiate WebRTC/ICE connectivity, which
+is all about peer-to-peer offer answer pairs to set up connectivity.
+
+This is a very simple way to send notifications / pokes / alerts from
+one client to another.
+
+|Parameter|Notes|
+|---------|-----|
+|client|A client identifier, you get your own identifier with `client`|
+|topic|A topic string, listen for this with `Client.on`|
+|message|Any JSON serializable object|
+
+### close()
+Close off the connection, this will end attempts to reconnect, and close
+every `Link` started from this `Client`.
 
 ## Server
 This is the main object you create on the server, `new` it.
@@ -288,6 +331,64 @@ And a very basic client:
 </script>
 ```
 
+## Room
+Rooms provide simple community features, you get in them with `join`,
+and can leave them at any time.
+
+Rooms let you:
+
+* Track presence
+* Store client specific state in a room
+
+When a client disconnects, or leaves, other clients in the room are
+notified of the state change. Clients disappear from `clients` when
+disconnected.
+
+Network interruptions will be detected by the server and used to notify
+other clients.
+
+### leave()
+Leave the room, this will stop auto reconnection, as well as notify
+other clients that you have left.
+
+### save()
+Save client specific state to the room. This is open ended and can be
+used for status, settings, etc.
+
+|Property|Notes|
+|--------|-----|
+|state|Any JSON serializable object with your per client, per room state|
+|callback|(error) fired when complete|
+
+### clients()
+List all the clients in the room. This returns a dictionary of all
+clients, with their saved state.
+
+|Property|Notes|
+|--------|-----|
+|callback|(error, clients) fired when the data is available|
+
+The __clients__ parameter keys client->saved state.
+
+### on()
+Attach an event handler. `Room` is an `EventEmitter`.
+
+#### join
+Fired when a client joins the room, this sends along (client, state).
+
+#### leave
+Fired when a client leaves the room, this sends along (client).
+
+#### disconnect
+Fired when a client network interruption is detected, in effect leaving
+the room, but not explicitly, this sends along (client).
+
+Having this as a separate event lets you handle network errors in a
+cusom way.
+
+#### change
+Fired when a client saves state to the room, this sends along (client,
+state).
 
 ## HookContext
 Server hooks get an instance of this passed to their hook function.

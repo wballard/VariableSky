@@ -24,11 +24,9 @@
     </ul>
   </div>
 </div>
-<div class="container main">
-  <div class="row">
-    <div class="col-lg-10" id="content">
-      {{content}}
-    </div>
+<div class="main" id="main">
+  <div class="content" id="content">
+    {{content}}
   </div>
   <hr>
   <footer>
@@ -82,7 +80,7 @@ $(':header').each(function(){
 if(tocItems == 0) {
   $('#leftnav').hide();
 } else {
-  $('#content').addClass('navpad');
+  $('#main').addClass('navpad');
 }
 $('table').addClass('table table-bordered table-striped');
 </script>
