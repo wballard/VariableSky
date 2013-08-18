@@ -230,7 +230,7 @@ clients are writing to this stream, and clients close
                     if todo.command is 'autoremove'
                       autoremove[packPath(todo.path)] =
                           command: 'remove'
-                          path: todo.path
+                          path: parsePath(todo.path)
                     todo
                 ),
                 es.mapSync( (todo) ->
