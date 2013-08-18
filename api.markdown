@@ -119,19 +119,6 @@ automatically.
 |name|A name to store the data on the scope, use this name to bind|
 |default|If provided, and the server returns undefined, this will stand in for the current server data. A default|
 
-### join()
-Join a `Room`, which automatically tracks client presence. Rooms are a
-simple mechanism to provide community features.
-
-Rooms you have joined are automatically reconnected if there is a
-network interruption in your client until you `Client.close()` or `Room.leave()`
-the room.
-
-|Parameter|Notes|
-|---------|-----|
-|name|The name of the room to join|
-|callback|(error, room) called once you have joined|
-
 ### on()
 Attach an event handler. `Client` is an `EventEmitter`.
 
@@ -331,65 +318,6 @@ And a very basic client:
 </script>
 ```
 
-## Room
-Rooms provide simple community features, you get in them with `join`,
-and can leave them at any time.
-
-Rooms let you:
-
-* Track presence
-* Store client specific state in a room
-
-When a client disconnects, or leaves, other clients in the room are
-notified of the state change. Clients disappear from `clients` when
-disconnected.
-
-Network interruptions will be detected by the server and used to notify
-other clients.
-
-### leave()
-Leave the room, this will stop auto reconnection, as well as notify
-other clients that you have left.
-
-### save()
-Save client specific state to the room. This is open ended and can be
-used for status, settings, etc.
-
-|Property|Notes|
-|--------|-----|
-|state|Any JSON serializable object with your per client, per room state|
-|callback|(error) fired when complete|
-
-### clients()
-List all the clients in the room. This returns a dictionary of all
-clients, with their saved state.
-
-|Property|Notes|
-|--------|-----|
-|callback|(error, clients) fired when the data is available|
-
-The __clients__ parameter keys client->saved state.
-
-### on()
-Attach an event handler. `Room` is an `EventEmitter`.
-
-#### join
-Fired when a client joins the room, this sends along (client, state).
-
-#### leave
-Fired when a client leaves the room, this sends along (client).
-
-#### disconnect
-Fired when a client network interruption is detected, in effect leaving
-the room, but not explicitly, this sends along (client).
-
-Having this as a separate event lets you handle network errors in a
-cusom way.
-
-#### change
-Fired when a client saves state to the room, this sends along (client,
-state).
-
 ## HookContext
 Server hooks get an instance of this passed to their hook function.
 
@@ -490,6 +418,15 @@ than `null`.
 |Parameter|Notes|
 |---------|-----|
 |callback| (error) fired when the remove has completed to the server|
+
+### autoRemove()
+Mark a link as self-deleting when the connection is closed. This is a
+very simple way to implement presence features by having a variable
+lifetime tied to a client connection.
+
+|Parameter|Notes|
+|---------|-----|
+|callback| (error) fired when the autoremove is registered on the server|
 
 ### concurrentEdit()
 Enable concurrent editing by a text editing HTML element Simply call
