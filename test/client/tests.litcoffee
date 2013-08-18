@@ -192,68 +192,15 @@ eventing, so we simulate these with two connections.
             done()
           otherConn.send(conn.client, 'A-topic', 'yep')
 
-
-All about Rooms, these are shared sessions designed for presence and community.
-
-    describe "Room API", ->
-        conn = null
-        otherConn = null
-
-        before (done) ->
-            conn = variablesky.connect()
-            otherConn = variablesky.connect()
-            done()
-
-        after (done) ->
-            conn.close ->
-                otherConn.close ->
-                    done()
-
-        beforeEach (done) ->
-          conn.rooms['peeps'].removeAllListeners()
-          otherConn.rooms['peeps'].removeAllListeners()
-          done()
-
-        it "notifies you when someone joins", (done) ->
-          conn.join 'peeps', (error, room) ->
-            room.on 'join', (client, state) ->
-              state.should.eql otherConn.client
+        it "will autoRemove variables on disconnect", (done) ->
+          newConn = variablesky.connect()
+          newConn.link('deleto').save('yep').autoRemove()
+          conn.link 'deleto', (error, value) ->
+            #initial value triggers the close later on
+            if value is 'yep'
+              newConn.close()
+              newConn = null
+            #conn and value are gone, caused by the close
+            if not newConn and not value
               done()
-            otherConn.join 'peeps'
 
-        it "lets you see who is in the room", (done) ->
-          conn.rooms['peeps'].clients (error, clients) ->
-            clients[conn.client].should.eql {}
-            clients[otherConn.client].should.eql {}
-            done()
-
-        it "notifies you when someone updates state", (done) ->
-          conn.rooms['peeps'].on 'change', (client, state) ->
-            client.should.eql otherConn.client
-            state.should.eql hi: 'mom'
-            done()
-          otherConn.rooms['peeps'].save hi: 'mom'
-
-        it "lets you see the state of everyone in the room", (done) ->
-          conn.rooms['peeps'].clients (error, clients) ->
-            clients[conn.client].should.eql {}
-            clients[otherConn.client].should.eql hi: 'mom'
-            done()
-
-        it "notifies you when someone leaves", (done) ->
-          conn.rooms['peeps'].on 'leave', (client) ->
-            client.should.eql otherConn.client
-            conn.rooms['peeps'].on 'join', (client) ->
-              client.should.eql.otherConn.client
-              done()
-            otherConn.join 'peeps'
-          otherConn.rooms['peeps'].leave()
-
-        it "notifies you when someone disconnects", (done) ->
-          conn.rooms['peeps'].on 'disconnect', (client) ->
-            client.should.eql otherConn.client
-            conn.rooms['peeps'].clients (error, clients) ->
-              clients[conn.client].should.exist
-              should.not.exist clients[otherConn.client]
-              done()
-          otherConn.close()

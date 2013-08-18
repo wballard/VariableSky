@@ -182,10 +182,14 @@ Streaming web sockets are go.
 
             socketstream = websocket(conn)
 
+AutoRemove variables are tracked here by path.
+
+            autoremove = {}
+
 The outbound event stream, send messages along to a connected client.
 
             outbound = es.map( (todo, callback) ->
-              callback(null, JSON.stringify(todo))
+                callback(null, JSON.stringify(todo))
             )
             outbound.pipe(socketstream)
 
@@ -194,16 +198,14 @@ The inbound event stream, messages coming from a connected client.
 * Spy for links. This informs you which clients need which messages by doing
 a prefix match against all the linked data in this connection.
 * Spy for client identifiers so we can route back client messages
+* Spy for autoremove, which will be run on close
 * Listen for events to reply on completion.
 * Write to the server workstream, not that *this is not a pipe*, as multiple
 clients are writing to this stream, and clients close
 
             client = null
             inbound = es.pipeline(
-                es.map( (message, callback) ->
-                    todo = JSON.parse(message)
-                    callback(null, todo)
-                ),
+                es.parse(),
                 es.map( (todo, callback) ->
                     if client is todo.__client__
                         #no change
@@ -214,7 +216,7 @@ clients are writing to this stream, and clients close
                         server.on(client, outbound.write)
                     callback(null, todo)
                 ),
-                es.map( (todo, callback) ->
+                es.mapSync( (todo) ->
                     if todo.command is 'link'
                         datapath = packPath(todo.path)
                         if not router.has('done', datapath)
@@ -222,11 +224,18 @@ clients are writing to this stream, and clients close
                                 todo.__routed__ = true
                                 outbound.write(todo)
                                 done()
-                    callback(null, todo)
+                    todo
                 ),
-                es.map( (todo, callback) ->
+                es.mapSync( (todo) ->
+                    if todo.command is 'autoremove'
+                      autoremove[todo.path] =
+                          command: 'remove'
+                          path: todo.path
+                    todo
+                ),
+                es.mapSync( (todo) ->
                     server.workstream.write(todo)
-                    callback(null, null)
+                    null
                 )
             )
             socketstream.pipe(inbound)
@@ -235,6 +244,8 @@ clients are writing to this stream, and clients close
               console.info 'closing', client
               server.removeListener 'done', routeDone
               server.removeListener client, outbound.write
+              for ignore, todo of autoremove
+                server.workstream.write(todo)
 
             conn.on 'error', (error) =>
               console.error 'connection error', client, error

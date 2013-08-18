@@ -93,6 +93,16 @@ Totally blows away a value, making it `undefined`.
                         dataCallback undefined, undefined, todo
                 this
 
+Mark a variable as self deleting on disconnect. Useful to implement presence.
+
+            @autoRemove = (done) ->
+                processor.do {command: 'autoremove', path: @path}, (error, value, todo) =>
+                    if error
+                        done(error) if done
+                    else
+                        done() if done
+                this
+
 Force fire the data callback, used when you get a message from another client.
 
             @fireCallback = (error, newVal, todo) ->
