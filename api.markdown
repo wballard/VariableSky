@@ -73,10 +73,6 @@ In general, don't set this, just read it. This is settable to support
 persistent clients, for example storing a client identifier in local
 storage.
 
-### rooms
-All rooms that this client has joined. This maps from the room name to a 
-`Room` object for each currently joined room.
-
 ### link()
 Connect to data via a dotted path, linking to a local variable in
 your client program via a callback.
