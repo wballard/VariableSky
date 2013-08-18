@@ -288,9 +288,6 @@ back into the sky to automatically save. This little trick keeps you from needin
 to call save on your own.
 
             unwatch = $scope.$watch name, (newValue, oldValue) =>
-
-Firehose for debugging. Whoosh!
-
                 if @trace
                     console.log 'SCOPE', name
                     console.log 'Was:', inspect(oldValue)
@@ -317,6 +314,8 @@ Clean up your room! Put your toys away!
                     console.log 'CLOSE', link.path
                 unwatch()
                 link.close()
+
+All done, return the link
 
             link
 

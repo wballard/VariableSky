@@ -204,3 +204,12 @@ eventing, so we simulate these with two connections.
             if not newConn and not value
               done()
 
+        it "will autoRemove variables on a link close", (done) ->
+          link = conn.link('super').save('saver').autoRemove()
+          otherConn.link 'super', (error, value) ->
+            if value is 'saver'
+              link.close()
+              link = null
+            if not link and not value
+              done()
+

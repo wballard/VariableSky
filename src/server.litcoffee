@@ -228,9 +228,17 @@ clients are writing to this stream, and clients close
                 ),
                 es.mapSync( (todo) ->
                     if todo.command is 'autoremove'
-                      autoremove[todo.path] =
+                      autoremove[packPath(todo.path)] =
                           command: 'remove'
                           path: todo.path
+                    todo
+                ),
+                es.mapSync( (todo) ->
+                    if todo.command is 'closelink'
+                      for path, rm of autoremove
+                        if path is packPath(todo.path)
+                          delete autoremove[path]
+                          server.workstream.write(rm)
                     todo
                 ),
                 es.mapSync( (todo) ->

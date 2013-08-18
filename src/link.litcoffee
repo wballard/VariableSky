@@ -112,8 +112,14 @@ Force fire the data callback, used when you get a message from another client.
 
 Closing, with a callback. Clients closing close all their allocated links this way.
 
-            @close = ->
-                onClose() if onClose
+            @close = (done) ->
+                processor.do {command: 'closelink', path: @path}, (error) =>
+                  if error
+                    done(error) if done
+                    onClose(error) if onClose
+                  else
+                    done() if done
+                    onClose() if onClose
 
 This actually starts off the link, by processing a command to link.
 
