@@ -1,4 +1,5 @@
-Test connection and action over a streaming socket.
+Test connection and action over a streaming socket, using Zombie to make
+a simulated browser to connect back to our test server.
 
     sky = require('../index')
     path = require('path')

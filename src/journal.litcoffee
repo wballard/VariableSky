@@ -33,9 +33,4 @@ Record a command in the journal for later playback.
             key = String('00000'+Date.now()).slice(-16)
             @database.put key, JSON.stringify(todo), done
 
-Throw away all journaled memory.
-
-        reset: ->
-
-
     module.exports = Journal

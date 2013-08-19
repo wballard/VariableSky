@@ -1,5 +1,4 @@
-The most basic interactions are with REST, this makes a workable server, the only
-sad part is that it doesn't have events and thus no replication.
+The most basic server self tests are here.
 
     sky = require('../index')
     path = require('path')
@@ -11,12 +10,14 @@ This is a side effect test variable to make sure we are journaling post hook.
 
     stashAt = 0
 
-The REST API.
-
     options =
         storageDirectory: path.join __dirname, '.test'
 
     wrench.rmdirSyncRecursive options.storageDirectory, true
+
+Client library tests, the most interesting thing is this is a self connecting /
+reconnecting client, so you don't wait for it to open, you just start doing
+stuff and it will queue.
 
     describe "Client", ->
         server = null
@@ -40,6 +41,8 @@ The REST API.
                     client.close done
             )
             .save('boop')
+
+Server side hooks.
 
     describe "Hooks", ->
         client = null
@@ -109,9 +112,7 @@ The REST API.
             server.hook('save', 'modifier', (context, next) ->
                 #linking to other data, saving it, and only coming out of
                 #the hook when complete
-                context.link('modified').save(context.val, ->
-                    next()
-                )
+                context.link('modified').save(context.val, next)
             )
             client.link('modified', (error, snapshot) ->
                 if this.count is 3

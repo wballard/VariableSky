@@ -14,8 +14,6 @@ blackboard. The signature of an implementation is:
 This is all node callback style `(error, result)` on done. On success, pass
 back the `todo` with `done(null, todo)`.
 
-    fs = require('fs')
-    path = require('path')
     util = require('util')
     errors = require('./errors.litcoffee')
     _ = require('lodash')
