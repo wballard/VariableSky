@@ -9,6 +9,7 @@ sent along to a command processor with a shared memory blackboard.
     Processor = require('./processor')
     Journal = require('./journal')
     Router = require('./router').PrefixRouter
+    Link = require('./link.litcoffee')
     wrench = require('wrench')
     browserify = require('browserify')
     parsePath = require('./util').parsePath
@@ -18,6 +19,7 @@ sent along to a command processor with a shared memory blackboard.
     WebSocketServer = require('ws').Server
     es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
+    hookstream = require('./hookstream.litcoffee')
     websocket = require('websocket-stream')
 
 This is the main server object. This is a class to give instancing, I'm not all
@@ -49,9 +51,22 @@ Set up a processor with the server based commands.
                 todo.error = error
                 @emit 'done', todo
 
-An event stream, paused until recovery is complete, that will process todos.
+An event stream, paused until recovery is complete, that will process todos
+with installed hooks.
 
             @workstream = es.pipeline(
+
+Enhance the todo turning it into a context for the rest of the processing stream.
+
+                es.mapSync( (todo, callback) =>
+                  _.extend todo,
+                    prev: @processor.blackboard.valueAt(todo.path)
+                    abort: (message) ->
+                      throw errors.HOOK_ABORTED(message)
+                    link: (path, done) =>
+                      new Link(@processor, @processor.blackboard, path, done)
+                ),
+                @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
                 es.map( (todo, callback) =>
                     if @trace
                         console.log "Server Processing", inspect(todo)
@@ -62,7 +77,9 @@ An event stream, paused until recovery is complete, that will process todos.
                         else
                             todo.val = val
                             callback(null, todo)
-                )
+                ),
+                @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
+                es.mapSync( -> null)
             )
             @workstream.pause()
 
@@ -92,7 +109,9 @@ Build an event stream from the processor through to the journal.
                             @journal.record todo, (error) =>
                                 if error
                                     @emit 'error', error, todo
-                    callback()
+                                    callback()
+                    else
+                        callback()
                 )
             )
             @processor.on 'done', journalstream.write
@@ -106,12 +125,12 @@ Clean server shutdown.
 Hook support forwards to the processor, supports chaining.
 
         hook: (event, datapath, callback) ->
-            switch event
-                when 'link'
-                    @processor.hookAfter event, datapath, callback
-                else
-                    @processor.hookBefore event, datapath, callback
-            this
+          switch event
+              when 'link'
+                @afterHooks.hook "#{event}:#{packPath(datapath)}", callback
+              else
+                @beforeHooks.hook "#{event}:#{packPath(datapath)}", callback
+          this
 
 
 This is a web socket listen, attached to a connect application

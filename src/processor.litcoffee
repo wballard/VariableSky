@@ -27,7 +27,7 @@ back the `todo` with `done(null, todo)`.
 Used in hooks to provide access to data.
 
     class HookContext
-        constructor: (processor, todo, done) ->
+        constructor: (processor, todo) ->
             _.extend this, todo,
                 prev: processor.blackboard.valueAt(todo.path)
                 val: todo.val
@@ -43,7 +43,6 @@ clients to through `Link`.
 
     class Processor extends EventEmitter
         constructor: () ->
-            @todos = []
             @counter = 0
 
 Commands get to write to the `blackboard` however they see fit. Playing back
@@ -64,14 +63,7 @@ that each command module exposes exactly the function taht is the command
 implementation.
 
             @commands = {}
-            @beforeHooks = new Router()
             @afterHooks = new Router()
-
-
-Before hooks fire before the command has started.
-
-        hookBefore: (command, path, hook) =>
-            @beforeHooks.on command, path, hook
 
 After hooks fire when the executed command has completed.
 
@@ -113,34 +105,28 @@ this content, which will then be passed along to the core. That's the main
 thing going on, re-writing `val`.
 
                 req = new HookContext(this, todo, done)
-                @beforeHooks.dispatch todo.command, packPath(req.path), req, (error) =>
-                    if error
-                        done error, undefined, todo
-                        @emit 'error', error, todo
-                    else
-                        todo.val = req.val
 
 The core command execution, here is the writing to the blackboard. These are
 internal commands, not user hooks, so they get to really store data.
 
-                        @commands[todo.command] todo, @blackboard, (error) =>
-                            if error
-                                done error, undefined, todo
-                                @emit 'error', error, todo
-                            else
+                @commands[todo.command] todo, @blackboard, (error) =>
+                    if error
+                        done error, undefined, todo
+                        @emit 'error', error, todo
+                    else
 
 And the final after phase, last chance to modify the `val` before it is
 sent along to any clients, linking the vaue of the todo into the hook context
 req before we fire.
 
-                                req.val = todo.val
-                                @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
-                                    if error
-                                        done error, undefined, todo
-                                        @emit 'error', error, todo
-                                    else
-                                        done undefined, req.val, todo
-                                        @emit 'done', todo
+                        req.val = todo.val
+                        @afterHooks.dispatch todo.command, packPath(req.path), req, (error) =>
+                            if error
+                                done error, undefined, todo
+                                @emit 'error', error, todo
+                            else
+                                done undefined, req.val, todo
+                                @emit 'done', todo
             else
                 done errors.NO_SUCH_COMMAND(), undefined, todo
 

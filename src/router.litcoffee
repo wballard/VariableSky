@@ -23,15 +23,6 @@ call `done(error)`, which ends the callback link chain.
             @methods[method] = chain
             @routes["#{method}.#{route}"] = (@routes["#{method}.#{route}"] or 0) + 1
 
-Goodbye, cruel route.
-
-        off: (method, route, callback) =>
-            chain = @methods[method] or []
-            @methods[method] = _.reject(chain, (x) ->
-                x.route == route and x.callback == callback
-            )
-            @routes["#{method}.#{route}"] = @routes["#{method}.#{route}"] - 1
-
 Existence check, handy when you want to prevent duplicate routes.
 
         has: (method, route) =>
@@ -45,7 +36,7 @@ All the routes in the router.
 Match a route and a link on the chain. This works on strings.
 
         match: (dispatchRoute, linkRoute) ->
-            return dispatchRoute == linkRoute
+            return dispatchRoute is linkRoute
 
 Fire all installed callbacks, if any for the method and route. Each callback is fired until
 they are all done calling `done()`, or you hit an error, in which case `done(error)` is called.
