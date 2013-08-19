@@ -31,9 +31,7 @@ stuff and it will queue.
                 done()
         after (done) ->
             httpserver.close ->
-                console.log 'http off'
                 server.shutdown ->
-                    console.log 'server off'
                     done()
         it "will queue up actions so you don't need to wait for an open", (done) ->
             client = new sky.Client('ws://localhost:9999/variablesky').traceOn()
@@ -53,9 +51,12 @@ Server side hooks.
         before (done) ->
             app = connect()
             httpserver = require('http').createServer(app)
-            server = new sky.Server(options)
+            server = new sky.Server(options).traceOn()
+            console.log 'ggggg'
             server.listen app, httpserver
+            console.log 'iggggg'
             httpserver.listen 9999, ->
+                console.log 'iiggggg'
                 client = new sky.Client('ws://localhost:9999/variablesky')
                 done()
         after (done) ->

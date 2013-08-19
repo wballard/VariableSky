@@ -8,7 +8,6 @@ lying :)
     path = require('path')
     errors = require('./errors')
     Blackboard = require('./blackboard')
-    Router = require('./router').PrefixRouter
     Link = require('./link.litcoffee')
     wrench = require('wrench')
     browserify = require('browserify')
@@ -32,21 +31,8 @@ lying :)
             @options.journal = if @options.journal? then @options.journal else true
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
-
-Blackboard is a shared context.
-
             @blackboard = new Blackboard()
-
-An event stream, paused until recovery is complete, that will process todos
-with installed hooks.
-
             @workstream = es.pipeline(
-              es.mapSync( (todo) ->
-                if not todo.command
-                  undefined
-                else
-                  todo
-              ),
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
@@ -89,24 +75,14 @@ Commands are written to a journal, providing durability and recovery.
 
               @journalstream = journalstream(@options),
 
-Client identifier events, each client connection is listening for itself, this
-way responses are streamed back.
-
-              es.mapSync( (todo) =>
-                @emit todo.__client__, todo
-                todo
-              ),
-
 Lots of tracing, server is done.
 
-              es.map( (todo, callback) =>
+              es.mapSync( (todo) =>
                   if @trace
                     console.log '\nServer Done', inspect(todo)
-                  callback(null, todo)
+                  @emit 'done', todo
               ),
             )
-            @workstream.on 'error', (error) ->
-              console.error 'ERROR', error
 
 Clean server shutdown.
 
@@ -119,44 +95,44 @@ Hook support forwards to the correct streams, supports chaining.
 
         hook: (event, datapath, callback) ->
           switch event
-              when 'link'
-                @afterHooks.hook "#{event}:#{packPath(datapath)}", callback
-              else
-                @beforeHooks.hook "#{event}:#{packPath(datapath)}", callback
+            when 'link'
+              @afterHooks.hook "#{event}:#{packPath(datapath)}", callback
+            else
+              @beforeHooks.hook "#{event}:#{packPath(datapath)}", callback
           this
 
 This is a web socket listen, attached to a connect application
 at a given mount point url with the default `/variablesky`.
 
         listen: (app, server, url) =>
-            @connections = {}
-            if not app.use
-                throw errors.NOT_AN_APP()
-            if @sock
-                throw errors.ALREADY_LISTENING()
+          @connections = {}
+          if not app.use
+            throw errors.NOT_AN_APP()
+          if @sock
+            throw errors.ALREADY_LISTENING()
 
-            url = url or '/variablesky'
+          url = url or '/variablesky'
 
 If this looks like connect or express, install a client library handler and
 and self check sample page. Detect connect/express with the presence of `use`.
 
-            if app.use
-                client = "#{path.join(url)}.client"
-                app.use path.join(client, 'test'),
-                    connect.static(path.join(__dirname, '../test/client'))
-                app.use client,  (req, res, next) ->
-                    res.setHeader('Content-Type', 'text/javascript')
-                    bundle = browserify()
-                        .transform(require('coffeeify'))
-                        .add(path.join(__dirname, 'client.litcoffee'))
-                        .bundle()
-                    bundle.pipe(res)
-                    bundle.on 'error', (error) ->
-                        res.statusCode = 500
-                        res.end("#{error}")
-                    bundle.on 'end', ->
-                        res.statusCode = 404
-                        res.end()
+          if app.use
+            client = "#{path.join(url)}.client"
+            app.use path.join(client, 'test'),
+              connect.static(path.join(__dirname, '../test/client'))
+            app.use client,  (req, res, next) ->
+              res.setHeader('Content-Type', 'text/javascript')
+              bundle = browserify()
+                .transform(require('coffeeify'))
+                .add(path.join(__dirname, 'client.litcoffee'))
+                .bundle()
+              bundle.pipe(res)
+              bundle.on 'error', (error) ->
+                res.statusCode = 500
+                res.end("#{error}")
+              bundle.on 'end', ->
+                res.statusCode = 404
+                res.end()
 
 And, install the socket processing, this hands off to a `Connection` which is
 a per client/connection abstraction.
@@ -168,42 +144,45 @@ a per client/connection abstraction.
                 ret
 
         traceOn: ->
-            @trace = true
-            this
+          @trace = true
+          this
 
 A single server side connection instance, isolates the state of each client
 from one another on the server.
 
     class Connection
-        constructor: (conn, server) ->
-            router = new Router()
+      constructor: (conn, server) ->
 
-When the server says it has journaled something, we need to route it to clients.
+When the server says it has journaled something, we need to route it to clients
+that have a link to this path or a prefix of it so parent data knows about
+child data changes.
 
-            routeDone = (todo) =>
-                datapath = packPath(todo.path)
-                router.dispatch 'done', datapath, todo, ->
-            server.on 'done', routeDone
+        links = {}
+        server.on 'done', routeDone = (todo) ->
+          donepath = packPath(todo.path)
+          for link in _.keys(links)
+            if donepath.indexOf(link) is 0
+              outbound.write todo
 
 Streaming web sockets are go.
 
-            socketstream = websocket(conn)
+        socketstream = websocket(conn)
 
 AutoRemove variables are tracked here by path.
 
-            autoremove = {}
+        autoremove = {}
 
 The outbound event stream, send messages along to a connected client.
 
-            outbound = es.pipeline(
-              es.map( (todo, callback) =>
-                  if server.trace
-                      console.log '\nServer<----', inspect(todo)
-                  callback(null, todo)
-              ),
-              es.stringify(),
-              socketstream
-            )
+        outbound = es.pipeline(
+          es.mapSync( (todo) =>
+            if server.trace
+              console.log '\nServer---->', inspect(todo)
+            todo
+          ),
+          es.stringify(),
+          socketstream
+        )
 
 The inbound event stream, messages coming from a connected client.
 
@@ -215,63 +194,58 @@ a prefix match against all the linked data in this connection.
 * Write to the server workstream, not that *this is not a pipe*, as multiple
 clients are writing to this stream, and clients close
 
-            client = null
-            inbound = es.pipeline(
-                es.parse(),
-                es.map( (todo, callback) =>
-                    if server.trace
-                        console.log '\nServer<----', inspect(todo)
-                    callback(null, todo)
-                ),
-                es.map( (todo, callback) ->
-                    if client is todo.__client__
-                        #no change
-                    else
-                        if client
-                           server.removeListener(client, outbound.write)
-                        client = todo.__client__
-                        server.on(client, outbound.write)
-                    callback(null, todo)
-                ),
-                es.mapSync( (todo) ->
-                    if todo.command is 'link'
-                        datapath = packPath(todo.path)
-                        if not router.has('done', datapath)
-                            router.on 'done', datapath, (todo, done) ->
-                                todo.__routed__ = true
-                                outbound.write(todo)
-                                done()
-                    todo
-                ),
-                es.mapSync( (todo) ->
-                    if todo.command is 'autoremove'
-                      autoremove[packPath(todo.path)] =
-                          command: 'remove'
-                          path: parsePath(todo.path)
-                    todo
-                ),
-                es.mapSync( (todo) ->
-                    if todo.command is 'closelink'
-                      for path, rm of autoremove
-                        if path is packPath(todo.path)
-                          delete autoremove[path]
-                          server.workstream.write(rm)
-                    todo
-                ),
-                es.mapSync( (todo) ->
-                    server.workstream.write(todo)
-                    null
-                )
-            )
-            socketstream.pipe(inbound)
+        client = null
+        inbound = es.pipeline(
+          es.parse(),
+          es.mapSync( (todo) =>
+            if server.trace
+                console.log '\nServer<----', inspect(todo)
+            todo
+          ),
+          es.mapSync( (todo) ->
+            if todo.path
+              links[packPath(todo.path)] = true
+            todo
+          ),
+          es.map( (todo, callback) ->
+            if client is todo.__client__
+              #no change
+            else
+              if client
+                server.removeListener(client, outbound.write)
+              client = todo.__client__
+              server.on(client, outbound.write)
+            callback(null, todo)
+          ),
+          es.mapSync( (todo) ->
+            if todo.command is 'autoremove'
+              autoremove[packPath(todo.path)] =
+                command: 'remove'
+                path: parsePath(todo.path)
+            todo
+          ),
+          es.mapSync( (todo) ->
+            if todo.command is 'closelink'
+              for path, rm of autoremove
+                if path is packPath(todo.path)
+                  delete autoremove[path]
+                  server.workstream.write(rm)
+            todo
+          ),
+          es.mapSync( (todo) ->
+              server.workstream.write(todo)
+              undefined
+          )
+        )
+        socketstream.pipe(inbound)
 
-            conn.on 'close', =>
-              server.removeListener 'done', routeDone
-              server.removeListener client, outbound.write
-              for ignore, todo of autoremove
-                server.workstream.write(todo)
+        conn.on 'close', =>
+          server.removeListener 'done', routeDone
+          server.removeListener client, outbound.write
+          for ignore, todo of autoremove
+            server.workstream.write(todo)
 
-            conn.on 'error', (error) =>
-              console.error 'connection error', client, error
+        conn.on 'error', (error) =>
+          console.error 'connection error', client, error
 
     module.exports = Server
