@@ -1,13 +1,13 @@
-This is the main junction box to hook up as a server to `http` and `express`.
-This takes incoming network activity and generates commands, which are then
-sent along to a command processor with a shared memory blackboard.
+This is the main server object. This is a class to  hook to [connect] or
+[express], I'm not all the way sure why you would want to, but you can make
+multiple of these in a process and have separate sockets or rest url mount
+points to them. I'd make some claim abut this being more testable, but I'd be
+lying :)
 
     _ = require('lodash')
     path = require('path')
     errors = require('./errors')
     Blackboard = require('./blackboard')
-    Processor = require('./processor')
-    Journal = require('./journal')
     Router = require('./router').PrefixRouter
     Link = require('./link.litcoffee')
     wrench = require('wrench')
@@ -20,12 +20,9 @@ sent along to a command processor with a shared memory blackboard.
     es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
     hookstream = require('./hookstream.litcoffee')
+    commandstream = require('./commandstream.litcoffee')
+    journalstream = require('./journalstream.litcoffee')
     websocket = require('websocket-stream')
-
-This is the main server object. This is a class to give instancing, I'm not all
-the way sure why you would want to, but you can make multiple of these in a
-process and have separate sockets or rest url mount points to them. I'd make
-some claim abut this being more testable, but I'd be lying :)
 
     class Server extends EventEmitter
         constructor: (@options) ->
@@ -36,93 +33,89 @@ some claim abut this being more testable, but I'd be lying :)
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
 
-Set up a processor with the server based commands.
+Blackboard is a shared context.
 
-            @processor = new Processor()
-            @processor.commands.link = require('./commands/server/link')
-            @processor.commands.save = require('./commands/server/save')
-            @processor.commands.remove = require('./commands/server/remove')
-            @processor.commands.message = (todo, blackboard, done) =>
-              @emit todo.__to__, todo
-              done()
-            @processor.on 'done', (todo) =>
-                @emit 'done', todo
-            @processor.on 'error', (error, todo) =>
-                todo.error = error
-                @emit 'done', todo
+            @blackboard = new Blackboard()
 
 An event stream, paused until recovery is complete, that will process todos
 with installed hooks.
 
             @workstream = es.pipeline(
+              es.mapSync( (todo) ->
+                if not todo.command
+                  undefined
+                else
+                  todo
+              ),
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
-                es.mapSync( (todo, callback) =>
-                  _.extend todo,
-                    prev: @processor.blackboard.valueAt(todo.path)
-                    abort: (message) ->
-                      throw errors.HOOK_ABORTED(message)
-                    link: (path, done) =>
-                      new Link(@processor, @processor.blackboard, path, done)
-                ),
-                @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
-                es.map( (todo, callback) =>
-                    if @trace
-                        console.log "Server Processing", inspect(todo)
-                    @processor.do todo, (error, val, todo) =>
-                        if error
-                            todo.error = error
-                            callback()
-                        else
-                            todo.val = val
-                            callback(null, todo)
-                ),
-                @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
-                es.mapSync( -> null)
+              es.mapSync( (todo) =>
+                _.extend todo,
+                  prev: @blackboard.valueAt(todo.path)
+                  abort: (message) ->
+                    throw errors.HOOK_ABORTED(message)
+                  link: (path, done) =>
+                    new Link(@workstream, @blackboard, path, done)
+              ),
+
+And here is where the real processing happens:
+
+* hooks
+* commands
+* hooks
+
+              @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
+              @processor = commandstream(
+                link: require('./commands/server/link')
+                save: require('./commands/server/save')
+                remove: require('./commands/server/remove')
+                message: (todo, blackboard, done) =>
+                  @emit todo.__to__, todo
+                  done()
+              , ((todo) -> todo.command)
+              , @blackboard),
+              @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
+
+De-context, strip off methods we don't need any more.
+
+              es.mapSync( (todo) ->
+                delete todo.link
+                delete todo.abort
+                todo
+              ),
+
+Commands are written to a journal, providing durability and recovery.
+
+              @journalstream = journalstream(@options),
+
+Client identifier events, each client connection is listening for itself, this
+way responses are streamed back.
+
+              es.mapSync( (todo) =>
+                @emit todo.__client__, todo
+                todo
+              ),
+
+Lots of tracing, server is done.
+
+              es.map( (todo, callback) =>
+                  if @trace
+                    console.log '\nServer Done', inspect(todo)
+                  callback(null, todo)
+              ),
             )
-            @workstream.pause()
-
-And commands are written to a journal, providing durability. The journal is
-given a function to recover each command that takes a 'direct' hook free path
-through the command processor.
-
-            recover = (todo, next) =>
-                @processor.directExecute todo, (error, todo) =>
-                    if error
-                        @emit 'error', error, todo
-                    next()
-
-On startup, the journal recovers, and when it is full recovered, connect the
-command handling `do` directly, no more `enqueue`.
-
-            @journal = new Journal @options, recover, =>
-                @workstream.resume()
-                @emit 'recovered'
-
-Build an event stream from the processor through to the journal.
-
-            journalstream = es.pipeline(
-                es.map( (todo, callback) =>
-                    if @options.journal
-                        if not @processor.commands[todo.command]?.DO_NOT_JOURNAL
-                            @journal.record todo, (error) =>
-                                if error
-                                    @emit 'error', error, todo
-                                    callback()
-                    else
-                        callback()
-                )
-            )
-            @processor.on 'done', journalstream.write
+            @workstream.on 'error', (error) ->
+              console.error 'ERROR', error
 
 Clean server shutdown.
 
         shutdown: (done) ->
-            @sock.close() if @sock
-            @journal.shutdown done
+          @sock.close() if @sock
+          @workstream.end()
+          done()
 
-Hook support forwards to the processor, supports chaining.
+Hook support forwards to the correct streams, supports chaining.
 
         hook: (event, datapath, callback) ->
           switch event
@@ -131,7 +124,6 @@ Hook support forwards to the processor, supports chaining.
               else
                 @beforeHooks.hook "#{event}:#{packPath(datapath)}", callback
           this
-
 
 This is a web socket listen, attached to a connect application
 at a given mount point url with the default `/variablesky`.
@@ -177,10 +169,6 @@ a per client/connection abstraction.
 
         traceOn: ->
             @trace = true
-            remit = @emit
-            @emit = ->
-                console.error 'emit', arguments[0], inspect(arguments[1])
-                remit.apply this, _.toArray(arguments)
             this
 
 A single server side connection instance, isolates the state of each client
@@ -207,10 +195,15 @@ AutoRemove variables are tracked here by path.
 
 The outbound event stream, send messages along to a connected client.
 
-            outbound = es.map( (todo, callback) ->
-                callback(null, JSON.stringify(todo))
+            outbound = es.pipeline(
+              es.map( (todo, callback) =>
+                  if server.trace
+                      console.log '\nServer<----', inspect(todo)
+                  callback(null, todo)
+              ),
+              es.stringify(),
+              socketstream
             )
-            outbound.pipe(socketstream)
 
 The inbound event stream, messages coming from a connected client.
 
@@ -225,6 +218,11 @@ clients are writing to this stream, and clients close
             client = null
             inbound = es.pipeline(
                 es.parse(),
+                es.map( (todo, callback) =>
+                    if server.trace
+                        console.log '\nServer<----', inspect(todo)
+                    callback(null, todo)
+                ),
                 es.map( (todo, callback) ->
                     if client is todo.__client__
                         #no change
@@ -268,7 +266,6 @@ clients are writing to this stream, and clients close
             socketstream.pipe(inbound)
 
             conn.on 'close', =>
-              console.info 'closing', client
               server.removeListener 'done', routeDone
               server.removeListener client, outbound.write
               for ignore, todo of autoremove
