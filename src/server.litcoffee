@@ -81,6 +81,9 @@ Lots of tracing, server is done.
                   @emit 'done', todo
               ),
             )
+            @workstream.on 'error', (error, todo) =>
+              todo.error = error
+              @emit 'error', todo
 
 Clean server shutdown.
 
@@ -161,6 +164,7 @@ child data changes.
           for link in _.keys(links)
             if donepath.indexOf(link) is 0
               outbound.write todo
+        server.on 'error', routeDone
 
 Streaming web sockets are go.
 
@@ -239,6 +243,7 @@ clients are writing to this stream, and clients close
 
         conn.on 'close', =>
           server.removeListener 'done', routeDone
+          server.removeListener 'error', routeDone
           server.removeListener client, outbound.write
           for ignore, todo of autoremove
             server.workstream.write(todo)

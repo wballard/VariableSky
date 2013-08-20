@@ -55,54 +55,42 @@ bindings as there is already an 'old' copy in memory, no sense in making yet
 another copy...
 
         saveDiff: (newValue, oldValue, done) ->
-            if _.isArray(oldValue) and _.isArray(newValue)
-                todo =
-                    command: 'save'
-                    path: @path
-                    diff: diff(oldValue, newValue)
-                processor.do todo, (error, val, todo) =>
-                    if error
-                        done(error) if done
-                        dataCallback error, undefined, todo
-                    else
-                        done(undefined, val) if done
-                        dataCallback undefined, val, todo
-            else
-                @save newValue, done
+          if _.isArray(oldValue) and _.isArray(newValue)
+            @processor.write
+              command: 'save'
+              path: @path
+              diff: diff(oldValue, newValue)
+          else
+            @save newValue, done
 
 Totally blows away a value, making it `undefined`.
 
-            @remove = (done) ->
-                processor.do {command: 'remove', path: @path}, (error, val, todo) =>
-                    if error
-                        done(error) if done
-                        dataCallback error, undefined, todo
-                    else
-                        delete @val
-                        done() if done
-                        dataCallback undefined, undefined, todo
-                this
+        remove: (done) ->
+          @processor.write
+            command: 'remove'
+            path: @path
+          this
 
 Mark a variable as self deleting on disconnect. Useful to implement presence.
 
-            @autoRemove = (done) ->
-                processor.do {command: 'autoremove', path: @path}, (error, value, todo) =>
-                    if error
-                        done(error) if done
-                    else
-                        done() if done
-                this
+        autoRemove: (done) ->
+            processor.do {command: 'autoremove', path: @path}, (error, value, todo) =>
+                if error
+                    done(error) if done
+                else
+                    done() if done
+            this
 
 Closing, with a callback. Clients closing close all their allocated links this way.
 
-            @close = (done) ->
-                processor.do {command: 'closelink', path: @path}, (error) =>
-                  if error
-                    done(error) if done
-                    onClose(error) if onClose
-                  else
-                    done() if done
-                    onClose() if onClose
+        close: (done) ->
+            processor.do {command: 'closelink', path: @path}, (error) =>
+              if error
+                done(error) if done
+                onClose(error) if onClose
+              else
+                done() if done
+                onClose() if onClose
 
 
     module.exports = Link

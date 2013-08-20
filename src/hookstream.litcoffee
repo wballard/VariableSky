@@ -47,12 +47,17 @@ is an error, in which case it sends the error up the stream as a stream error.
           s = segment
           es.map (message, next) ->
             if match(s.pattern, matcher(message))
-              s.action message, (err) ->
+              try
+                s.action message, (err) ->
+                  next(err, message)
+              catch err
                 next(err, message)
             else
               next(null, message)
         segments.push es.mapSync (message) ->
           stream.emit 'data', message
         hookstream = es.pipeline.apply(null, segments)
+        hookstream.on 'error', (error, message) ->
+          stream.emit 'error', error, message
 
       stream

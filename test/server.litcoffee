@@ -98,33 +98,6 @@ Server side hooks.
                     snapshot.type.should.equal('monster')
                     done()
             ).save({type: 'monster'}).save({type: 'nonmonster'})
-        it "will let you link to other data in a hook, and save it", (done) ->
-            server.hook('save', 'modifier', (context, next) ->
-                #linking to other data, saving it, and only coming out of
-                #the hook when complete
-                context.link('modified').save(context.val, next)
-            )
-            client.link('modified', (error, snapshot) ->
-                if this.count is 3
-                    snapshot.should.equal('X')
-                    done()
-            )
-            client.link('modifier').save('X')
-        it "will let you link to other data in a hook, and delete it", (done) ->
-            server.hook('save', 'remover', (context, next) ->
-                #link to some other data and delete it
-                context.link('removed').remove(next)
-            )
-            #now set up some data that will be deleted by the link
-            client.link('removed', (error, snapshot) ->
-                if this.count is 2
-                    snapshot.should.equal('X')
-                if this.count is 4
-                    should.not.exist(snapshot)
-                    done()
-            ).save('X')
-            #and cross delete
-            client.link('remover').save('Y')
         it "will let you hook a remove to prevent it", (done) ->
             server.hook('remove', 'immortal', (context, next) ->
                 context.abort()
