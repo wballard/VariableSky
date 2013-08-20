@@ -91,9 +91,10 @@ Commands are written to a journal, providing durability and recovery.
 
 Clean server shutdown.
 
-        shutdown: (done) ->
+        shutdown: (done) =>
           @sock.close() if @sock
-          @workstream.end null, done
+          @workstream.end()
+          @journalstream.once 'shutdown', done
 
 Hook support forwards to the correct streams, supports chaining.
 

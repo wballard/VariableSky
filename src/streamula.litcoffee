@@ -33,6 +33,7 @@ over.
           catch err
             callback(err)
         else
+          console.log 'nomap'
           @push(null)
           callback()
 

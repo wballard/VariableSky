@@ -29,6 +29,9 @@ the substream just sends along.
           pattern is str
 
       stream = es.through (message) ->
+
+        if not message
+          console.log 'nob'
         segments = _.clone(hooks)
         next = ->
           if segments.length

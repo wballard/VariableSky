@@ -16,16 +16,17 @@ techniques as a database with write ahead logging.
     class Writer extends Writable
       constructor: (@options) ->
         super objectMode: true
+      close: (done) ->
+        @database.close done
       _write: (todo, encoding, next) ->
-        console.log 'wr', todo
         outbound = (todo, next) =>
           key = String('0000000000000000'+@counter++).slice(-16)
-          console.log key, todo
           @database.put key, JSON.stringify(todo), next
         if not @database
           @database = leveldown(@options.journalDirectory)
           @on 'finish', =>
-            console.log 'doner'
+            @database.close =>
+              @emit 'shutdown'
           @database.open (error) =>
             return next(error, todo) if error
             highmark = @database.iterator()

@@ -25,7 +25,7 @@ stuff and it will queue.
         before (done) ->
             app = connect()
             httpserver = require('http').createServer(app)
-            server = new sky.Server(options).traceOn()
+            server = new sky.Server(options)
             server.listen app, httpserver
             httpserver.listen 9999, ->
                 done()
@@ -34,7 +34,7 @@ stuff and it will queue.
                 server.shutdown ->
                     done()
         it "will queue up actions so you don't need to wait for an open", (done) ->
-            client = new sky.Client('ws://localhost:9999/variablesky').traceOn()
+            client = new sky.Client('ws://localhost:9999/variablesky')
             client.link('qbert', (error, snapshot) ->
                 if this.count is 2
                     snapshot.should.eql('boop')
@@ -51,10 +51,10 @@ Server side hooks.
         before (done) ->
             app = connect()
             httpserver = require('http').createServer(app)
-            server = new sky.Server(options).traceOn()
+            server = new sky.Server(options)
             server.listen app, httpserver
             httpserver.listen 9999, ->
-                client = new sky.Client('ws://localhost:9999/variablesky').traceOn()
+                client = new sky.Client('ws://localhost:9999/variablesky')
                 done()
         after (done) ->
             client.close ->
