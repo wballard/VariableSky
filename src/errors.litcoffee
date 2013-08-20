@@ -1,9 +1,6 @@
 Error making macros.
 
     module.exports =
-        NO_SUCH_COMMAND: (command) ->
-            name: "NO_SUCH_COMMAND"
-            message: command
         PARSE_ERROR: (err) ->
             name: "PARSE_ERROR"
             message: "This was no parseable. Sorry"

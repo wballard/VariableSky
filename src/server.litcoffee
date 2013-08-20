@@ -19,7 +19,6 @@ lying :)
     es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
     hookstream = require('./hookstream.litcoffee')
-    commandstream = require('./commandstream.litcoffee')
     journalstream = require('./journalstream.litcoffee')
     websocket = require('websocket-stream')
     streamula = require('./streamula.litcoffee')
@@ -38,16 +37,17 @@ This is the main command processor, separate here becuase it will be used in
 journal playback without hooks as well as in the main workstream.
 
             commands = =>
-              commandstream(
-                link: require('./commands/server/link')
-                save: require('./commands/server/save')
-                remove: require('./commands/server/remove')
-                message: (todo, blackboard, done) =>
-                  @emit todo.__to__, todo
-                  done()
-              , ((m) -> m.command)
-              , ((m) -> m.error)
-              , @blackboard)
+              streamula.commandprocessor(
+                map:
+                  link: require('./commands/server/link')
+                  save: require('./commands/server/save')
+                  remove: require('./commands/server/remove')
+                  message: (todo, blackboard) =>
+                    @emit todo.__to__, todo
+                lookup: (m) -> m.command
+                skip: (m) -> m.error
+                context: @blackboard
+              )
 
 This is the main workstream, it does all the processing for the server.
 
