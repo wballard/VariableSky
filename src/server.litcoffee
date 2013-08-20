@@ -22,6 +22,7 @@ lying :)
     commandstream = require('./commandstream.litcoffee')
     journalstream = require('./journalstream.litcoffee')
     websocket = require('websocket-stream')
+    streamula = require('./streamula.litcoffee')
 
     class Server extends EventEmitter
         constructor: (@options) ->
@@ -36,8 +37,8 @@ lying :)
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
-              contextify = es.through( (todo) =>
-                contextify.queue _.extend(todo,
+              contextify = streamula.map( (todo) =>
+                _.extend(todo,
                   prev: @blackboard.valueAt(todo.path)
                   abort: (message) ->
                     throw errors.HOOK_ABORTED(message)
@@ -67,29 +68,32 @@ De-context, strip off methods we don't need any more.
                 todo
               ),
 
-Commands are written to a journal, providing durability and recovery.
-
-              @journalstream = journalstream(@options),
-
 Lots of tracing, server is done.
 
               es.mapSync( (todo) =>
                   if @trace
                     console.log '\nServer Done', inspect(todo)
                   @emit 'done', todo
+                  todo
               ),
+
+Commands are written to a journal, providing durability and recovery.
+
+              @journalstream = new journalstream.Writer(@options)
             )
             @workstream.on 'error', (error, todo) =>
-              todo.error = error
-              console.log 'horror', @workstream
-              @emit 'error', todo
+              console.log 'horror', error
+              if todo
+                todo.error = error
+                @emit 'error', todo
+              else
+                @emit 'error', error
 
 Clean server shutdown.
 
         shutdown: (done) ->
           @sock.close() if @sock
-          @workstream.end()
-          done()
+          @workstream.end null, done
 
 Hook support forwards to the correct streams, supports chaining.
 
