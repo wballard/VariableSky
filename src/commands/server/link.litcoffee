@@ -6,5 +6,5 @@ otherwise.
 
 This is a read command, no sense clogging up the journal with it.
 
-      todo.DO_NOT_JOURNAL = true
+      todo.__no_journal__ = true
       done()

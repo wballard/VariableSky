@@ -22,42 +22,42 @@ This stream flows through a substream before coming back up, this is where
 a spot emerges to have a dynamic series of hooks as a pipeline. So by default,
 the substream just sends along.
 
-      hookstream = es.mapSync (message) ->
-        stream.emit 'data', message
-
-      stream = es.through (message) ->
-        hookstream.write message
-
       match = (pattern, str) ->
         if pattern.test
           pattern.test str
         else
           pattern is str
 
-Build up the dynamic pipeline as hooks are added, this will replace the
-substream with a pipeline of all the hooks. Each hook chains along unless there
-is an error, in which case it sends the error up the stream as a stream error.
+      stream = es.through (message) ->
+        segments = _.clone(hooks)
+        next = ->
+          if segments.length
+            segment = segments.shift()
+            if match(segment.pattern, matcher(message))
+              try
+                segment.action message, (err) ->
+                  if err
+                    message.error = err
+                    stream.queue(message)
+                  else
+                    next()
+              catch err
+                message.error = err
+                stream.queue(message)
+            else
+              next()
+          else
+            stream.queue(message)
+        next()
+
+Build up the dynamic pipeline as hooks are added. Each hook chains along unless
+there is an error, in which case it sends the error up the stream as a stream
+error.
 
       hooks = []
       stream.hook = (pattern, action) ->
         hooks.push
           pattern: pattern
           action: action
-        segments = _.map hooks, (segment) ->
-          s = segment
-          es.map (message, next) ->
-            if match(s.pattern, matcher(message))
-              try
-                s.action message, (err) ->
-                  next(err, message)
-              catch err
-                next(err, message)
-            else
-              next(null, message)
-        segments.push es.mapSync (message) ->
-          stream.emit 'data', message
-        hookstream = es.pipeline.apply(null, segments)
-        hookstream.on 'error', (error, message) ->
-          stream.emit 'error', error, message
 
       stream

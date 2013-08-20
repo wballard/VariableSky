@@ -36,18 +36,15 @@ lying :)
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
-              es.mapSync( (todo) =>
-                _.extend todo,
+              contextify = es.through( (todo) =>
+                contextify.queue _.extend(todo,
                   prev: @blackboard.valueAt(todo.path)
                   abort: (message) ->
                     throw errors.HOOK_ABORTED(message)
+                )
               ),
 
-And here is where the real processing happens:
-
-* hooks
-* commands
-* hooks
+And here is where the real processing happens, hooks wrapping commands.
 
               @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
               @processor = commandstream(
@@ -57,7 +54,8 @@ And here is where the real processing happens:
                 message: (todo, blackboard, done) =>
                   @emit todo.__to__, todo
                   done()
-              , ((todo) -> todo.command)
+              , ((m) -> m.command)
+              , ((m) -> m.error)
               , @blackboard),
               @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
 
@@ -83,6 +81,7 @@ Lots of tracing, server is done.
             )
             @workstream.on 'error', (error, todo) =>
               todo.error = error
+              console.log 'horror', @workstream
               @emit 'error', todo
 
 Clean server shutdown.
@@ -209,7 +208,7 @@ clients are writing to this stream, and clients close
               links[packPath(todo.path)] = true
             todo
           ),
-          es.map( (todo, callback) ->
+          es.mapSync( (todo) ->
             if client is todo.__client__
               #no change
             else
@@ -217,7 +216,7 @@ clients are writing to this stream, and clients close
                 server.removeListener(client, outbound.write)
               client = todo.__client__
               server.on(client, outbound.write)
-            callback(null, todo)
+            todo
           ),
           es.mapSync( (todo) ->
             if todo.command is 'autoremove'
@@ -235,8 +234,7 @@ clients are writing to this stream, and clients close
             todo
           ),
           es.mapSync( (todo) ->
-              server.workstream.write(todo)
-              undefined
+            server.workstream.write(todo)
           )
         )
         socketstream.pipe(inbound)

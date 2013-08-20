@@ -25,6 +25,11 @@ with a function that returns a string command name, matching into the
 
 `lookup(todo)`
 
+Commands can be skipped, this is most likely when you have a prior error
+in stream and want to avoid processing. Return true to skip.
+
+`skip(todo)`
+
 Commands have shared state via a `context`. This is any object you like, and
 lives as long as the stream.
 
@@ -32,16 +37,17 @@ lives as long as the stream.
     _ = require('lodash')
     errors = require('./errors.litcoffee')
 
-    module.exports = (commandMap, lookup, context) ->
+    module.exports = (commandMap, lookup, skip, context) ->
       stream = es.through (todo) ->
-        stream.emit 'todo', todo
         command = commandMap[lookup(todo)]
-        if command
-          stream.emit 'doing', todo
+        mustSkip = (skip or -> false)(todo)
+        if mustSkip
+          stream.emit 'data', todo
+        else if command
           command todo, context, (error) ->
             if error
               todo.error = error
             stream.emit 'data', todo
-            stream.emit 'done', todo
         else
-          stream.emit 'error', errors.NO_SUCH_COMMAND()
+          lookup.error = errors.NO_SUCH_COMMAND
+          stream.emit 'data', todo

@@ -60,8 +60,10 @@ another copy...
               command: 'save'
               path: @path
               diff: diff(oldValue, newValue)
+              __done__: done
           else
             @save newValue, done
+          this
 
 Totally blows away a value, making it `undefined`.
 
@@ -69,28 +71,25 @@ Totally blows away a value, making it `undefined`.
           @processor.write
             command: 'remove'
             path: @path
+            __done__: done
           this
 
 Mark a variable as self deleting on disconnect. Useful to implement presence.
 
         autoRemove: (done) ->
-            processor.do {command: 'autoremove', path: @path}, (error, value, todo) =>
-                if error
-                    done(error) if done
-                else
-                    done() if done
-            this
+          @processor.write
+            command: 'autoremove'
+            path: @path
+            __done__: done
+          this
 
 Closing, with a callback. Clients closing close all their allocated links this way.
 
         close: (done) ->
-            processor.do {command: 'closelink', path: @path}, (error) =>
-              if error
-                done(error) if done
-                onClose(error) if onClose
-              else
-                done() if done
-                onClose() if onClose
-
+          @processor.write
+            command: 'closelink'
+            path: @path
+            __done__: done
+          this
 
     module.exports = Link
