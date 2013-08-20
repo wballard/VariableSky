@@ -52,11 +52,8 @@ Server side hooks.
             app = connect()
             httpserver = require('http').createServer(app)
             server = new sky.Server(options).traceOn()
-            console.log 'ggggg'
             server.listen app, httpserver
-            console.log 'iggggg'
             httpserver.listen 9999, ->
-                console.log 'iiggggg'
                 client = new sky.Client('ws://localhost:9999/variablesky')
                 done()
         after (done) ->
@@ -93,22 +90,12 @@ Server side hooks.
                 if context?.prev?.type
                     context.val.type = context.prev.type
                 next()
-            ).hook('save', 'withtimestamp', (context, next) ->
-                #and link to other data, looping back to the server
-                context.link('hello', (error, snapshot) ->
-                    context.val.message = snapshot
-                    next()
-                )
-            ).hook('link', 'hello', (context, next) ->
-                context.val = 'hello'
-                next()
             )
             client.link('withtimestamp', (error, snapshot) ->
                 if snapshot and this.count is 3
                     snapshot.at.should.equal(stashAt)
                     snapshot.name.should.equal('Fred')
                     snapshot.type.should.equal('monster')
-                    snapshot.message.should.equal('hello')
                     done()
             ).save({type: 'monster'}).save({type: 'nonmonster'})
         it "will let you link to other data in a hook, and save it", (done) ->

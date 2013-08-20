@@ -41,8 +41,6 @@ Enhance the todo turning it into a context for the rest of the processing stream
                   prev: @blackboard.valueAt(todo.path)
                   abort: (message) ->
                     throw errors.HOOK_ABORTED(message)
-                  link: (path, done) =>
-                    new Link(@workstream, @blackboard, path, done)
               ),
 
 And here is where the real processing happens:
