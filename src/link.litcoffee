@@ -16,12 +16,12 @@ an Array mutator.
 
     class Link extends EventEmitter
         constructor: (processor, blackboard, path, callback, onClose) ->
-          diff = adiff.diff
+          @diff = adiff.diff
 
 Sometimes you need to redefine equals. Specifically for angular, to ignore $$.
 
           @equalIs = (fn) ->
-            diff = adiff(equal: fn).diff
+            @diff = adiff(equal: fn).diff
             this
 
           @processor = processor
@@ -60,7 +60,7 @@ another copy...
             @processor.write
               command: 'save'
               path: @path
-              diff: diff(oldValue, newValue)
+              diff: @diff(oldValue, newValue)
               __done__: done
           else
             @save newValue, done

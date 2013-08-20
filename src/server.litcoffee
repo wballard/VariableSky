@@ -33,7 +33,26 @@ lying :)
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
             @blackboard = new Blackboard()
+
+This is the main command processor, separate here becuase it will be used in
+journal playback without hooks as well as in the main workstream.
+
+            commands = =>
+              commandstream(
+                link: require('./commands/server/link')
+                save: require('./commands/server/save')
+                remove: require('./commands/server/remove')
+                message: (todo, blackboard, done) =>
+                  @emit todo.__to__, todo
+                  done()
+              , ((m) -> m.command)
+              , ((m) -> m.error)
+              , @blackboard)
+
+This is the main workstream, it does all the processing for the server.
+
             @workstream = es.pipeline(
+              gate = es.pause(),
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
@@ -48,16 +67,7 @@ Enhance the todo turning it into a context for the rest of the processing stream
 And here is where the real processing happens, hooks wrapping commands.
 
               @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
-              @processor = commandstream(
-                link: require('./commands/server/link')
-                save: require('./commands/server/save')
-                remove: require('./commands/server/remove')
-                message: (todo, blackboard, done) =>
-                  @emit todo.__to__, todo
-                  done()
-              , ((m) -> m.command)
-              , ((m) -> m.error)
-              , @blackboard),
+              commands(),
               @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
 
 De-context, strip off methods we don't need any more.
@@ -88,6 +98,16 @@ Commands are written to a journal, providing durability and recovery.
                 @emit 'error', todo
               else
                 @emit 'error', error
+
+Starting up, the command processing is paused at the gate, the journal is
+played back to restore state, and then the gate is released.
+
+            gate.pause()
+            new journalstream.Reader(@options)
+              .on('shutdown', gate.resume)
+              .pipe(
+                commands()
+              )
 
 Clean server shutdown.
 

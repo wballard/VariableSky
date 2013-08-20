@@ -160,21 +160,33 @@ Fire up again, should have the log playback. This proves we can come back from
 a restart/crash.
 
     describe "Hooks -- durable server", ->
+        client = null
         server = null
+        httpserver = null
         before (done) ->
+            app = connect()
+            httpserver = require('http').createServer(app)
             server = new sky.Server(options)
-            server.on 'recovered', ->
+            server.listen app, httpserver
+            httpserver.listen 9999, ->
+                client = new sky.Client('ws://localhost:9999/variablesky')
                 done()
         after (done) ->
-            server.shutdown done
+            client.close ->
+                server.shutdown ->
+                    httpserver.close ->
+                        done()
+        afterEach ->
+            client.links.forEach (x) -> x.close()
         it "recovers previous commands", (done) ->
-            server.processor.blackboard.immortal.should.eql('Zeus')
-            done()
+            client.link 'immortal', (error, snapshot) ->
+                snapshot.should.eql('Zeus')
+                done()
         it "recovers the result of hooks", (done) ->
-            server.processor.blackboard.withtimestamp.should.eql(
-                at: stashAt
-                name: 'Fred'
-                type: 'monster'
-                message: 'hello'
-            )
-            done()
+            client.link 'withtimestamp', (error, snapshot) ->
+                snapshot.should.eql(
+                    at: stashAt
+                    name: 'Fred'
+                    type: 'monster'
+                )
+                done()

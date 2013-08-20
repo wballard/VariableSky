@@ -8,16 +8,31 @@ techniques as a database with write ahead logging.
     leveldown = require('leveldown')
 
     class Reader extends Readable
-      constructor: (options) ->
+      constructor: (@options) ->
         super objectMode: true
       _read: () ->
-        @push(null)
+        if not @database
+          @database = leveldown(@options.journalDirectory)
+          @on 'end', =>
+            @database.close =>
+              @emit 'shutdown'
+          @database.open (error) =>
+            return next(error, todo) if error
+            todos = @database.iterator()
+            each = (error, key, value) =>
+              if error
+                @emit 'error', error
+              else if value
+                @push(JSON.parse(value))
+                todos.next each
+              else
+                @push({})
+                @push(null)
+            todos.next each
 
     class Writer extends Writable
       constructor: (@options) ->
         super objectMode: true
-      close: (done) ->
-        @database.close done
       _write: (todo, encoding, next) ->
         outbound = (todo, next) =>
           key = String('0000000000000000'+@counter++).slice(-16)
@@ -29,7 +44,7 @@ techniques as a database with write ahead logging.
               @emit 'shutdown'
           @database.open (error) =>
             return next(error, todo) if error
-            highmark = @database.iterator()
+            highmark = @database.iterator(reverse: true)
             highmark.next (error, key, value) =>
               return next(error, todo) if error
               @counter = key or 0
