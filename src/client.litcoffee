@@ -123,9 +123,10 @@ the tree to change if they are parents.
             es.mapSync( (todo) =>
               for link in @links
                 if _.isEqual(link.path, _.first(todo.path, link.path.length))
-                  if @trace
-                    console.log 'dispatching', todo.path, 'to', link.path
-                  link.dataCallback null, @blackboard.valueAt(link.path), todo
+                  if not todo.__do_not_dispatch__
+                    if @trace
+                      console.log 'dispatching', todo.path, 'to', link.path
+                    link.dataCallback todo.error, @blackboard.valueAt(link.path), todo
               todo
             ),
 
@@ -133,11 +134,11 @@ Per command events, used for callbacks.
 
             es.mapSync( (todo) =>
               @emit todo.__id__, todo
+              todo
             ),
             es.mapSync( (todo) =>
               if @trace
                   console.log '\nClient Done', inspect(todo)
-              todo
             )
           )
 
@@ -215,7 +216,7 @@ Create a new data link to the server.
           , @blackboard
           , path
           , done
-          , => @links = _.reject @links, link
+          , => @links = _.reject(@links, link)
         )
         @links.push link
         link

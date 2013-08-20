@@ -163,6 +163,7 @@ child data changes.
           for link in _.keys(links)
             if donepath.indexOf(link) is 0
               outbound.write todo
+              return #only write it once, the client can multidispatch
         server.on 'error', routeDone
 
 Streaming web sockets are go.

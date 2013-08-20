@@ -54,13 +54,15 @@ Server side hooks.
             server = new sky.Server(options).traceOn()
             server.listen app, httpserver
             httpserver.listen 9999, ->
-                client = new sky.Client('ws://localhost:9999/variablesky')
+                client = new sky.Client('ws://localhost:9999/variablesky').traceOn()
                 done()
         after (done) ->
             client.close ->
                 server.shutdown ->
                     httpserver.close ->
                         done()
+        afterEach ->
+            client.links.forEach (x) -> x.close()
         it "will let you hook a read", (done) ->
             server.hook('link', 'message', (context, next) ->
                 context.val =

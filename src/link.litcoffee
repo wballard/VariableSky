@@ -32,6 +32,7 @@ Sometimes you need to redefine equals. Specifically for angular, to ignore $$.
             @count += 1
             callback.call(this, error, value, todo) if callback
             @emit 'data', value
+          @onClose = onClose
 
 This actually starts off the link, by processing a command to link.
 
@@ -80,15 +81,18 @@ Mark a variable as self deleting on disconnect. Useful to implement presence.
           @processor.write
             command: 'autoremove'
             path: @path
+            __do_not_dispatch__: true
             __done__: done
           this
 
 Closing, with a callback. Clients closing close all their allocated links this way.
 
         close: (done) ->
+          @onClose(this)
           @processor.write
             command: 'closelink'
             path: @path
+            __do_not_dispatch__: true
             __done__: done
           this
 
