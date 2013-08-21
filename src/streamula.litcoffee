@@ -5,7 +5,7 @@ More to the point, Streamula uses new and exciting v0.10.x streams to allow
 simple functional streaming programming. Use these exciting stream types, pipe
 them together and go wild. Wild I say!
 
-    stream = require('readable-stream')
+    through = require('through')
 
 ## map(mapFunction)
 Map every incoming object to an output object. This is smart enough that when
@@ -17,18 +17,11 @@ you come back with a `null`, you are telling everyone downstream that it's all
 over.
 
     map = (mapFunction) ->
-      tr = new stream.Transform(objectMode: true)
-      tr._transform = (object, encoding, callback) ->
-        if object
-          try
-            tr.push(mapFunction(object))
-            callback()
-          catch err
-            callback(err)
-        else
-          tr.push(null)
-          callback()
-      tr
+      through (object) ->
+        try
+          @queue(mapFunction(object))
+        catch err
+          @emit('error', err)
 
 ## commandprocessor(options)
 A command processing streams turns *todo* into *done* by way of *commands*. This
@@ -56,30 +49,25 @@ asynchronous modes are supported:
       options.lookup = options.lookup or ->
       options.skip = options.skip or -> false
       options.context = options.context or {}
-      tr = new stream.Transform(objectMode: true)
-      tr._transform = (todo, encoding, callback) ->
-        push = (todo) =>
-          tr.push(todo)
-          callback()
+      through (todo, encoding, callback) ->
         command = options.map[options.lookup(todo)]
         mustSkip = options.skip(todo)
         if mustSkip
-          push(todo)
+          @queue(todo)
         else if command
           if command.length is 3
             command todo, options.context, (error) =>
               if error
                 todo.error = error
-              push(todo)
+              @queue(todo)
           else
             command todo, options.context
-            push(todo)
+            @queue(todo)
         else
           todo.error =
             name: "NO_SUCH_COMMAND"
             message: command
-          push(todo)
-      tr
+          @queue(todo)
 
 ## pipeline(stream...)
 Feed a comma separated multiple argument set of streams in, get a fully piped

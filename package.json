@@ -33,11 +33,9 @@
     "connect": "~2.8.4",
     "ws": "~0.4.27",
     "node-uuid": "~1.4.0",
-    "colors": "~0.6.0-1",
-    "event-stream": "~3.0.16",
     "adiff": "~0.2.10",
     "websocket-stream": "~0.2.0",
-    "readable-stream": "~1.0.15"
+    "through": "~2.3.4"
   },
   "devDependencies": {
     "mocha": "~1.12.0",
