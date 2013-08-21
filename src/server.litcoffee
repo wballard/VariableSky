@@ -106,7 +106,7 @@ played back to restore state, and then the gate is released.
               #no action here
             else
               gate.pause()
-              new journalstream.Reader(@options)
+              new journalstream.reader(@options)
                 .on('shutdown', gate.resume)
                 .pipe(
                   commands()

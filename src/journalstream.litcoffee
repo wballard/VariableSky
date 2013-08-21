@@ -7,28 +7,40 @@ techniques as a database with write ahead logging.
     Writable = require('stream').Writable
     leveldown = require('leveldown')
 
-    class Reader extends Readable
-      constructor: (@options) ->
-        super objectMode: true
-      _read: () ->
-        if not @database
-          @database = leveldown(@options.journalDirectory)
-          @on 'end', =>
-            @database.close =>
-              @emit 'shutdown'
-          @database.open (error) =>
-            return next(error, todo) if error
-            todos = @database.iterator()
-            each = (error, key, value) =>
-              if error
-                @emit 'error', error
-              else if value
-                @push(JSON.parse(value))
-                todos.next each
-              else
-                @push({})
-                @push(null)
+# reader(options)
+
+Stream will read all the records out of the journal and send them along. This
+is the _playback_ sequence. You'll want to read all these back, do them, and
+then start the actual server processing.
+
+### options
+|Name|Description|
+|-|-|
+|journalDirectory|Disk location for the journal. Mandatory|
+
+    reader = (options) ->
+      ret = new Readable(objectMode: true)
+      ret.on 'end', ->
+        database.close ->
+          ret.emit 'shutdown'
+      database = leveldown(options.journalDirectory)
+      todos = null
+      ret._read = ->
+        each = (error, key, value) =>
+          if error
+            ret.emit('error', error)
+          else if value
+            ret.push(JSON.parse(value))
+          else
+            ret.push(null)
+        if not todos
+          database.open (error) ->
+            return ret.emit('error', error) if error
+            todos = database.iterator()
             todos.next each
+        else
+          todos.next each
+      ret
 
     class Writer extends Writable
       constructor: (@options) ->
@@ -57,7 +69,7 @@ techniques as a database with write ahead logging.
           console.log 'closing'
 
     module.exports =
-      Reader: Reader
+      reader: reader
       Writer: Writer
 
 
