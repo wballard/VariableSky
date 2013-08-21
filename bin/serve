@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require('coffee-script');
-var port = 9999;
+var port = 8888;
 var sky = require('../index');
 var app = require('connect')();
 var server = require('http').createServer(app).listen(port);

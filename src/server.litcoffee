@@ -102,12 +102,15 @@ Commands are written to a journal, providing durability and recovery.
 Starting up, the command processing is paused at the gate, the journal is
 played back to restore state, and then the gate is released.
 
-            gate.pause()
-            new journalstream.Reader(@options)
-              .on('shutdown', gate.resume)
-              .pipe(
-                commands()
-              )
+            if not @options.journal
+              #no action here
+            else
+              gate.pause()
+              new journalstream.Reader(@options)
+                .on('shutdown', gate.resume)
+                .pipe(
+                  commands()
+                )
 
 Clean server shutdown.
 
