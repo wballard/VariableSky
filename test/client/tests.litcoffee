@@ -6,7 +6,7 @@
     describe "Client Library", ->
         connToBeOrphaned = null
         before (done) ->
-            connToBeOrphaned = variablesky.connect().traceOn()
+            connToBeOrphaned = variablesky.connect()
             done()
 
         after (done) ->
