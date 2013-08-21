@@ -51,38 +51,37 @@ asynchronous modes are supported:
 |skip|This is a `fn(todo)` that if true, skips processing|
 |context|This is a shared object _blackboard_ where commands can record state|
 
-    class CommandProcessor extends stream.Transform
-      constructor: (@options) ->
-        super objectMode: true
-        @options.map = @options.map or {}
-        @options.lookup = @options.lookup or ->
-        @options.skip = @options.skip or -> false
-        @options.context = @options.context or {}
-      _transform: (todo, encoding, callback) ->
+    commandprocessor = (options) ->
+      options.map = options.map or {}
+      options.lookup = options.lookup or ->
+      options.skip = options.skip or -> false
+      options.context = options.context or {}
+      tr = new stream.Transform(objectMode: true)
+      tr._transform = (todo, encoding, callback) ->
         push = (todo) =>
-          @push(todo)
+          tr.push(todo)
           callback()
-        command = @options.map[@options.lookup(todo)]
-        mustSkip = @options.skip(todo)
+        command = options.map[options.lookup(todo)]
+        mustSkip = options.skip(todo)
         if mustSkip
           push(todo)
         else if command
           if command.length is 3
-            command todo, @options.context, (error) =>
+            command todo, options.context, (error) =>
               if error
                 todo.error = error
               push(todo)
           else
-            command todo, @options.context
+            command todo, options.context
             push(todo)
         else
           todo.error =
             name: "NO_SUCH_COMMAND"
             message: command
           push(todo)
+      tr
 
 
     module.exports =
       map: map
-      CommandProcessor: CommandProcessor
-      commandprocessor: (options) -> new CommandProcessor(options)
+      commandprocessor: commandprocessor
