@@ -15,6 +15,7 @@ a simulated browser to connect back to our test server.
     describe "Socket API", ->
         app = null
         skyserver = null
+        browser = new Browser()
         before (done) ->
             app = connect()
             server = require('http').createServer(app)
@@ -25,7 +26,6 @@ a simulated browser to connect back to our test server.
             skyserver.shutdown done
         it "serves a browser client self test page", (done) ->
             this.timeout(5000)
-            browser = new Browser()
             browser.debug = true
             browser.runScripts = true
             browser.visit 'http://localhost:9999/variablesky.client/test/index.html', ->
