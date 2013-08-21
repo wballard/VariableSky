@@ -81,7 +81,16 @@ asynchronous modes are supported:
           push(todo)
       tr
 
+## pipeline(stream...)
+Feed a comma separated multiple argument set of streams in, get a fully piped
+stream out.
+
+    pipeline = (stream...) ->
+      root = stream.shift()
+      stream.reduce(((l, r) -> l.pipe(r)), root)
+      root
 
     module.exports =
       map: map
       commandprocessor: commandprocessor
+      pipeline: pipeline
