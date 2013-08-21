@@ -56,7 +56,6 @@ Websocket stream reconnector.
                 allowReconnect = false
                 sock.end()
             interrupt: ->
-                console.log 'erroror'
                 sock.emit 'error', 'interrupt'
         sock
 

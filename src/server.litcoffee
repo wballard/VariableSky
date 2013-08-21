@@ -89,7 +89,7 @@ Lots of tracing, server is done.
 
 Commands are written to a journal, providing durability and recovery.
 
-              @journalstream = new journalstream.Writer(@options)
+              @journalstream = journalstream.writer(@options)
             )
             @workstream.on 'error', (error, todo) =>
               console.log 'horror', error
@@ -106,7 +106,7 @@ played back to restore state, and then the gate is released.
               #no action here
             else
               gate.pause()
-              new journalstream.reader(@options)
+              journalstream.reader(@options)
                 .on('shutdown', gate.resume)
                 .pipe(
                   commands()

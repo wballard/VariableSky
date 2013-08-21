@@ -22,7 +22,6 @@
         it "should re-link data", (done) ->
             link = connToBeOrphaned
                 .link('reco', (error, snapshot) ->
-                    console.log 'reco', snapshot
                     #this will be called three times
                     # * first link
                     # * save
