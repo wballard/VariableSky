@@ -6,7 +6,7 @@
     describe "Client Library", ->
         connToBeOrphaned = null
         before (done) ->
-            connToBeOrphaned = variablesky.connect()
+            connToBeOrphaned = variablesky.connect().traceOn()
             done()
 
         after (done) ->
@@ -22,6 +22,7 @@
         it "should re-link data", (done) ->
             link = connToBeOrphaned
                 .link('reco', (error, snapshot) ->
+                    console.log 'reco', snapshot
                     #this will be called three times
                     # * first link
                     # * save

@@ -5,7 +5,7 @@ points to them. I'd make some claim abut this being more testable, but I'd be
 lying :)
 
     _ = require('lodash')
-    path = require('path')
+    pathjoin = require('path').join
     errors = require('./errors')
     Blackboard = require('./blackboard')
     Link = require('./link.litcoffee')
@@ -26,8 +26,8 @@ lying :)
     class Server extends EventEmitter
         constructor: (@options) ->
             @options = @options or {}
-            @options.storageDirectory = @options.storageDirectory or path.join(process.cwd(), '.server')
-            @options.journalDirectory = @options.journalDirectory or path.join(@options.storageDirectory, '.journal')
+            @options.storageDirectory = @options.storageDirectory or pathjoin(process.cwd(), '.server')
+            @options.journalDirectory = @options.journalDirectory or pathjoin(@options.storageDirectory, '.journal')
             @options.journal = if @options.journal? then @options.journal else true
             wrench.mkdirSyncRecursive(@options.storageDirectory)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
@@ -142,14 +142,14 @@ If this looks like connect or express, install a client library handler and
 and self check sample page. Detect connect/express with the presence of `use`.
 
           if app.use
-            client = "#{path.join(url)}.client"
-            app.use path.join(client, 'test'),
-              connect.static(path.join(__dirname, '../test/client'))
+            client = "#{pathjoin(url)}.client"
+            app.use pathjoin(client, 'test'),
+              connect.static(pathjoin(__dirname, '../test/client'))
             app.use client,  (req, res, next) ->
               res.setHeader('Content-Type', 'text/javascript')
               bundle = browserify()
                 .transform(require('coffeeify'))
-                .add(path.join(__dirname, 'client.litcoffee'))
+                .add(pathjoin(__dirname, 'client.litcoffee'))
                 .bundle()
               bundle.pipe(res)
               bundle.on 'error', (error) ->

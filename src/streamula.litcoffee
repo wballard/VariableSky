@@ -5,16 +5,9 @@ More to the point, Streamula uses new and exciting v0.10.x streams to allow
 simple functional streaming programming. Use these exciting stream types, pipe
 them together and go wild. Wild I say!
 
-    stream = require('stream')
+    stream = require('readable-stream')
 
-## Notes
-All of these streams are classes, but for the object disinclined, you can go
-at them with a function too. Save the baby `new`s.
-
-So, for stream `new streamula.Map()` you can also say `streamula.map()`. I'm
-just that considerate.
-
-## Map(mapFunction)
+## map(mapFunction)
 Map every incoming object to an output object. This is smart enough that when
 it gets a `null` it knows the stream is over and it doesn't bother you.
 
@@ -23,22 +16,21 @@ This handles the synchronous case, whatever you return will be sent along. If
 you come back with a `null`, you are telling everyone downstream that it's all
 over.
 
-    class Map extends stream.Transform
-      constructor: (@mapFunction) ->
-        super objectMode: true
-      _transform: (object, encoding, callback) ->
+    map = (mapFunction) ->
+      tr = new stream.Transform(objectMode: true)
+      tr._transform = (object, encoding, callback) ->
         if object
           try
-            @push(@mapFunction(object))
+            tr.push(mapFunction(object))
             callback()
           catch err
             callback(err)
         else
-          console.log 'nomap'
-          @push(null)
+          tr.push(null)
           callback()
+      tr
 
-## CommandProcessor(options)
+## commandprocessor(options)
 A command processing streams turns *todo* into *done* by way of *commands*. This
 combines the featuers of a *Command Processor* and a *Command Queue* with a
 *Blackboard* allowing commands to collaborate, as well as to save state.
@@ -91,7 +83,6 @@ asynchronous modes are supported:
 
 
     module.exports =
-      Map: Map
-      map: (mapFunction) -> new Map(mapFunction)
+      map: map
       CommandProcessor: CommandProcessor
       commandprocessor: (options) -> new CommandProcessor(options)
