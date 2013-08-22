@@ -1,8 +1,10 @@
-This is a big shared memory, a blackboard that all commands can write to. This
-provides the location for the variables in the sky to live.
 
     _ = require('lodash')
     parsePath = require('./util.litcoffee').parsePath
+
+## Blackboard
+This is a big shared memory, a blackboard that all commands can write to. This
+provides the location for the variables in the sky to live.
 
     class Blackboard
         constructor: ->

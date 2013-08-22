@@ -6,6 +6,15 @@ simple functional streaming programming. Use these exciting stream types, pipe
 them together and go wild. Wild I say!
 
     through = require('through')
+    eyes = require('eyes').inspector({ stream: null })
+
+Adaptive object dumper. Inside the browser, the eyes escape codes are no fun.
+
+    inspect =  (thing) ->
+      if window?
+        thing
+      else
+        eyes(thing)
 
 ## map(mapFunction)
 Map every incoming object to an output object. This is smart enough that when
@@ -17,11 +26,11 @@ you come back with a `null`, you are telling everyone downstream that it's all
 over.
 
     map = (mapFunction) ->
-      through (object) ->
+      ret = through (object) ->
         try
-          @queue(mapFunction(object))
+          ret.queue(mapFunction(object))
         catch err
-          @emit('error', err)
+          ret.emit('error', err)
 
 ## commandprocessor(options)
 A command processing streams turns *todo* into *done* by way of *commands*. This
@@ -49,25 +58,64 @@ asynchronous modes are supported:
       options.lookup = options.lookup or ->
       options.skip = options.skip or -> false
       options.context = options.context or {}
-      through (todo, encoding, callback) ->
-        command = options.map[options.lookup(todo)]
-        mustSkip = options.skip(todo)
+      ret = through (object) ->
+        command = options.map[options.lookup(object)]
+        mustSkip = options.skip(object)
         if mustSkip
-          @queue(todo)
+          ret.queue(object)
         else if command
           if command.length is 3
-            command todo, options.context, (error) =>
+            command object, options.context, (error) =>
               if error
-                todo.error = error
-              @queue(todo)
+                object.error = error
+              ret.queue(object)
           else
-            command todo, options.context
-            @queue(todo)
+            command object, options.context
+            ret.queue(object)
         else
-          todo.error =
+          object.error =
             name: "NO_SUCH_COMMAND"
             message: command
-          @queue(todo)
+          ret.queue(object)
+
+## decode()
+Take a chunk off the stream and decode it into an object.
+
+    decode = ->
+      ret = through (object) ->
+        ret.queue(JSON.parse(object))
+
+## encode()
+Take an object off the stream and encode it into a string.
+
+    encode = ->
+      ret = through (object) ->
+        ret.queue(JSON.stringify(object))
+
+## echo()
+Everyone's favorite do-nothing stream. It is however a nice thing to `pause()`.
+
+    echo = through
+
+## tap(prefix, guard)
+Wiretap a stream, printing out the inner goodness as each message goes by.
+
+|Argument|Description|
+|----|-----------|
+|prefix|String that will go before each log message|
+|guard|Function(loggedObject), if truthy, your object will be logged|
+
+    tap = (prefix, guard) ->
+      guard = guard or -> true
+      ret = through (object) ->
+        console.log(prefix, inspect(object)) if guard(object)
+        ret.queue(object)
+
+## discard()
+This stream really does nothing. I mean it.
+
+    discard = ->
+      through ->
 
 ## pipeline(stream...)
 Feed a comma separated multiple argument set of streams in, get a fully piped
@@ -78,7 +126,13 @@ stream out.
       stream.reduce(((l, r) -> l.pipe(r)), root)
       root
 
+
     module.exports =
       map: map
       commandprocessor: commandprocessor
+      decode: decode
+      encode: encode
+      echo: echo
+      tap: tap
+      discard: discard
       pipeline: pipeline

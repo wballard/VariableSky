@@ -1,8 +1,3 @@
-This is the main server object. This is a class to  hook to [connect] or
-[express], I'm not all the way sure why you would want to, but you can make
-multiple of these in a process and have separate sockets or rest url mount
-points to them. I'd make some claim abut this being more testable, but I'd be
-lying :)
 
     _ = require('lodash')
     pathjoin = require('path').join
@@ -16,12 +11,18 @@ lying :)
     connect = require('connect')
     EventEmitter = require('events').EventEmitter
     WebSocketServer = require('ws').Server
-    es = require('event-stream')
     inspect = require('./util.litcoffee').inspect
     hookstream = require('./hookstream.litcoffee')
     journalstream = require('./journalstream.litcoffee')
     websocket = require('websocket-stream')
     streamula = require('./streamula.litcoffee')
+
+## Server
+This is the main server object. This is a class to  hook to [connect] or
+[express], I'm not all the way sure why you would want to, but you can make
+multiple of these in a process and have separate sockets or rest url mount
+points to them. I'd make some claim abut this being more testable, but I'd be
+lying :)
 
     class Server extends EventEmitter
         constructor: (@options) ->
@@ -51,8 +52,9 @@ journal playback without hooks as well as in the main workstream.
 
 This is the main workstream, it does all the processing for the server.
 
-            @workstream = es.pipeline(
-              gate = es.pause(),
+            @workstream = streamula.pipeline(
+              streamula.tap('Server Start', => @trace),
+              gate = streamula.echo(),
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
@@ -72,23 +74,19 @@ And here is where the real processing happens, hooks wrapping commands.
 
 De-context, strip off methods we don't need any more.
 
-              es.mapSync( (todo) ->
+              streamula.map( (todo) ->
                 delete todo.link
                 delete todo.abort
                 todo
               ),
 
-Lots of tracing, server is done.
-
-              es.mapSync( (todo) =>
-                  if @trace
-                    console.log '\nServer Done', inspect(todo)
-                  @emit 'done', todo
-                  todo
-              ),
-
 Commands are written to a journal, providing durability and recovery.
 
+              streamula.map( (todo) =>
+                @emit 'done', todo
+                todo
+              ),
+              streamula.tap('Server Done', => @trace),
               @journalstream = journalstream.writer(@options)
             )
             @workstream.on 'error', (error, todo) =>
@@ -204,13 +202,17 @@ AutoRemove variables are tracked here by path.
 
 The outbound event stream, send messages along to a connected client.
 
-        outbound = es.pipeline(
-          es.mapSync( (todo) =>
-            if server.trace
-              console.log '\nServer---->', inspect(todo)
+        outbound = streamula.pipeline(
+          streamula.tap('Server', -> server.trace),
+De-context, strip off methods we don't need any more.
+
+          streamula.map( (todo) ->
+            delete todo.link
+            delete todo.abort
             todo
           ),
-          es.stringify(),
+          streamula.tap("Server---->", -> server.trace),
+          streamula.encode(),
           socketstream
         )
 
@@ -225,19 +227,15 @@ a prefix match against all the linked data in this connection.
 clients are writing to this stream, and clients close
 
         client = null
-        inbound = es.pipeline(
-          es.parse(),
-          es.mapSync( (todo) =>
-            if server.trace
-                console.log '\nServer<----', inspect(todo)
-            todo
-          ),
-          es.mapSync( (todo) ->
+        inbound = streamula.pipeline(
+          streamula.decode(),
+          streamula.tap("Server<----", -> server.trace),
+          streamula.map( (todo) ->
             if todo.path
               links[packPath(todo.path)] = true
             todo
           ),
-          es.mapSync( (todo) ->
+          streamula.map( (todo) ->
             if client is todo.__client__
               #no change
             else
@@ -247,14 +245,14 @@ clients are writing to this stream, and clients close
               server.on(client, outbound.write)
             todo
           ),
-          es.mapSync( (todo) ->
+          streamula.map( (todo) ->
             if todo.command is 'autoremove'
               autoremove[packPath(todo.path)] =
                 command: 'remove'
                 path: parsePath(todo.path)
             todo
           ),
-          es.mapSync( (todo) ->
+          streamula.map( (todo) ->
             if todo.command is 'closelink'
               for path, rm of autoremove
                 if path is packPath(todo.path)
@@ -262,7 +260,7 @@ clients are writing to this stream, and clients close
                   server.workstream.write(rm)
             todo
           ),
-          es.mapSync( (todo) ->
+          streamula.map( (todo) ->
             server.workstream.write(todo)
           )
         )

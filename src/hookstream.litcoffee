@@ -13,8 +13,8 @@ hook.  This `action` is the middleware bit, and needs to be a function like
 After all your hooks have had a chance to fire, the message is written out of
 the end of the stream, ready to be piped.
 
-    es = require('event-stream')
     _ = require('lodash')
+    through = require('through')
 
     module.exports = (matcher) ->
 
@@ -28,8 +28,7 @@ the substream just sends along.
         else
           pattern is str
 
-      stream = es.through (message) ->
-
+      stream = through (message) ->
         if not message
           console.log 'nob'
         segments = _.clone(hooks)
