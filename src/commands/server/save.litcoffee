@@ -8,7 +8,7 @@ Well, maybe not, maybe it is just _dedicated_.
     _ = require('lodash')
     adiff = require('adiff')
 
-    module.exports = (todo, blackboard, done) ->
+    module.exports = (todo, blackboard) ->
         if todo?.path.length
             at = blackboard
             for segment in _.initial(todo.path)
@@ -20,4 +20,3 @@ Well, maybe not, maybe it is just _dedicated_.
                 at[_.last(todo.path)] = todo.val
             if todo.diff
                 adiff.patch(at[_.last(todo.path)], todo.diff, true)
-        done null

@@ -3,7 +3,7 @@ so is smart enough to tell the difference.
 
     _ = require('lodash')
 
-    module.exports = (todo, blackboard, done) ->
+    module.exports = (todo, blackboard) ->
         if todo?.path.length
             at = blackboard
             for segment in _.initial(todo.path)
@@ -25,4 +25,3 @@ so is smart enough to tell the difference.
                 if todo.__trace__
                     console.log 'remove', todo.path
                 delete at[_.last(todo.path)]
-        done null
