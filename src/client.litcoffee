@@ -35,7 +35,6 @@ Websocket stream reconnector.
       tryReconnect = ->
         if allowReconnect
           clearTimeout(reconnector) if reconnector
-          sock.removeAllListeners() if sock
           backoff = Math.min(backoff * 2, 30000)
           reconnector = setTimeout ->
             connect(url)
@@ -54,7 +53,7 @@ Websocket stream reconnector.
           allowReconnect = false
           sock.end()
         interrupt: ->
-          sock.emit 'error', 'interrupt'
+          sock.end()
       sock
 
 
@@ -111,6 +110,8 @@ the client to update state.
                 remove: removecommand
                 message: (todo, context) =>
                   @emit todo.topic, todo.message, todo.__client__
+                close: (todo) =>
+                  @forceClose(todo.message)
               lookup: (m) -> m.command
               skip: (m) -> m.error
               context: @blackboard
@@ -135,7 +136,8 @@ Per command events, used for callbacks.
             ),
             streamula.tap("Client Done", => @trace),
             streamula.discard()
-          )
+          ).on 'end', =>
+            @emit 'close'
 
 The outbound event processing stream, from this client to the server.
 
@@ -189,7 +191,7 @@ Refresh all links, keeps the data in memory up to date after a reconnect.
       relink: =>
         paths =  _.unique(_.pluck(@links, 'path'))
         for path in paths
-          console.log 'relink', path
+          @emit 'relink', path
           @outbound.write
             command: 'link'
             path: parsePath(path)
@@ -293,9 +295,16 @@ Polite close. My money is you never remember to call this, so the server
 has a close connection timeout anyhow.
 
       close: (done) ->
-        @removeAllListeners()
         @sock.close()
         (done or ->)()
+
+Forced close.
+
+      forceClose: (message) ->
+        console.log message
+        @sock.close()
+
+Fake test close.
 
       interrupt: (done) ->
         @sock.interrupt()

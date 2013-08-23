@@ -34,6 +34,10 @@ lying :)
             wrench.mkdirSyncRecursive(@options.journalDirectory)
             @blackboard = new Blackboard()
 
+Track connections, and force close if we have a duplicate connection come in.
+
+            connections = {}
+
 This is the main command processor, separate here becuase it will be used in
 journal playback without hooks as well as in the main workstream.
 
@@ -43,8 +47,6 @@ journal playback without hooks as well as in the main workstream.
                   link: require('./commands/server/link')
                   save: require('./commands/server/save')
                   remove: require('./commands/server/remove')
-                  message: (todo, blackboard) =>
-                    @emit todo.__to__, todo
                 lookup: (m) -> m.command
                 skip: (m) -> m.error
                 context: @blackboard
@@ -71,14 +73,6 @@ And here is where the real processing happens, hooks wrapping commands.
               @beforeHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
               commands(),
               @afterHooks = hookstream((todo) -> "#{todo.command}:#{packPath(todo.path)}"),
-
-De-context, strip off methods we don't need any more.
-
-              streamula.map( (todo) ->
-                delete todo.link
-                delete todo.abort
-                todo
-              ),
 
 Commands are written to a journal, providing durability and recovery.
 
@@ -165,9 +159,7 @@ a per client/connection abstraction.
 
             @sock = new WebSocketServer({server: server, path: url})
             @sock.on 'connection', (conn) =>
-                ret = new Connection(conn, this)
-                @emit 'connected', ret
-                ret
+                new Connection(conn, this)
 
         traceOn: ->
           @trace = true
@@ -178,6 +170,7 @@ from one another on the server.
 
     class Connection
       constructor: (conn, server) ->
+        connection = @
 
 When the server says it has journaled something, we need to route it to clients
 that have a link to this path or a prefix of it so parent data knows about
@@ -189,7 +182,7 @@ child data changes.
           for link in _.keys(links)
             if donepath.indexOf(link) is 0
               outbound.write todo
-              return #only write it once, the client can multidispatch
+              return #only write it once, the client can multidispatch to links
         server.on 'error', routeDone
 
 Streaming web sockets are go.
@@ -204,17 +197,20 @@ The outbound event stream, send messages along to a connected client.
 
         outbound = streamula.pipeline(
           streamula.tap('Server', -> server.trace),
-De-context, strip off methods we don't need any more.
+
+De-context, strip off methods.
 
           streamula.map( (todo) ->
-            delete todo.link
-            delete todo.abort
+            for key, value of todo
+              if _.isFunction(value)
+                delete todo[key]
             todo
           ),
           streamula.tap("Server---->", -> server.trace),
           streamula.encode(),
           socketstream
         )
+        @write = outbound.write
 
 The inbound event stream, messages coming from a connected client.
 
@@ -228,6 +224,7 @@ clients are writing to this stream, and clients close
 
         client = null
         inbound = streamula.pipeline(
+          socketstream,
           streamula.decode(),
           streamula.tap("Server<----", -> server.trace),
           streamula.map( (todo) ->
@@ -236,44 +233,50 @@ clients are writing to this stream, and clients close
             todo
           ),
           streamula.map( (todo) ->
-            if client is todo.__client__
-              #no change
+            if server.connections[todo.__client__] and server.connections[todo.__client__] isnt connection
+              outbound.write
+                command: 'close'
+                message: 'duplicate client'
+              null
             else
-              if client
-                server.removeListener(client, outbound.write)
-              client = todo.__client__
-              server.on(client, outbound.write)
-            todo
+              connection.client = client = todo.__client__
+              server.connections[todo.__client__] = connection
+              todo
           ),
           streamula.map( (todo) ->
-            if todo.command is 'autoremove'
-              autoremove[packPath(todo.path)] =
-                command: 'remove'
-                path: parsePath(todo.path)
-            todo
-          ),
-          streamula.map( (todo) ->
-            if todo.command is 'closelink'
-              for path, rm of autoremove
-                if path is packPath(todo.path)
-                  delete autoremove[path]
-                  server.workstream.write(rm)
-            todo
+            try
+              if todo.command is 'autoremove'
+                autoremove[packPath(todo.path)] =
+                  command: 'remove'
+                  path: parsePath(todo.path)
+              if todo.command is 'closelink'
+                for path, rm of autoremove
+                  if path is packPath(todo.path)
+                    delete autoremove[path]
+                    server.workstream.write(rm)
+              if todo.command is 'message'
+                server.connections[todo.__to__].write todo
+              todo
+            catch wtf
+              console.log 'wtf', wtf
           ),
           streamula.map( (todo) ->
             server.workstream.write(todo)
           )
         )
-        socketstream.pipe(inbound)
 
         conn.on 'close', =>
+          if server.connections[client] is connection
+            delete server.connections[client]
           server.removeListener 'done', routeDone
           server.removeListener 'error', routeDone
-          server.removeListener client, outbound.write
           for ignore, todo of autoremove
             server.workstream.write(todo)
+          server.emit 'close', connection
 
-        conn.on 'error', (error) =>
+        conn.on 'error', (error) ->
+          console.error 'connection error', client, error
+        inbound.on 'error', (error) ->
           console.error 'connection error', client, error
 
     module.exports = Server
