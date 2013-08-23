@@ -16,6 +16,21 @@ Adaptive object dumper. Inside the browser, the eyes escape codes are no fun.
       else
         eyes(thing)
 
+## act(actionFunction)
+Take an action on every incoming object on the stream by passing it to
+`actionFunction`. This differs from a map in that you don't return a replacement
+object to be handed along the stream, you just *do things*. It is acceptable
+to modify the incoming object in place, but if you want to totally replace it
+with another object, try [map].
+
+    act = (actionFunction) ->
+      ret = through (object) ->
+        try
+          actionFunction(object)
+          ret.queue(object)
+        catch err
+          ret.emit('error', err)
+
 ## map(mapFunction)
 Map every incoming object to an output object. This is smart enough that when
 it gets a `null` it knows the stream is over and it doesn't bother you.
@@ -128,6 +143,7 @@ stream out.
 
 
     module.exports =
+      act: act
       map: map
       commandprocessor: commandprocessor
       decode: decode

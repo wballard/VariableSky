@@ -1,3 +1,10 @@
+    parsePath = require('./util.litcoffee').parsePath
+    errors = require('./errors.litcoffee')
+    _ = require('lodash')
+    adiff = require('adiff')
+    EventEmitter = require('events').EventEmitter
+
+##Link
 Link to data on a `Blackboard` by `path`.
 
 Links are asynchronous, dispatching a `link` command to fulfill themselves
@@ -8,17 +15,12 @@ the data over the wire to a client as JSON. This is to keep behavior the
 same on client as on server, in that you must `save`, `remove`, `set`, or call
 an Array mutator.
 
-    parsePath = require('./util.litcoffee').parsePath
-    errors = require('./errors.litcoffee')
-    _ = require('lodash')
-    adiff = require('adiff')
-    EventEmitter = require('events').EventEmitter
-
     class Link extends EventEmitter
         constructor: (processor, blackboard, path, callback, onClose) ->
           @diff = adiff.diff
 
 Sometimes you need to redefine equals. Specifically for angular, to ignore $$.
+Actually, that is the only time...
 
           @equalIs = (fn) ->
             @diff = adiff(equal: fn).diff
