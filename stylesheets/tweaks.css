@@ -63,3 +63,7 @@ footer {
 #toc > ul > .toc-h3 {
   margin-left: 16px;
 }
+
+pre {
+  padding: 0px;
+}

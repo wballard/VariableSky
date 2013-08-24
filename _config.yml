@@ -1,9 +1,8 @@
 name: Variable Sky
 lsi: false
 port: 9002
-pygments: true
+pygments: false
 github: https://github.com/wballard/VariableSky
-plugins: _plugins
 markdown: redcarpet
 redcarpet:
-  extensions: ["with_toc_data", "tables", "no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript", "with_toc_data", "highlight"]
+  extensions: ["with_toc_data", "tables", "no_intra_emphasis", "autolink", "strikethrough", "superscript"]
