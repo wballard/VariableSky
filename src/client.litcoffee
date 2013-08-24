@@ -6,6 +6,7 @@ This is the client library, focused on a streamy socket interface.
     Blackboard = require('./blackboard.litcoffee')
     packPath = require('./util.litcoffee').packPath
     parsePath = require('./util.litcoffee').parsePath
+    pathPrefixOf = require('./util.litcoffee').pathPrefixOf
     websocket = require('websocket-stream')
     streamula = require('./streamula.litcoffee')
     _ = require('lodash')
@@ -129,7 +130,7 @@ the tree to change if they are parents.
 
             streamula.act( (todo) =>
               for link in @links
-                if _.isEqual(link.path, _.first(todo.path, link.path.length))
+                if pathPrefixOf(link.path, todo.path)
                   if not todo.__do_not_dispatch__
                     link.dataCallback todo.error, @blackboard.valueAt(link.path), todo
             ),

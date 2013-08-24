@@ -25,6 +25,15 @@ And sometimes you have a parsed path and just want a string for it.
         pathArray = pathArray or []
         "#{pathArray.join('.')}"
 
+## pathPrefixOf(shortPath, longPath)
+Figure out if a short path is the prefix of a longer path.
+
+    pathPrefixOf = (short, long) ->
+      short = parsePath(short)
+      long = parsePath(long)
+      _.isEqual(short, _.first(long, short.length))
+
+
 ## inspect(thing)
 Context specific object dumper, uses coloring if you are servery, and the
 console log if you are browsery.
@@ -38,4 +47,5 @@ console log if you are browsery.
     module.exports =
       parsePath: parsePath
       packPath: packPath
+      pathPrefixOf: pathPrefixOf
       inspect: inspect
