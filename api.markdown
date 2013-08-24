@@ -380,6 +380,18 @@ links' you can do bulk updates of whole objects.
 |value|Any JavaScript value, just a variable, no need to JSON it|
 |callback| (error, snapshot) fired when the save has completed to the server|
 
+### merge()
+Merge additional properties to a linke. This **adds** to the existing
+value, notifies the server, then replicates to all clients.
+
+This notifies all child links and other cliens in the same way as
+`Link.save()`.
+
+|Parameter|Notes|
+|---------|-----|
+|value|Any JavaScript value, just a variable, no need to JSON it|
+|callback| (error, snapshot) fired when the merge has completed to the server|
+
 ### saveDiff()
 This is a smart save, intended to be used on arrays. It just sends a
 diff, avoiding the need to ship an entire array back to the server.
