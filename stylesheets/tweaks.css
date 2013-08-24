@@ -9,16 +9,18 @@ body { padding-top: 70px; }
   top: 50px;
   left: 0px;
   bottom: 0px;
-  width: 160px;
+  width: 180px;
   background-color: #eee;
   overflow-y: scroll;
 }
 
 .main {
-  position: absolute;
+  position: fixed;
   top: 60px;
   left: 0px;
   right: 0px;
+  bottom: 0px;
+  overflow-y: scroll;
 }
 
 .content {
@@ -29,7 +31,7 @@ body { padding-top: 70px; }
 }
 
 .navpad {
-  left: 170px;
+  left: 180px;
 }
 
 .nav-list {
@@ -47,3 +49,17 @@ footer {
   }
 }
 
+#toc > ul{
+  list-style: none;
+  padding: 12px
+}
+#toc > ul > li > a{
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+#toc > ul > .toc-h2 {
+  margin-left: 8px;
+}
+#toc > ul > .toc-h3 {
+  margin-left: 16px;
+}
