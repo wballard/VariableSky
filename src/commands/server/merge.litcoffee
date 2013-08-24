@@ -1,12 +1,8 @@
-Save content into the blackboard at an object location determined
-by the path.
+Merge content into the bloackboard at a path location.
 
-Save always works, it creates object along the path as needed, and stomps
-data in its way if needed. It is **ruthless** and **relentless**.
-Well, maybe not, maybe it is just _dedicated_.
+Merge will create objects as needed, take a look at `save`.
 
     _ = require('lodash')
-    adiff = require('adiff')
 
     module.exports = (todo, blackboard) ->
       if todo?.path.length
@@ -16,7 +12,9 @@ Well, maybe not, maybe it is just _dedicated_.
             at = at[segment]
           else
             at = at[segment] = {}
+        if not at[_.last(todo.path)]
+          at[_.last(todo.path)] = {}
         if todo.val
-          at[_.last(todo.path)] = todo.val
+          at[_.last(todo.path)] = _.extend at[_.last(todo.path)], todo.val
         if todo.diff
           adiff.patch(at[_.last(todo.path)], todo.diff, true)

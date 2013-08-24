@@ -52,6 +52,17 @@ Save does what you would think, replaces an entire value.
             __done__: done
           this
 
+Merge additional values into this link. Useful when you just want to add a few
+properties and have it read explicitly.
+
+        merge: (value, done) ->
+          @processor.write
+            command: 'merge'
+            path: @path
+            val: value
+            __done__: done
+          this
+
 Save diff tries to just send updates, this is currently only useful on arrays.
 You feed it an old and new value, so in practice this is called from the angular
 bindings as there is already an 'old' copy in memory, no sense in making yet

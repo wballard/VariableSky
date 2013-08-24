@@ -43,7 +43,6 @@ eventing, so we simulate these with two connections.
           second.link 'whatever'
 
       it "should re-link data", (done) ->
-
         link = conn.link('reco', (error, snapshot) ->
             #this will be called three times
             # * first link

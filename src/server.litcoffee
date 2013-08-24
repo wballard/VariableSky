@@ -46,6 +46,7 @@ journal playback without hooks as well as in the main workstream.
                 map:
                   link: require('./commands/server/link')
                   save: require('./commands/server/save')
+                  merge: require('./commands/server/merge')
                   remove: require('./commands/server/remove')
                 lookup: (m) -> m.command
                 skip: (m) -> m.error

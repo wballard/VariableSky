@@ -15,6 +15,7 @@ Yes. On purpose. Appeases browserify.
     linkcommand = require('./commands/client/link.litcoffee')
     savecommand = require('./commands/server/save.litcoffee')
     removecommand = require('./commands/server/remove.litcoffee')
+    mergecommand = require('./commands/server/merge.litcoffee')
 
 Two different ways to get a WebSocket depending if we are running in a browser
 or in node. Shim it in node, count on the browser otherwise. This little patch
@@ -111,6 +112,7 @@ the client to update state.
               map:
                 link: linkcommand
                 save: savecommand
+                merge: mergecommand
                 remove: removecommand
                 message: (todo, context) =>
                   @emit todo.topic, todo.message, todo.__client__
