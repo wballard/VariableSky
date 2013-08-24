@@ -330,17 +330,6 @@ change the final result of the command as needed.
 |link|The value currently stored in the server, change this value to intercept what is sent to the client|
 |save|The original value sent in by the client|
 |remove|`undefined`, there is no `val` for a `removed`|
-|splice|See below|
-
-#### splice
-In this case, `val` contains the arguments that will be passed to the
-eventual array `splice`. This lets you redefine the splice.
-
-|Property|Notes|
-|--------|-----|
-|index|Start modifying the array at this index, if≈ `undefined` modify at the end of the array|
-|howMany|Remove this many elements|
-|elements|Insert this array of elements after removing. If emtpy, we are just removing elements|
 
 ### prev
 Get the previous value of of the data before this current hook sequence
@@ -351,14 +340,6 @@ started.
 |link|`prev` is the stored server, which will be the same as `val`|
 |save|`prev` is the stored server, about to be replaced|
 |remove|`prev` is the stored server, about to be removed|
-|splice|`prev` is the stored server array, about to be modified|
-
-### link()
-Return a `Link` to other data on the server, the same as a client.
-
-Just as a client is in a separate memory space, and updating a linked
-snapshot doesn't modify the server unless you `save`, this link hands
-you a _clone_.
 
 ### abort()
 Abort the processing of hooks, raising an error, and blocking the
