@@ -140,7 +140,7 @@ Fired on any socket reported error.
 #### _topic_
 Custom events fired by `send`.
 
-### send()
+### send([client], topic, message)
 Point-to-point messaging, allowing connected clients to exchange
 messages through the server. You can do a lot of things with this, but
 it was added as a mechanism to negoatiate WebRTC/ICE connectivity, which
@@ -148,6 +148,10 @@ is all about peer-to-peer offer answer pairs to set up connectivity.
 
 This is a very simple way to send notifications / pokes / alerts from
 one client to another.
+
+With all three parameters, this is a send to a single client. With two
+parameters, this is a send to all attached clients. Pointcast.
+Broadcast.
 
 |Parameter|Notes|
 |---------|-----|
