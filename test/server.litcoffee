@@ -5,6 +5,7 @@ The most basic server self tests are here.
     wrench = require('wrench')
     connect = require('connect')
     should = require('chai').should()
+    deferred = require('deferred')
 
 This is a side effect test variable to make sure we are journaling post hook.
 
@@ -62,6 +63,23 @@ stuff and it will queue.
             two.close ->
               done()
         two.send(one.client, 'A-topic', 'yep')
+      it "lets you broadcast messages to multiple clients", (done) ->
+        one = new sky.Client('ws://localhost:9999/variablesky')
+        two = new sky.Client('ws://localhost:9999/variablesky')
+        onedef = deferred()
+        twodef = deferred()
+        one.on 'A', (value, from) ->
+          value.should.eql('go')
+          onedef.resolve(value)
+        two.on 'A', (value, from) ->
+          value.should.eql('go')
+          twodef.resolve(value)
+        deferred(onedef.promise, twodef.promise).then ->
+          one.close ->
+            two.close ->
+              done()
+        one.send('A', 'go')
+
 
 # Server Hooks
 

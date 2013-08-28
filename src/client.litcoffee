@@ -194,6 +194,11 @@ to a specific client. This isn't durable, just a way to do signalling.
             topic: arguments[1]
             message: arguments[2]
             command: 'message'
+        if arguments.length is 2
+          @outbound.write
+            topic: arguments[0]
+            message: arguments[1]
+            command: 'message'
 
 Refresh all links, keeps the data in memory up to date after a reconnect.
 

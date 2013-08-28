@@ -54,13 +54,27 @@ journal playback without hooks as well as in the main workstream.
                   merge: require('./commands/server/merge')
                   remove: require('./commands/server/remove')
                   message: (todo) ->
-                    buffer = (messages[todo.__to__] = messages[todo.__to__] or [])
-                    if connection = connections[todo.__to__]
-                      connection.write(todo)
+                    if todo.__to__
+                      buffer = (messages[todo.__to__] = messages[todo.__to__] or [])
+                      if connection = connections[todo.__to__]
+                        connection.write(todo)
+                      else
+                        buffer.push(todo)
                     else
+                      buffer = (messages['*'] = messages['*'] or [])
+                      for client, connection of connections
+                        connection.write(todo)
                       buffer.push(todo)
+                      #max length, broadcasts buffer but not forever
+                      if buffer.length > 10
+                        buffer.shift()
                   hello: (todo) ->
-                    buffer = (messages[todo.__client__] = messages[todo.__client__] or [])
+                    mybuffer = (messages[todo.__client__] = messages[todo.__client__] or [])
+                    buffer = (messages['*'] = messages['*'] or [])
+                    if connection = connections[todo.__client__]
+                      for message in _.union(mybuffer, buffer)
+                        connection.write message
+                      mybuffer.splice(0, mybuffer.length)
                 lookup: (m) -> m.command
                 skip: (m) -> m.error
                 context: @blackboard
