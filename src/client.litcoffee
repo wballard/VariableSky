@@ -187,17 +187,20 @@ Fire hose of tracing.
 A general purpose message channel allowing you to stream messages directly
 to a specific client. This isn't durable, just a way to do signalling.
 
-      send: (client, topic, message) ->
-        @outbound.write
-          __to__: client
-          topic: topic
-          message: message
-          command: 'message'
+      send: () ->
+        if arguments.length is 3
+          @outbound.write
+            __to__: arguments[0]
+            topic: arguments[1]
+            message: arguments[2]
+            command: 'message'
 
 Refresh all links, keeps the data in memory up to date after a reconnect.
 
       relink: ->
         paths =  _.unique(_.pluck(@links, 'path'))
+        @outbound.write
+          command: 'hello'
         for path in paths
           @emit 'relink', path
           @outbound.write

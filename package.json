@@ -35,7 +35,8 @@
     "node-uuid": "~1.4.0",
     "adiff": "~0.2.10",
     "websocket-stream": "~0.2.0",
-    "through": "~2.3.4"
+    "through": "~2.3.4",
+    "deferred": "~0.6.5"
   },
   "devDependencies": {
     "mocha": "~1.12.0",

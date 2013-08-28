@@ -44,7 +44,7 @@ stuff and it will queue.
         )
         .save('boop')
       it "will let you save data", (done) ->
-        client = new sky.Client('ws://localhost:9999/variablesky').traceOn()
+        client = new sky.Client('ws://localhost:9999/variablesky')
         link = client.link 'smurfs', (error, snapshot) ->
           if this.count is 3
             snapshot.should.eql
@@ -52,6 +52,16 @@ stuff and it will queue.
               from: 'me'
             client.close done
         link.save(hi: 'there').merge(from: 'me')
+      it "lets you directly send messages to other clients", (done) ->
+        one = new sky.Client('ws://localhost:9999/variablesky')
+        two = new sky.Client('ws://localhost:9999/variablesky')
+        one.on 'A-topic', (value, from) ->
+          value.should.eql('yep')
+          from.should.eql(two.client)
+          one.close ->
+            two.close ->
+              done()
+        two.send(one.client, 'A-topic', 'yep')
 
 # Server Hooks
 

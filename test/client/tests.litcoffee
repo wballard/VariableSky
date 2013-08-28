@@ -184,13 +184,6 @@ eventing, so we simulate these with two connections.
             value.should.eql({oh: 'yeah'})
             done()
 
-      it "lets you directly send messages to other clients", (done) ->
-        conn.on 'A-topic', (value, from) ->
-          value.should.eql('yep')
-          from.should.eql(otherConn.client)
-          done()
-        otherConn.send(conn.client, 'A-topic', 'yep')
-
       it "will autoRemove variables on disconnect", (done) ->
         newConn = variablesky.connect()
         newConn.link('deleto').save('yep').autoRemove()

@@ -36,7 +36,12 @@ lying :)
 
 Track connections, and force close if we have a duplicate connection come in.
 
-            connections = {}
+            @connections = connections = {}
+
+Buffer messages out to clients, this allows you to get messages that are
+waiting for you when you connect.
+
+            messages = {}
 
 This is the main command processor, separate here becuase it will be used in
 journal playback without hooks as well as in the main workstream.
@@ -48,6 +53,14 @@ journal playback without hooks as well as in the main workstream.
                   save: require('./commands/server/save')
                   merge: require('./commands/server/merge')
                   remove: require('./commands/server/remove')
+                  message: (todo) ->
+                    buffer = (messages[todo.__to__] = messages[todo.__to__] or [])
+                    if connection = connections[todo.__to__]
+                      connection.write(todo)
+                    else
+                      buffer.push(todo)
+                  hello: (todo) ->
+                    buffer = (messages[todo.__client__] = messages[todo.__client__] or [])
                 lookup: (m) -> m.command
                 skip: (m) -> m.error
                 context: @blackboard
@@ -61,12 +74,13 @@ This is the main workstream, it does all the processing for the server.
 
 Enhance the todo turning it into a context for the rest of the processing stream.
 
-              contextify = streamula.map( (todo) =>
-                _.extend(todo,
-                  prev: @blackboard.valueAt(todo.path)
-                  abort: (message) ->
-                    throw errors.HOOK_ABORTED(message)
-                )
+              contextify = streamula.act( (todo) =>
+                if todo.path
+                  _.extend(todo,
+                    prev: @blackboard.valueAt(todo.path)
+                    abort: (message) ->
+                      throw errors.HOOK_ABORTED(message)
+                  )
               ),
 
 And here is where the real processing happens, hooks wrapping commands.
@@ -126,7 +140,6 @@ This is a web socket listen, attached to a connect application
 at a given mount point url with the default `/variablesky`.
 
         listen: (app, server, url) =>
-          @connections = {}
           if not app.use
             throw errors.NOT_AN_APP()
           if @sock
@@ -201,11 +214,10 @@ The outbound event stream, send messages along to a connected client.
 
 De-context, strip off methods.
 
-          streamula.map( (todo) ->
+          streamula.act( (todo) ->
             for key, value of todo
               if _.isFunction(value)
                 delete todo[key]
-            todo
           ),
           streamula.tap("Server---->", -> server.trace),
           streamula.encode(),
@@ -255,8 +267,6 @@ clients are writing to this stream, and clients close
                   if path is packPath(todo.path)
                     delete autoremove[path]
                     server.workstream.write(rm)
-              if todo.command is 'message'
-                server.connections[todo.__to__].write todo
               todo
             catch wtf
               console.log 'wtf', wtf
